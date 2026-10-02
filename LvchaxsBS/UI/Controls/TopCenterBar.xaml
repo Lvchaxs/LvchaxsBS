@@ -1,0 +1,191 @@
+﻿<UserControl x:Class="LvchaxsBS.UI.Controls.TopLeftBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:LvchaxsBS.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="32" d:DesignWidth="400">
+
+    <StackPanel Orientation="Horizontal">
+
+        <!-- 首页 -->
+        <Button x:Name="ButtonHome"
+                Width="28" Height="28"
+                MinWidth="28"
+                Margin="0,0,4,0"
+                Style="{StaticResource ImageButtonStyleRound6}"
+                ui:ButtonTip.Text="首页"
+                Click="ButtonHome_Click">
+            <Path x:Name="IconHome"
+                  Data="M 2,8 L 8,2 L 11,5 L 11,3 L 13,3 L 13,7 L 14,8 L 14,14 L 10,14 L 10,10 L 6,10 L 6,14 L 2,14 Z"
+                  Stroke="{DynamicResource TextSecondaryBrush}"
+                  StrokeThickness="1.3"
+                  StrokeLineJoin="Round"
+                  Fill="Transparent"
+                  Width="16" Height="16"
+                  Stretch="Uniform"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"/>
+        </Button>
+
+        <!-- 个性化 -->
+        <Button x:Name="ButtonPersonalization"
+                Width="28" Height="28"
+                MinWidth="28"
+                Margin="0,0,4,0"
+                Style="{StaticResource ImageButtonStyleRound6}"
+                ui:ButtonTip.Text="个性化"
+                Click="ButtonPersonalization_Click">
+            <Viewbox Width="18" Height="18"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center">
+                <Grid Width="24" Height="24">
+                    <Path x:Name="IconSliderLine1"
+                          Data="M 3,6 L 21,6"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="1.6"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"/>
+                    <Ellipse x:Name="IconSliderKnob1"
+                             Width="5" Height="5"
+                             HorizontalAlignment="Left"
+                             VerticalAlignment="Top"
+                             Margin="9,3,0,0"
+                             Stroke="{DynamicResource TextSecondaryBrush}"
+                             StrokeThickness="1.6"
+                             Fill="Transparent"/>
+                    <Path x:Name="IconSliderLine2"
+                          Data="M 3,12 L 21,12"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="1.6"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"/>
+                    <Ellipse x:Name="IconSliderKnob2"
+                             Width="5" Height="5"
+                             HorizontalAlignment="Left"
+                             VerticalAlignment="Top"
+                             Margin="15,9,0,0"
+                             Stroke="{DynamicResource TextSecondaryBrush}"
+                             StrokeThickness="1.6"
+                             Fill="Transparent"/>
+                    <Path x:Name="IconSliderLine3"
+                          Data="M 3,18 L 21,18"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="1.6"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"/>
+                    <Ellipse x:Name="IconSliderKnob3"
+                             Width="5" Height="5"
+                             HorizontalAlignment="Left"
+                             VerticalAlignment="Top"
+                             Margin="6,15,0,0"
+                             Stroke="{DynamicResource TextSecondaryBrush}"
+                             StrokeThickness="1.6"
+                             Fill="Transparent"/>
+                </Grid>
+            </Viewbox>
+        </Button>
+
+        <!-- 字幕设置 -->
+        <Button x:Name="ButtonVoice"
+                Width="28" Height="28"
+                MinWidth="28"
+                Margin="0,0,4,0"
+                Style="{StaticResource ImageButtonStyleRound6}"
+                ui:ButtonTip.Text="字幕设置"
+                Click="ButtonVoice_Click">
+            <Viewbox Width="18" Height="18"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center">
+                <Grid Width="24" Height="24">
+                    <Path x:Name="IconVoiceBubble"
+                          Data="M 3,4 L 21,4 A 2,2 0 0 1 23,6 L 23,16 A 2,2 0 0 1 21,18 L 10,18 L 6,22 L 6,18 L 3,18 A 2,2 0 0 1 1,16 L 1,6 A 2,2 0 0 1 3,4 Z"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="1.8"
+                          StrokeLineJoin="Round"
+                          Fill="Transparent"/>
+                    <Path x:Name="IconVoiceLine1"
+                          Data="M 6,9 L 18,9"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="1.6"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"/>
+                    <Path x:Name="IconVoiceLine2"
+                          Data="M 6,13 L 14,13"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="1.6"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"/>
+                </Grid>
+            </Viewbox>
+        </Button>
+
+        <!-- 设置 -->
+        <Button x:Name="ButtonSettings"
+                Width="28" Height="28"
+                MinWidth="28"
+                Margin="0,0,4,0"
+                Style="{StaticResource ImageButtonStyleRound6}"
+                ui:ButtonTip.Text="设置"
+                Click="ButtonSettings_Click">
+            <Viewbox Width="17" Height="17"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center">
+                <Grid Width="24" Height="24">
+                    <Path x:Name="IconSettingsOuter"
+                          Data="M9.25 22 8.85 18.8q-.35-.125-.675-.3-.325-.175-.625-.425l-3 1.25-2.9-5 2.6-1.95q-.05-.175-.05-.35V11.55q0-.175.05-.35L1.65 9.25l2.9-5 3 1.25q.3-.25.625-.425t.675-.3L9.25 1.5h5.5l.4 3.275q.35.125.675.3.325.175.625.425l3-1.25 2.9 5-2.6 1.95q.05.175.05.35V12.45q0 .175-.05.35l2.6 1.95-2.9 5-3-1.25q-.3.25-.625.425t-.675.3l-.4 3.275Z"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="1.9"
+                          StrokeLineJoin="Round"
+                          Fill="Transparent"/>
+                    <Path x:Name="IconSettingsInner"
+                          Data="M12 8.5q-1.45 0-2.475 1.025Q8.5 10.55 8.5 12q0 1.45 1.025 2.475Q10.55 15.5 12 15.5q1.45 0 2.475-1.025Q15.5 13.45 15.5 12q0-1.45-1.025-2.475Q13.45 8.5 12 8.5Z"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="1.9"
+                          StrokeLineJoin="Round"
+                          Fill="Transparent"/>
+                </Grid>
+            </Viewbox>
+        </Button>
+
+        <!-- 分辨率 -->
+        <Button x:Name="ButtonResolution"
+                Content="分辨率: --"
+                MinWidth="80"
+                Height="28"
+                Margin="0,0,4,0"
+                IsEnabled="False"
+                Cursor="Arrow"
+                Style="{StaticResource SettingsButtonStyleRound6}"/>
+
+        <!-- 官服 -->
+        <Button x:Name="CenterButton1"
+                Width="25" Height="25"
+                MinWidth="25"
+                Margin="0,0,4,0"
+                Padding="0"
+                Style="{StaticResource ImageButtonStyleRound6NoBorder115}"
+                ui:ButtonTip.Text="启动官服.exe"
+                Click="CenterButton1_Click">
+            <Button.Background>
+                <ImageBrush ImageSource="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/官服.png"
+                            Stretch="UniformToFill"/>
+            </Button.Background>
+        </Button>
+
+        <!-- 国际服 -->
+        <Button x:Name="CenterButton2"
+                Width="25" Height="25"
+                MinWidth="25"
+                Padding="0"
+                Style="{StaticResource ImageButtonStyleRound6NoBorder115}"
+                ui:ButtonTip.Text="启动国际服.exe"
+                Click="CenterButton2_Click">
+            <Button.Background>
+                <ImageBrush ImageSource="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/国际服.png"
+                            Stretch="UniformToFill"/>
+            </Button.Background>
+        </Button>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,56 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============ 背景层 ============ -->
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="HoverBackgroundBrush" Color="#F9FAFB"/>
+    <SolidColorBrush x:Key="PressedBackgroundBrush" Color="#F3F4F6"/>
+
+    <!-- ============ 文字层 ============ -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#6B7280"/>
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="#9CA3AF"/>
+
+    <!-- ============ 边框层 ============ -->
+    <SolidColorBrush x:Key="BorderBrush" Color="#E5E7EB"/>
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="#D1D5DB"/>
+
+    <!-- ============ 主色 ============ -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#3B82F6"/>
+    <SolidColorBrush x:Key="PrimaryLightBrush" Color="#DBEAFE"/>
+    <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#1D4ED8"/>
+
+    <!-- ============ 状态色 ============ -->
+    <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
+
+    <!-- ============ 标签色 ============ -->
+    <SolidColorBrush x:Key="TagBlueBgBrush" Color="#DBEAFE"/>
+    <SolidColorBrush x:Key="TagBlueFgBrush" Color="#1D4ED8"/>
+    <SolidColorBrush x:Key="TagGreenBgBrush" Color="#D1FAE5"/>
+    <SolidColorBrush x:Key="TagGreenFgBrush" Color="#065F46"/>
+    <SolidColorBrush x:Key="TagRedBgBrush" Color="#FEE2E2"/>
+    <SolidColorBrush x:Key="TagRedFgBrush" Color="#991B1B"/>
+    <SolidColorBrush x:Key="TagPurpleBgBrush" Color="#EDE9FE"/>
+    <SolidColorBrush x:Key="TagPurpleFgBrush" Color="#5B21B6"/>
+
+    <!-- ============ 中性灰 ============ -->
+    <SolidColorBrush x:Key="Gray100Brush" Color="#F3F4F6"/>
+    <SolidColorBrush x:Key="Gray200Brush" Color="#E5E7EB"/>
+    <SolidColorBrush x:Key="Gray300Brush" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="Gray400Brush" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="Gray500Brush" Color="#6B7280"/>
+    <SolidColorBrush x:Key="Gray700Brush" Color="#374151"/>
+    <SolidColorBrush x:Key="Gray800Brush" Color="#1F2937"/>
+
+    <!-- ============ Popup 提示 ============ -->
+    <SolidColorBrush x:Key="TipBackgroundBrush" Color="#34D399"/>
+
+    <!-- ============ 开关背景 ============ -->
+    <SolidColorBrush x:Key="ToggleOffBrush" Color="#E5E7EB"/>
+    <SolidColorBrush x:Key="ToggleOnBrush" Color="#22C55E"/>
+
+</ResourceDictionary>

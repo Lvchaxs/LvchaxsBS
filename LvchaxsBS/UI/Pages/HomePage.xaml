@@ -1,0 +1,400 @@
+﻿<Page x:Class="LvchaxsBS.UI.Pages.HomePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:ui="clr-namespace:LvchaxsBS.UI.Controls"
+      mc:Ignorable="d"
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="HomePage"
+      Background="Transparent">
+
+    <ScrollViewer Style="{StaticResource CustomScrollViewer}">
+        <StackPanel Margin="5,4,0,0">
+
+            <!-- 卡片1：快速传送 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
+                               Width="60" Height="60" Stretch="Uniform"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="快速传送" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"/>
+                            <Border Style="{StaticResource TagLabelBlueStyle}" Width="35">
+                                <TextBlock Text="16:9" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagBlueFgBrush}" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelPurpleStyle}">
+                                <TextBlock Text="5120x2160" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagPurpleFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelGreenStyle}">
+                                <TextBlock Text="3440x1440" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagGreenFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelRedStyle}">
+                                <TextBlock Text="2560x1080" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagRedFgBrush}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="地图界面中选择锚点后按下触发键识别并自动执行点击F传送操作"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Button x:Name="QuickTeleportTriggerBtn"
+                                Content="触发键" Width="50" Height="28" FontSize="11" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="TriggerKeyButton_Click" Tag="快速传送"/>
+                        <Button Content="配置" Width="50" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ConfigButton_Click" Tag="快速传送"/>
+                        <CheckBox x:Name="QuickTeleportToggle"
+                                  Style="{StaticResource ModuleToggleSwitchStyle}"
+                                  VerticalAlignment="Center"
+                                  Checked="Toggle_Changed" Unchecked="Toggle_Changed"
+                                  Tag="QuickTeleport"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 卡片2：快速拾取 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速拾取.png"
+                               Width="60" Height="60" Stretch="Uniform"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="快速拾取" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"/>
+                            <Border Style="{StaticResource TagLabelBlueStyle}" Width="35">
+                                <TextBlock Text="16:9" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagBlueFgBrush}" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelPurpleStyle}">
+                                <TextBlock Text="5120x2160" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagPurpleFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelGreenStyle}">
+                                <TextBlock Text="3440x1440" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagGreenFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelRedStyle}">
+                                <TextBlock Text="2560x1080" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagRedFgBrush}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="主界面中按下触发键开启/关闭 F滚轮快速循环，非主界面自动暂停"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Button x:Name="QuickPickupTriggerBtn"
+                                Content="触发键" Width="50" Height="28" FontSize="11" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="TriggerKeyButton_Click" Tag="快速拾取"/>
+                        <Button Content="配置" Width="50" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ConfigButton_Click" Tag="快速拾取"/>
+                        <CheckBox x:Name="QuickPickupToggle"
+                                  Style="{StaticResource ModuleToggleSwitchStyle}"
+                                  VerticalAlignment="Center"
+                                  Checked="Toggle_Changed" Unchecked="Toggle_Changed"
+                                  Tag="QuickPickup"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 卡片3：剧情对话 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/剧情对话.png"
+                               Width="60" Height="60" Stretch="Uniform"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="剧情对话" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"/>
+                            <Border Style="{StaticResource TagLabelBlueStyle}" Width="35">
+                                <TextBlock Text="16:9" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagBlueFgBrush}" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelPurpleStyle}">
+                                <TextBlock Text="5120x2160" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagPurpleFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelGreenStyle}">
+                                <TextBlock Text="3440x1440" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagGreenFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelRedStyle}">
+                                <TextBlock Text="2560x1080" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagRedFgBrush}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="对话界面中按下触发键开启/关闭 识别到左上角对话隐藏图标时自动F对话"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Button x:Name="StoryDialogueTriggerBtn"
+                                Content="触发键" Width="50" Height="28" FontSize="11" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="TriggerKeyButton_Click" Tag="剧情对话"/>
+                        <Button Content="配置" Width="50" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ConfigButton_Click" Tag="剧情对话"/>
+                        <CheckBox x:Name="StoryDialogueToggle"
+                                  Style="{StaticResource ModuleToggleSwitchStyle}"
+                                  VerticalAlignment="Center"
+                                  Checked="Toggle_Changed" Unchecked="Toggle_Changed"
+                                  Tag="StoryDialogue"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 卡片4：自动烹饪 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/自动烹饪.png"
+                               Width="60" Height="60" Stretch="Uniform"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="自动烹饪" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"/>
+                            <Border Style="{StaticResource TagLabelBlueStyle}" Width="35">
+                                <TextBlock Text="16:9" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagBlueFgBrush}" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelPurpleStyle}">
+                                <TextBlock Text="5120x2160" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagPurpleFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelGreenStyle}">
+                                <TextBlock Text="3440x1440" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagGreenFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelRedStyle}">
+                                <TextBlock Text="2560x1080" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagRedFgBrush}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="自动烹饪料理+自动清理完美品质的复活药体力药"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Button x:Name="AutoCookTriggerBtn"
+                                Content="触发键" Width="50" Height="28" FontSize="11" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="TriggerKeyButton_Click" Tag="自动烹饪"/>
+                        <Button Content="配置" Width="50" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ConfigButton_Click" Tag="自动烹饪"/>
+                        <CheckBox x:Name="AutoCookToggle"
+                                  Style="{StaticResource ModuleToggleSwitchStyle}"
+                                  VerticalAlignment="Center"
+                                  Checked="Toggle_Changed" Unchecked="Toggle_Changed"
+                                  Tag="AutoCook"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 卡片5：钓鱼辅助 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/钓鱼辅助.png"
+                               Width="60" Height="60" Stretch="Uniform"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="钓鱼辅助" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"/>
+                            <Border Style="{StaticResource TagLabelBlueStyle}" Width="35">
+                                <TextBlock Text="16:9" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagBlueFgBrush}" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelPurpleStyle}">
+                                <TextBlock Text="5120x2160" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagPurpleFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelGreenStyle}">
+                                <TextBlock Text="3440x1440" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagGreenFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelRedStyle}">
+                                <TextBlock Text="2560x1080" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagRedFgBrush}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="钓鱼界面中按下触发键开启/关闭 只需手动抛竿，识别到上钩后自动收杆并控制滑块"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Button x:Name="FishingAssistTriggerBtn"
+                                Content="触发键" Width="50" Height="28" FontSize="11" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="TriggerKeyButton_Click" Tag="钓鱼辅助"/>
+                        <Button Content="配置" Width="50" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ConfigButton_Click" Tag="钓鱼辅助"/>
+                        <CheckBox x:Name="FishingAssistToggle"
+                                  Style="{StaticResource ModuleToggleSwitchStyle}"
+                                  VerticalAlignment="Center"
+                                  Checked="Toggle_Changed" Unchecked="Toggle_Changed"
+                                  Tag="FishingAssist"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 卡片6：自动伐木 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/自动伐木.png"
+                               Width="60" Height="60" Stretch="Uniform"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="自动伐木" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"/>
+                            <Border Style="{StaticResource TagLabelBlueStyle}" Width="35">
+                                <TextBlock Text="16:9" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagBlueFgBrush}" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelPurpleStyle}">
+                                <TextBlock Text="5120x2160" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagPurpleFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelGreenStyle}">
+                                <TextBlock Text="3440x1440" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagGreenFgBrush}"/>
+                            </Border>
+                            <Border Style="{StaticResource TagLabelRedStyle}">
+                                <TextBlock Text="2560x1080" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TagRedFgBrush}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="主界面并装备王树瑞佑后按下触发键开启/关闭 自动识别循环使用小道具"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Button x:Name="AutoLumberTriggerBtn"
+                                Content="触发键" Width="50" Height="28" FontSize="11" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="TriggerKeyButton_Click" Tag="自动伐木"/>
+                        <Button Content="配置" Width="50" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ConfigButton_Click" Tag="自动伐木"/>
+                        <CheckBox x:Name="AutoLumberToggle"
+                                  Style="{StaticResource ModuleToggleSwitchStyle}"
+                                  VerticalAlignment="Center"
+                                  Checked="Toggle_Changed" Unchecked="Toggle_Changed"
+                                  Tag="AutoLumber"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 卡片7：手柄拾取 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/手柄拾取.png"
+                               Width="60" Height="60" Stretch="Uniform"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="手柄拾取" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"/>
+                        </StackPanel>
+                        <TextBlock Text="按下触发键执行一次鼠标左键一键拾取，需要关闭游戏内-主界面控制设备自动切换"
+                                   FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <Button x:Name="ControllerPickupTriggerBtn"
+                                Content="触发键" Width="50" Height="28" FontSize="11" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="TriggerKeyButton_Click" Tag="手柄拾取"/>
+                        <Button Content="配置" Width="50" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ConfigButton_Click" Tag="手柄拾取"/>
+                        <CheckBox x:Name="ControllerPickupToggle"
+                                  Style="{StaticResource ModuleToggleSwitchStyle}"
+                                  VerticalAlignment="Center"
+                                  Checked="Toggle_Changed" Unchecked="Toggle_Changed"
+                                  Tag="ControllerPickup"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

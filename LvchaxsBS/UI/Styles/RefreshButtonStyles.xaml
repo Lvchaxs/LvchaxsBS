@@ -1,0 +1,136 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <QuadraticEase x:Key="RefreshEase" EasingMode="EaseOut"/>
+
+    <Style x:Key="RefreshIconButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="28"/>
+        <Setter Property="Height" Value="28"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4"
+                            Width="28"
+                            Height="28">
+                        <Grid Width="20" Height="20">
+                            <Grid.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform x:Name="RefreshScaleTransform"
+                                                    ScaleX="1" ScaleY="1"
+                                                    CenterX="10" CenterY="10"/>
+                                    <RotateTransform x:Name="RefreshRotateTransform"
+                                                     CenterX="10" CenterY="10"
+                                                     Angle="0"/>
+                                </TransformGroup>
+                            </Grid.RenderTransform>
+                            <TextBlock Text="&#xE72C;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="16"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="Transparent"/>
+                        </Trigger>
+
+                        <!-- 点击：先缩后旋 -->
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="RefreshScaleTransform"
+                                        Storyboard.TargetProperty="ScaleX"
+                                        From="1" To="0.85" Duration="0:0:0.08"
+                                        AutoReverse="True">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="RefreshScaleTransform"
+                                        Storyboard.TargetProperty="ScaleY"
+                                        From="1" To="0.85" Duration="0:0:0.08"
+                                        AutoReverse="True">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="RefreshRotateTransform"
+                                        Storyboard.TargetProperty="Angle"
+                                        From="0" To="360"
+                                        BeginTime="0:0:0.16"
+                                        Duration="0:0:0.6"
+                                        RepeatBehavior="1x">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <!-- 悬停放大 -->
+                        <EventTrigger RoutedEvent="Button.MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="RefreshScaleTransform"
+                                        Storyboard.TargetProperty="ScaleX"
+                                        To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="RefreshScaleTransform"
+                                        Storyboard.TargetProperty="ScaleY"
+                                        To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <EventTrigger RoutedEvent="Button.MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="RefreshScaleTransform"
+                                        Storyboard.TargetProperty="ScaleX"
+                                        To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="RefreshScaleTransform"
+                                        Storyboard.TargetProperty="ScaleY"
+                                        To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

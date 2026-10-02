@@ -1,0 +1,62 @@
+﻿<UserControl x:Class="LvchaxsBS.UI.Controls.SpinSliderControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="26" d:DesignWidth="200"
+             x:Name="RootControl">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 滑块 -->
+        <Slider x:Name="PART_Slider"
+                Grid.Column="0"
+                Style="{StaticResource ModernSliderStyle}"
+                Minimum="{Binding Minimum, ElementName=RootControl}"
+                Maximum="{Binding Maximum, ElementName=RootControl}"
+                Value="{Binding Value, ElementName=RootControl, Mode=TwoWay}"
+                SmallChange="{Binding Step, ElementName=RootControl}"
+                LargeChange="10"
+                IsSnapToTickEnabled="False"
+                IsMoveToPointEnabled="True"
+                VerticalAlignment="Center"
+                Focusable="False"
+                ValueChanged="PART_Slider_ValueChanged"
+                Thumb.DragCompleted="PART_Slider_DragCompleted"
+                PreviewMouseLeftButtonUp="PART_Slider_PreviewMouseLeftButtonUp"/>
+
+        <!-- 数值显示 -->
+        <TextBlock x:Name="PART_ValueText"
+                   Grid.Column="1"
+                   FontSize="12"
+                   FontWeight="SemiBold"
+                   Foreground="#8B5CF6"
+                   VerticalAlignment="Center"
+                   MinWidth="40"
+                   Margin="4,0,2,0"
+                   TextAlignment="Left"/>
+
+        <!-- 加减按钮 -->
+        <StackPanel Grid.Column="2"
+                    Orientation="Vertical"
+                    VerticalAlignment="Center"
+                    Margin="2,0,0,0">
+            <Button x:Name="PART_UpButton"
+                    Style="{StaticResource SpinButtonStyle}"
+                    Content="▲"
+                    Click="UpButton_Click"
+                    Focusable="False"/>
+            <Button x:Name="PART_DownButton"
+                    Style="{StaticResource SpinButtonStyle}"
+                    Content="▼"
+                    Margin="0,1,0,0"
+                    Click="DownButton_Click"
+                    Focusable="False"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

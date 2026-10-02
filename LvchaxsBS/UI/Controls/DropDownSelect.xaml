@@ -1,0 +1,15 @@
+﻿<UserControl x:Class="LvchaxsBS.UI.Controls.DropDownSelect"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="28" d:DesignWidth="120"
+             x:Name="RootControl">
+    <Button x:Name="PART_MainButton"
+            Style="{StaticResource SimpleDropDownButtonStyle}"
+            Click="MainButton_Click">
+        <TextBlock x:Name="PART_SelectedText"
+                   VerticalAlignment="Center"/>
+    </Button>
+</UserControl>

@@ -1,0 +1,204 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============ 卡片（固定高度 70） ============ -->
+    <Style x:Key="ModuleFunctionCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Height" Value="70"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+
+    <!-- ============ 卡片（自适应高度） ============ -->
+    <Style x:Key="ModuleFunctionCardAutoStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+
+    <!-- ============ 图标框 ============ -->
+    <Style x:Key="IconBorderStyle" TargetType="Border">
+        <Setter Property="Width" Value="60"/>
+        <Setter Property="Height" Value="60"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Margin" Value="5,0,12,0"/>
+        <Setter Property="Background" Value="Transparent"/>
+    </Style>
+
+    <!-- ============ 标签基样式 ============ -->
+    <Style x:Key="TagLabelStyle" TargetType="Border">
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="Margin" Value="4,0,0,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="TagLabelBlueStyle" TargetType="Border" BasedOn="{StaticResource TagLabelStyle}">
+        <Setter Property="Background" Value="{DynamicResource TagBlueBgBrush}"/>
+    </Style>
+
+    <Style x:Key="TagLabelGreenStyle" TargetType="Border" BasedOn="{StaticResource TagLabelStyle}">
+        <Setter Property="Background" Value="{DynamicResource TagGreenBgBrush}"/>
+    </Style>
+
+    <Style x:Key="TagLabelRedStyle" TargetType="Border" BasedOn="{StaticResource TagLabelStyle}">
+        <Setter Property="Background" Value="{DynamicResource TagRedBgBrush}"/>
+    </Style>
+
+    <Style x:Key="TagLabelPurpleStyle" TargetType="Border" BasedOn="{StaticResource TagLabelStyle}">
+        <Setter Property="Background" Value="{DynamicResource TagPurpleBgBrush}"/>
+    </Style>
+
+    <!-- ============ 状态标签（绿底） ============ -->
+    <Style x:Key="StatusTagStyle" TargetType="Border">
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="Margin" Value="4,0,0,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource TagGreenBgBrush}"/>
+    </Style>
+
+    <!-- ============ 胶囊开关（含悬停缩小效果） ============ -->
+    <Style x:Key="ModuleToggleSwitchStyle" TargetType="CheckBox">
+        <Setter Property="Width" Value="44"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid>
+                        <Border x:Name="BackgroundBorder"
+                                Width="44" Height="24"
+                                Background="{DynamicResource ToggleOffBrush}"
+                                CornerRadius="12"/>
+                        <Border x:Name="ThumbBorder"
+                                Width="20" Height="20"
+                                Background="White"
+                                CornerRadius="10"
+                                HorizontalAlignment="Left"
+                                Margin="2,0,0,0"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform x:Name="ThumbScale" ScaleX="1" ScaleY="1"/>
+                                    <TranslateTransform x:Name="ThumbTranslate" X="0"/>
+                                </TransformGroup>
+                            </Border.RenderTransform>
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1" Color="#40000000" Opacity="0.2"/>
+                            </Border.Effect>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+
+                        <!-- 悬停：圆球缩小 -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ThumbScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="0.85" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ThumbScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="0.85" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ThumbScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ThumbScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+
+                        <!-- 选中：滑块滑到右 + 背景变绿 -->
+                        <Trigger Property="IsChecked" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimationUsingKeyFrames
+                                            Storyboard.TargetName="ThumbTranslate"
+                                            Storyboard.TargetProperty="X"
+                                            Duration="0:0:0.4">
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.2" Value="22">
+                                                <SplineDoubleKeyFrame.KeySpline>
+                                                    <KeySpline ControlPoint1="0.1,0.9" ControlPoint2="0.2,1.0"/>
+                                                </SplineDoubleKeyFrame.KeySpline>
+                                            </SplineDoubleKeyFrame>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.4" Value="20">
+                                                <SplineDoubleKeyFrame.KeySpline>
+                                                    <KeySpline ControlPoint1="0.4,0" ControlPoint2="0.6,1"/>
+                                                </SplineDoubleKeyFrame.KeySpline>
+                                            </SplineDoubleKeyFrame>
+                                        </DoubleAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimationUsingKeyFrames
+                                            Storyboard.TargetName="ThumbTranslate"
+                                            Storyboard.TargetProperty="X"
+                                            Duration="0:0:0.35">
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.15" Value="-2">
+                                                <SplineDoubleKeyFrame.KeySpline>
+                                                    <KeySpline ControlPoint1="0.1,0.9" ControlPoint2="0.2,1.0"/>
+                                                </SplineDoubleKeyFrame.KeySpline>
+                                            </SplineDoubleKeyFrame>
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.35" Value="0">
+                                                <SplineDoubleKeyFrame.KeySpline>
+                                                    <KeySpline ControlPoint1="0.4,0" ControlPoint2="0.6,1"/>
+                                                </SplineDoubleKeyFrame.KeySpline>
+                                            </SplineDoubleKeyFrame>
+                                        </DoubleAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                            <Setter TargetName="BackgroundBorder" Property="Background"
+                                    Value="{DynamicResource ToggleOnBrush}"/>
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

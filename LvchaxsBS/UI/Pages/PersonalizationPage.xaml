@@ -1,0 +1,262 @@
+﻿<Page x:Class="LvchaxsBS.UI.Pages.PersonalizationPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:controls="clr-namespace:LvchaxsBS.UI.Controls"
+      xmlns:ui="clr-namespace:LvchaxsBS.UI.Helpers"
+      mc:Ignorable="d"
+      d:DesignHeight="450" d:DesignWidth="800"
+      Background="Transparent">
+
+    <ScrollViewer Style="{StaticResource CustomScrollViewer}">
+        <StackPanel Margin="5,4,0,0">
+
+            <!-- 卡片1 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}" Height="70">
+                <Grid Margin="10,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="壁纸透明度" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="WallpaperOpacitySlider"
+                                                    Grid.Column="1"
+                                                    Minimum="1" Maximum="100"
+                                                    Step="1"
+                                                    Unit="%" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="壁纸透明度"/>
+                    </Grid>
+
+                    <Grid Grid.Row="0" Grid.Column="1" Margin="10,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="壁纸模糊度" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="WallpaperBlurSlider"
+                                                    Grid.Column="1"
+                                                    Minimum="0" Maximum="100"
+                                                    Step="1"
+                                                    Unit="%" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="壁纸模糊度"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="卡片透明度" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="CardOpacitySlider"
+                                                    Grid.Column="1"
+                                                    Minimum="0" Maximum="100"
+                                                    Step="1"
+                                                    Unit="%" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="卡片透明度"/>
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Grid.Column="1"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Margin="10,0,0,0">
+                        <CheckBox x:Name="EnableCompressionCheckBox"
+                                  Content="画质压缩"
+                                  Style="{StaticResource PurpleCheckBoxStyle}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,20,0"
+                                  ui:ToastNotifier.Message="画质压缩"/>
+                        <CheckBox x:Name="EnableMirrorCheckBox"
+                                  Content="启用镜像"
+                                  Style="{StaticResource PurpleCheckBoxStyle}"
+                                  VerticalAlignment="Center"
+                                  ui:ToastNotifier.Message="启用镜像"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 卡片2 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}" Height="70">
+                <Grid Margin="10,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="X水平位置" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="XPositionSlider"
+                                                    Grid.Column="1"
+                                                    Minimum="-50" Maximum="50"
+                                                    Step="1"
+                                                    Unit="%" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="X水平位置"/>
+                    </Grid>
+
+                    <Grid Grid.Row="0" Grid.Column="1" Margin="10,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="壁纸缩放" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="WallpaperScaleSlider"
+                                                    Grid.Column="1"
+                                                    Minimum="0" Maximum="100"
+                                                    Step="1"
+                                                    Unit="x" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="壁纸缩放"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Y垂直位置" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="YPositionSlider"
+                                                    Grid.Column="1"
+                                                    Minimum="-50" Maximum="50"
+                                                    Step="1"
+                                                    Unit="%" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="Y垂直位置"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="壁纸旋转" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="WallpaperRotationSlider"
+                                                    Grid.Column="1"
+                                                    Minimum="-180" Maximum="180"
+                                                    Step="1"
+                                                    Unit="°" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="壁纸旋转"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- 卡片3 -->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}" Height="70">
+                <Grid Margin="10,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="标题字体大小" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="TitleFontSizeSlider"
+                                                    Grid.Column="1"
+                                                    Minimum="9" Maximum="20"
+                                                    Step="0.1"
+                                                    Unit="x" NumericFormat="F1"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="标题字体大小"/>
+                    </Grid>
+
+                    <Grid Grid.Row="0" Grid.Column="1" Margin="10,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="窗口圆角" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="TitleOpacitySlider"
+                                                    Grid.Column="1"
+                                                    Minimum="0" Maximum="30"
+                                                    Step="1"
+                                                    Unit="px" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="窗口圆角"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="窗口标题" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBox x:Name="WindowTitleTextBox"
+                                 Grid.Column="1"
+                                 Style="{StaticResource PublicTextBoxStyle}"
+                                 Height="26"
+                                 VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="窗口透明度" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:SpinSliderControl x:Name="WindowOpacitySlider"
+                                                    Grid.Column="1"
+                                                    Minimum="0" Maximum="100"
+                                                    Step="1"
+                                                    Unit="%" NumericFormat="F0"
+                                                    VerticalAlignment="Center" Height="26"
+                                                    ui:ToastNotifier.Message="窗口透明度"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

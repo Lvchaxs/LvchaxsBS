@@ -1,0 +1,72 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace LvchaxsBS.Config.FunctionConfigs
+{
+    [ConfigFile("FunctionConfigs/QuickTeleportSettings.json")]
+    public class QuickTeleportSettings
+    {
+        /// <summary>
+        /// 右下角检测延迟（毫秒）
+        /// </summary>
+        public int RightCornerDetectDelay_1 { get; set; } = 15;
+
+        /// <summary>
+        /// 右下角匹配阈值（0-1）
+        /// </summary>
+        public double DetectThreshold { get; set; } = 0.9;
+
+        /// <summary>
+        /// 右列表检测延迟（毫秒）
+        /// </summary>
+        public int RightListDetectDelay_1 { get; set; } = 300;
+
+        /// <summary>
+        /// 右列表匹配阈值（0-1）
+        /// </summary>
+        public double RightListThreshold { get; set; } = 0.9;
+
+        /// <summary>
+        /// 右列表点击项延迟（毫秒）
+        /// </summary>
+        public int RightListClickItemDelay_1 { get; set; } = 100;
+
+        /// <summary>
+        /// 右列表秘境F键延迟（毫秒）
+        /// </summary>
+        public int RightListAbyssFKeyDelay { get; set; } = 150;
+
+        /// <summary>
+        /// 右列表F键延迟（毫秒）
+        /// </summary>
+        public int RightListFKeyDelay { get; set; } = 50;
+
+        /// <summary>
+        /// 禁用列表识别
+        /// </summary>
+        public bool DisableListRecognition { get; set; } = false;
+
+        /// <summary>
+        /// 禁用快速切图
+        /// </summary>
+        public bool DisableQuickScreenshot { get; set; } = false;
+
+        /// <summary>
+        /// 深渊剧诗过滤
+        /// </summary>
+        public bool DisableAbyssFilter { get; set; } = true;
+
+        /// <summary>
+        /// 保存截图日志
+        /// </summary>
+        public bool SaveScreenshotLog { get; set; } = false;
+
+        /// <summary>
+        /// 开图键：快速传送模块专用的地图打开按键（多选，逗号分隔）
+        /// </summary>
+        public string OpenMapKey_1 { get; set; } = "M";
+    }
+}

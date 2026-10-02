@@ -1,0 +1,89 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============ 滚动条滑块 ============ -->
+    <Style x:Key="CustomScrollBarThumb" TargetType="Thumb">
+        <Setter Property="Background" Value="{DynamicResource Gray300Brush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="3"
+                            Margin="0,2"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource Gray400Brush}"/>
+            </Trigger>
+            <Trigger Property="IsDragging" Value="True">
+                <Setter Property="Background" Value="{DynamicResource Gray500Brush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============ 滚动条 ============ -->
+    <Style x:Key="CustomScrollBar" TargetType="ScrollBar">
+        <Setter Property="Width" Value="6"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Width="6">
+                        <Track x:Name="PART_Track"
+                               IsDirectionReversed="True"
+                               Width="6">
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource CustomScrollBarThumb}"/>
+                            </Track.Thumb>
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageUpCommand"
+                                              Opacity="0"
+                                              Focusable="False"/>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="ScrollBar.PageDownCommand"
+                                              Opacity="0"
+                                              Focusable="False"/>
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ScrollBar" BasedOn="{StaticResource CustomScrollBar}"/>
+
+    <!-- ============ 自定义 ScrollViewer（照旧项目） ============ -->
+    <Style x:Key="CustomScrollViewer" TargetType="ScrollViewer">
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollViewer">
+                    <Grid Margin="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="6"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ScrollContentPresenter Grid.Column="0" Margin="0"/>
+
+                        <ScrollBar x:Name="PART_VerticalScrollBar"
+                                   Grid.Column="1"
+                                   Style="{StaticResource CustomScrollBar}"
+                                   Orientation="Vertical"
+                                   ViewportSize="{TemplateBinding ViewportHeight}"
+                                   Maximum="{TemplateBinding ScrollableHeight}"
+                                   Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                   Margin="-3,10,-5,10"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

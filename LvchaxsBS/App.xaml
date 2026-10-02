@@ -1,0 +1,23 @@
+﻿<Application x:Class="LvchaxsBS.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:LvchaxsBS"
+             StartupUri="UI/MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="UI/Assets/Themes/Light.xaml"/>
+                <ResourceDictionary Source="UI/Styles/ButtonStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/CardStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/ScrollBarStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/SliderStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/ComboBoxStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/CheckBoxStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/TextBoxStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/VoiceCardStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/RefreshButtonStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/IconButtonStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

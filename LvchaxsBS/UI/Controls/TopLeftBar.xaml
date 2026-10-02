@@ -1,0 +1,103 @@
+﻿<UserControl x:Class="LvchaxsBS.UI.Controls.TopCenterBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="clr-namespace:LvchaxsBS.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="32" d:DesignWidth="400">
+
+    <Border x:Name="FunctionButtonsContainer"
+            HorizontalAlignment="Stretch">
+        <Canvas x:Name="FunctionButtonsCanvas"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Height="32">
+
+            <Button x:Name="BtnQuickTeleport"
+                    Style="{StaticResource ImageButtonStyleRound6NoBorder}"
+                    Tag="快速传送"
+                    ui:ButtonTip.Text="快速传送"
+                    Click="FunctionButton_Click"
+                    Canvas.Left="0" Canvas.Top="2">
+                <Button.RenderTransform>
+                    <TranslateTransform x:Name="TfQuickTeleport" X="0"/>
+                </Button.RenderTransform>
+                <Image Source="/UI/Assets/Images/快速传送.png" Width="33" Height="28"/>
+            </Button>
+
+            <Button x:Name="BtnQuickPickup"
+                    Style="{StaticResource ImageButtonStyleRound6NoBorder}"
+                    Tag="快速拾取"
+                    ui:ButtonTip.Text="快速拾取"
+                    Click="FunctionButton_Click"
+                    Canvas.Left="43" Canvas.Top="2">
+                <Button.RenderTransform>
+                    <TranslateTransform x:Name="TfQuickPickup" X="0"/>
+                </Button.RenderTransform>
+                <Image Source="/UI/Assets/Images/快速拾取.png" Width="33" Height="28"/>
+            </Button>
+
+            <Button x:Name="BtnStoryDialogue"
+                    Style="{StaticResource ImageButtonStyleRound6NoBorder}"
+                    Tag="剧情对话"
+                    ui:ButtonTip.Text="剧情对话"
+                    Click="FunctionButton_Click"
+                    Canvas.Left="86" Canvas.Top="2">
+                <Button.RenderTransform>
+                    <TranslateTransform x:Name="TfStoryDialogue" X="0"/>
+                </Button.RenderTransform>
+                <Image Source="/UI/Assets/Images/剧情对话.png" Width="33" Height="28"/>
+            </Button>
+
+            <Button x:Name="BtnAutoCook"
+                    Style="{StaticResource ImageButtonStyleRound6NoBorder}"
+                    Tag="自动烹饪"
+                    ui:ButtonTip.Text="自动烹饪"
+                    Click="FunctionButton_Click"
+                    Canvas.Left="129" Canvas.Top="2">
+                <Button.RenderTransform>
+                    <TranslateTransform x:Name="TfAutoCook" X="0"/>
+                </Button.RenderTransform>
+                <Image Source="/UI/Assets/Images/自动烹饪.png" Width="33" Height="28"/>
+            </Button>
+
+            <Button x:Name="BtnFishingAssist"
+                    Style="{StaticResource ImageButtonStyleRound6NoBorder}"
+                    Tag="钓鱼辅助"
+                    ui:ButtonTip.Text="钓鱼辅助"
+                    Click="FunctionButton_Click"
+                    Canvas.Left="172" Canvas.Top="2">
+                <Button.RenderTransform>
+                    <TranslateTransform x:Name="TfFishingAssist" X="0"/>
+                </Button.RenderTransform>
+                <Image Source="/UI/Assets/Images/钓鱼辅助.png" Width="33" Height="28"/>
+            </Button>
+
+            <Button x:Name="BtnAutoLumber"
+                    Style="{StaticResource ImageButtonStyleRound6NoBorder}"
+                    Tag="自动伐木"
+                    ui:ButtonTip.Text="自动伐木"
+                    Click="FunctionButton_Click"
+                    Canvas.Left="215" Canvas.Top="2">
+                <Button.RenderTransform>
+                    <TranslateTransform x:Name="TfAutoLumber" X="0"/>
+                </Button.RenderTransform>
+                <Image Source="/UI/Assets/Images/自动伐木.png" Width="33" Height="28"/>
+            </Button>
+
+            <Button x:Name="BtnControllerPickup"
+                    Style="{StaticResource ImageButtonStyleRound6NoBorder}"
+                    Tag="手柄拾取"
+                    ui:ButtonTip.Text="手柄拾取"
+                    Click="FunctionButton_Click"
+                    Canvas.Left="258" Canvas.Top="2">
+                <Button.RenderTransform>
+                    <TranslateTransform x:Name="TfControllerPickup" X="0"/>
+                </Button.RenderTransform>
+                <Image Source="/UI/Assets/Images/手柄拾取.png" Width="33" Height="28"/>
+            </Button>
+
+        </Canvas>
+    </Border>
+</UserControl>

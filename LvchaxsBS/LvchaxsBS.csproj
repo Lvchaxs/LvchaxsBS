@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<ApplicationIcon>UI\Assets\Images\派蒙.ico</ApplicationIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Resource Include="UI\Assets\Images\**\*.png" />
+		<Resource Include="UI\Assets\Images\**\*.ico" />
+		<Resource Include="UI\Assets\Images\**\*.jpg" />
+		<Resource Include="UI\Assets\Images\**\*.jpeg" />
+	</ItemGroup>
+
+</Project>

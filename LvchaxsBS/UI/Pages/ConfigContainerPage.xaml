@@ -1,0 +1,126 @@
+﻿<Page x:Class="LvchaxsBS.UI.Pages.ConfigContainerPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:ui="clr-namespace:LvchaxsBS.UI.Controls"
+      mc:Ignorable="d"
+      d:DesignHeight="450" d:DesignWidth="800"
+      Background="Transparent">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ============ 顶部信息卡 ============ -->
+        <Border Grid.Row="0"
+                Style="{StaticResource ModuleFunctionCardStyle}"
+                Height="70"
+                Margin="5,4,6,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                    <Image x:Name="PART_Icon"
+                           Width="60" Height="60"
+                           Stretch="Uniform"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="PART_Title"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,6,0"/>
+                        <ItemsControl x:Name="PART_TagsControl">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <TextBlock x:Name="PART_Description"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextTrimming="WordEllipsis"
+                               TextWrapping="NoWrap"
+                               Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="0,0,10,0">
+                    <Button x:Name="PART_OpenMapKeyBtn"
+                            Content="开图键"
+                            Style="{StaticResource FlatButtonStyleRound6}"
+                            Width="50" Height="28"
+                            FontSize="11"
+                            Margin="0,0,10,0"
+                            Visibility="Collapsed"
+                            ui:ButtonTip.Text="游戏中的开图键"
+                            Click="OpenMapKeyBtn_Click"/>
+
+                    <Button x:Name="PART_PauseKeyBtn"
+                            Content="暂停键"
+                            Style="{StaticResource FlatButtonStyleRound6}"
+                            Width="50" Height="28"
+                            FontSize="11"
+                            Margin="0,0,10,0"
+                            Visibility="Collapsed"
+                            ui:ButtonTip.Text="暂停/恢复功能"
+                            Click="PauseKeyBtn_Click"/>
+
+                    <Button x:Name="PART_TriggerKeyBtn"
+                            Content="触发键"
+                            Style="{StaticResource FlatButtonStyleRound6}"
+                            Width="50" Height="28"
+                            FontSize="11"
+                            Margin="0,0,10,0"
+                            ui:ButtonTip.Text="功能触发键"
+                            Click="TriggerKeyBtn_Click"/>
+
+                    <Button x:Name="PART_ConfigBtn"
+                            Content="配置"
+                            Style="{StaticResource FlatButtonStyleRound6}"
+                            Width="50" Height="28"
+                            Margin="0,0,10,0"
+                            ui:ButtonTip.Text="功能参数配置"
+                            Click="ConfigBtn_Click"/>
+
+                    <Button x:Name="PART_BackBtn"
+                            Content="返回"
+                            Style="{StaticResource FlatButtonStyleRound6}"
+                            Width="50" Height="28"
+                            ui:ButtonTip.Text="返回主页"
+                            Click="BackBtn_Click"/>
+
+                    <CheckBox x:Name="PART_Toggle"
+                              Style="{StaticResource ModuleToggleSwitchStyle}"
+                              VerticalAlignment="Center"
+                              Margin="10,0,0,0"
+                              Checked="PART_Toggle_Checked"
+                              Unchecked="PART_Toggle_Unchecked"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============ 内容区 Frame ============ -->
+        <Border Grid.Row="1" Margin="-4,0,-4,0" Background="Transparent">
+            <Grid Margin="4">
+                <Frame x:Name="PART_ContentFrame"
+                       NavigationUIVisibility="Hidden"
+                       FocusVisualStyle="{x:Null}"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>
