@@ -12,45 +12,14 @@
     <ScrollViewer Style="{StaticResource CustomScrollViewer}">
         <StackPanel Margin="5,4,0,0">
 
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/手柄拾取.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0" Text="触发后等待点击左键的延迟"
-                                   FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
-
-                        <controls:SpinSliderControl x:Name="TriggerDelaySlider"
-                                                    Grid.Row="1"
-                                                    Minimum="0" Maximum="500"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="TriggerDelaySlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="触发延迟"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="按下手柄上面的触发键后等待此处延迟之后再执行一次左键点击"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:SliderCardControl x:Name="TriggerDelayCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/手柄拾取.png"
+                                        Title="触发后等待点击左键的延迟"
+                                        Hint="按下手柄上面的触发键后等待此处延迟之后再执行一次左键点击"
+                                        Minimum="0" Maximum="500" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="触发延迟"
+                                        ValueChanged="TriggerDelaySlider_ValueChanged"/>
 
         </StackPanel>
     </ScrollViewer>

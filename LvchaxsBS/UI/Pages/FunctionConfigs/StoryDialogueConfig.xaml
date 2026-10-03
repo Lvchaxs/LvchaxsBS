@@ -12,111 +12,28 @@
     <ScrollViewer Style="{StaticResource CustomScrollViewer}">
         <StackPanel Margin="5,4,0,0">
 
-            <!-- 卡片1：剧情检测间隔 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <controls:SliderCardControl x:Name="StoryDialogueCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/剧情对话.png"
+                                        Title="剧情检测间隔"
+                                        Hint="运行中持续检测对话中的左上角隐藏图标的检测间隔"
+                                        Minimum="1" Maximum="1000" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="剧情检测间隔"
+                                        ValueChanged="StoryDialogueIntervalSlider_ValueChanged"
+                                        SpinLabel="匹配度:"
+                                        SpinMinimum="0" SpinMaximum="1" SpinStep="0.01"
+                                        SpinNumericFormat="F2"
+                                        SpinToast="匹配度"
+                                        SpinValueChanged="DetectThresholdSpinBox_ValueChanged"/>
 
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/剧情对话.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Grid.Column="0" Text="剧情检测间隔"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="匹配度:"
-                                       FontSize="13"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="2,0,0,0"/>
-                            <controls:SpinTextBoxControl x:Name="DetectThresholdSpinBox"
-                                                         Grid.Column="3"
-                                                         Minimum="0" Maximum="1"
-                                                         Step="0.01"
-                                                         Unit="" NumericFormat="F2"
-                                                         TextBoxWidth="45"
-                                                         VerticalAlignment="Center"
-                                                         Margin="2,0,6,0"
-                                                         ValueChanged="DetectThresholdSpinBox_ValueChanged"
-                                                         ui:ToastNotifier.Message="匹配度"/>
-                        </Grid>
-
-                        <controls:SpinSliderControl x:Name="StoryDialogueIntervalSlider"
-                                                    Grid.Row="1"
-                                                    Minimum="1" Maximum="1000"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="StoryDialogueIntervalSlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="剧情检测间隔"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="运行中持续检测对话中的左上角隐藏图标的检测间隔"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
-
-            <!-- 卡片2：每次按下F键的循环间隔 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/剧情对话.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0" Text="每次按下F键的循环间隔"
-                                   FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
-
-                        <controls:SpinSliderControl x:Name="FKeyIntervalSlider"
-                                                    Grid.Row="1"
-                                                    Minimum="1" Maximum="500"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="FKeyIntervalSlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="F键循环间隔"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="F循环中每次按下一次F后等待的间隔"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:SliderCardControl x:Name="FKeyIntervalCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/剧情对话.png"
+                                        Title="每次按下F键的循环间隔"
+                                        Hint="F循环中每次按下一次F后等待的间隔"
+                                        Minimum="1" Maximum="500" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="F键循环间隔"
+                                        ValueChanged="FKeyIntervalSlider_ValueChanged"/>
 
         </StackPanel>
     </ScrollViewer>

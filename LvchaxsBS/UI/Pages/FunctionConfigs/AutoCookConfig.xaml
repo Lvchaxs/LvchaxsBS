@@ -13,198 +13,51 @@
         <StackPanel Margin="5,4,0,0">
 
             <!-- 卡片1：烹饪检测间隔 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/自动烹饪.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="烹饪检测间隔"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="匹配度:"
-                                       FontSize="13"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="2,0,0,0"/>
-                            <controls:SpinTextBoxControl x:Name="DetectThresholdSpinBox"
-                                                         Grid.Column="3"
-                                                         Minimum="0" Maximum="1"
-                                                         Step="0.01"
-                                                         Unit="" NumericFormat="F2"
-                                                         TextBoxWidth="45"
-                                                         VerticalAlignment="Center"
-                                                         Margin="2,0,6,0"
-                                                         ValueChanged="DetectThresholdSpinBox_ValueChanged"
-                                                         ui:ToastNotifier.Message="匹配度"/>
-                        </Grid>
-
-                        <controls:SpinSliderControl x:Name="AutoCookIntervalSlider"
-                                                    Grid.Row="1"
-                                                    Minimum="1" Maximum="500"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="AutoCookIntervalSlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="烹饪检测间隔"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="QTE以外的检测部分每次检测的间隔"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:SliderCardControl x:Name="AutoCookIntervalCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/自动烹饪.png"
+                                        Title="烹饪检测间隔"
+                                        Hint="QTE以外的检测部分每次检测的间隔"
+                                        Minimum="1" Maximum="500" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="烹饪检测间隔"
+                                        ValueChanged="AutoCookIntervalSlider_ValueChanged"
+                                        SpinLabel="匹配度:"
+                                        SpinMinimum="0" SpinMaximum="1" SpinStep="0.01"
+                                        SpinNumericFormat="F2"
+                                        SpinToast="匹配度"
+                                        SpinValueChanged="DetectThresholdSpinBox_ValueChanged"/>
 
             <!-- 卡片2：一般品质判定 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/自动烹饪.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="一般品质目标区域内判定位置"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="二值化容差:"
-                                       FontSize="13"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="2,0,0,0"/>
-                            <controls:SpinTextBoxControl x:Name="NormalBinarizeToleranceSpinBox"
-                                                         Grid.Column="3"
-                                                         Minimum="0" Maximum="255"
-                                                         Step="1"
-                                                         Unit="" NumericFormat="F0"
-                                                         TextBoxWidth="45"
-                                                         VerticalAlignment="Center"
-                                                         Margin="2,0,6,0"
-                                                         ValueChanged="NormalBinarizeToleranceSpinBox_ValueChanged"
-                                                         ui:ToastNotifier.Message="一般二值化容差"/>
-                        </Grid>
-
-                        <controls:SpinSliderControl x:Name="NormalJudgePercentSlider"
-                                                    Grid.Row="1"
-                                                    Minimum="-50" Maximum="100"
-                                                    Step="1"
-                                                    Unit="%" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="NormalJudgePercentSlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="一般品质判定位置"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="QTE中获得一般品质左侧米黄色判断区域范围"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:SliderCardControl x:Name="NormalJudgeCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/自动烹饪.png"
+                                        Title="一般品质目标区域内判定位置"
+                                        Hint="QTE中获得一般品质左侧米黄色判断区域范围"
+                                        Minimum="-50" Maximum="100" Step="1"
+                                        Unit="%" NumericFormat="F0"
+                                        SliderToast="一般品质判定位置"
+                                        ValueChanged="NormalJudgePercentSlider_ValueChanged"
+                                        SpinLabel="二值化容差:"
+                                        SpinMinimum="0" SpinMaximum="255" SpinStep="1"
+                                        SpinNumericFormat="F0"
+                                        SpinToast="一般二值化容差"
+                                        SpinValueChanged="NormalBinarizeToleranceSpinBox_ValueChanged"/>
 
             <!-- 卡片3：完美品质判定 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <controls:SliderCardControl x:Name="PerfectJudgeCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/自动烹饪.png"
+                                        Title="完美品质目标区域内判定位置"
+                                        Hint="QTE中获得完美品质黄色判断区域范围"
+                                        Minimum="-50" Maximum="100" Step="1"
+                                        Unit="%" NumericFormat="F0"
+                                        SliderToast="完美品质判定位置"
+                                        ValueChanged="PerfectJudgePercentSlider_ValueChanged"
+                                        SpinLabel="二值化容差:"
+                                        SpinMinimum="0" SpinMaximum="255" SpinStep="1"
+                                        SpinNumericFormat="F0"
+                                        SpinToast="完美二值化容差"
+                                        SpinValueChanged="PerfectBinarizeToleranceSpinBox_ValueChanged"/>
 
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/自动烹饪.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="完美品质目标区域内判定位置"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="二值化容差:"
-                                       FontSize="13"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="2,0,0,0"/>
-                            <controls:SpinTextBoxControl x:Name="PerfectBinarizeToleranceSpinBox"
-                                                         Grid.Column="3"
-                                                         Minimum="0" Maximum="255"
-                                                         Step="1"
-                                                         Unit="" NumericFormat="F0"
-                                                         TextBoxWidth="45"
-                                                         VerticalAlignment="Center"
-                                                         Margin="2,0,6,0"
-                                                         ValueChanged="PerfectBinarizeToleranceSpinBox_ValueChanged"
-                                                         ui:ToastNotifier.Message="完美二值化容差"/>
-                        </Grid>
-
-                        <controls:SpinSliderControl x:Name="PerfectJudgePercentSlider"
-                                                    Grid.Row="1"
-                                                    Minimum="-50" Maximum="100"
-                                                    Step="1"
-                                                    Unit="%" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="PerfectJudgePercentSlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="完美品质判定位置"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="QTE中获得完美品质黄色判断区域范围"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
-
-            <!-- 卡片4：自动清药 -->
+            <!-- 卡片4：自动清药（三联动下拉，特殊布局） -->
             <Border Style="{StaticResource ModuleFunctionCardStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>

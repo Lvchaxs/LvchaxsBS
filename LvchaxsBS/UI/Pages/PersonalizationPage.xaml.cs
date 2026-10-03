@@ -68,99 +68,75 @@ namespace LvchaxsBS.UI.Pages
         private void WallpaperOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.WallpaperOpacity = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.WallpaperOpacity = e.NewValue);
         }
 
         private void WallpaperBlurSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.WallpaperBlur = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.WallpaperBlur = e.NewValue);
         }
 
         private void CardOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.CardOpacity = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.CardOpacity = e.NewValue);
         }
 
         private void EnableCompressionCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.EnableCompression = EnableCompressionCheckBox.IsChecked == true;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.EnableCompression = EnableCompressionCheckBox.IsChecked == true);
         }
 
         private void EnableMirrorCheckBox_Changed(object sender, RoutedEventArgs e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.EnableMirror = EnableMirrorCheckBox.IsChecked == true;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.EnableMirror = EnableMirrorCheckBox.IsChecked == true);
         }
 
         // ============ 卡片2 ============
         private void XPositionSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.XPosition = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.XPosition = e.NewValue);
         }
 
         private void WallpaperScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.WallpaperScale = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.WallpaperScale = e.NewValue);
         }
 
         private void YPositionSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.YPosition = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.YPosition = e.NewValue);
         }
 
         private void WallpaperRotationSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.WallpaperRotation = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.WallpaperRotation = e.NewValue);
         }
 
         // ============ 卡片3 ============
         private void TitleFontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.TitleFontSize = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.TitleFontSize = e.NewValue);
         }
 
         private void TitleOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.TitleOpacity = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.TitleOpacity = e.NewValue);
         }
 
         private void WindowTitleTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.WindowTitle = WindowTitleTextBox.Text;
-            ConfigManager.Save(s);
+            var s = ConfigSync.Mutate<PersonalizationSettings>(x => x.WindowTitle = WindowTitleTextBox.Text);
 
             AppearanceService.NotifyWindowTitleChanged(s.WindowTitle);
         }
@@ -168,9 +144,7 @@ namespace LvchaxsBS.UI.Pages
         private void WindowOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<PersonalizationSettings>();
-            s.WindowOpacity = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<PersonalizationSettings>(s => s.WindowOpacity = e.NewValue);
         }
     }
 }

@@ -90,15 +90,22 @@ namespace LvchaxsBS.UI.Controls
         private bool _isDragging;
 
         /// <summary>
-        /// 入场动画进行中标志。为 true 时吞掉 Slider 的写回，
-        /// 保证 Value 依赖属性、ValueChanged / ValueCommitted 事件都不被触发。
+        /// 入场动画进行中标志。为 true 时：
+        /// 1) 吞掉 Slider 的反向写回，不向上转发 ValueChanged（避免中间值写进配置）；
+        /// 2) 保证 ValueCommitted 不被触发。
         /// </summary>
         private bool _isEntryAnimating;
+
+        /// <summary>入场动画代次号。每次取消/重开自增，用来让过期的 Completed 回调失效。</summary>
+        private int _entryToken;
 
         public SpinSliderControl()
         {
             InitializeComponent();
             UpdateDisplay();
+
+            // 页面被切走时立刻停掉动画并复位，避免动画残留、标志位卡死
+            Unloaded += (s, e) => CancelEntryAnimation();
         }
 
         private static void OnValueChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -111,6 +118,11 @@ namespace LvchaxsBS.UI.Controls
                 else
                 {
                     c.UpdateDisplay();
+
+                    // 入场动画期间滑块值会被逐帧反写上来，这里不向上转发：
+                    // 既不把中间值写进配置，也避免每帧触发一次保存造成卡顿。
+                    if (c._isEntryAnimating) return;
+
                     c.ValueChanged?.Invoke(c, new RoutedPropertyChangedEventArgs<double>(
                         (double)e.OldValue, (double)e.NewValue));
                 }
@@ -164,6 +176,8 @@ namespace LvchaxsBS.UI.Controls
 
         private void PART_Slider_DragStarted(object sender, DragStartedEventArgs e)
         {
+            // 用户开始拖动：立刻停掉入场动画，避免动画和拖动互相打架
+            CancelEntryAnimation();
             _isDragging = true;
         }
 
@@ -171,6 +185,12 @@ namespace LvchaxsBS.UI.Controls
         {
             _isDragging = false;
             ValueCommitted?.Invoke(this, Value);
+        }
+
+        /// <summary>任何一次鼠标按下（拖滑块或点滑轨）都先取消入场动画</summary>
+        private void PART_Slider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            CancelEntryAnimation();
         }
 
         /// <summary>
@@ -190,6 +210,7 @@ namespace LvchaxsBS.UI.Controls
 
         private void UpButton_Click(object sender, RoutedEventArgs e)
         {
+            CancelEntryAnimation();
             double v = Value + Step;
             if (v <= Maximum)
             {
@@ -200,6 +221,7 @@ namespace LvchaxsBS.UI.Controls
 
         private void DownButton_Click(object sender, RoutedEventArgs e)
         {
+            CancelEntryAnimation();
             double v = Value - Step;
             if (v >= Minimum)
             {
@@ -212,42 +234,70 @@ namespace LvchaxsBS.UI.Controls
         /// 播放入场动画：滑块从 Minimum 快速滑到当前 Value，右侧数值同步滚动。
         /// 纯视觉，不影响 Value 依赖属性，不触发 ValueChanged / ValueCommitted。
         /// 由外部（如页面 Loaded）主动调用。
+        ///
+        /// 注意：这里 **不写** PART_Slider.Value。
+        /// 因为 PART_Slider.Value 与 Value 之间是 TwoWay 绑定，直接赋值会把
+        /// "最小值"反向写回 Value 并逐级传到页面（进而写进配置）；一旦页面在
+        /// 动画结束前被切走，Completed 不执行，配置就被永久留在最小值，
+        /// 下次打开就会"卡在最左侧"。改用仅动画 + 文本滚动，从根本上避免。
         /// </summary>
         public void PlayEntryAnimation(int durationMs = 400)
         {
+            // 未加载 / 用户正在拖动时不播，避免滑块卡住或和用户操作打架
+            if (!IsLoaded || _isDragging) return;
+
+            // 先彻底取消上一轮动画（含其 Completed 回调），保证可重入
+            CancelEntryAnimation();
+
             double target = Value;
 
-            // 已经等于下限则没有视觉意义，直接跳过
-            if (Math.Abs(target - Minimum) < 0.0001) return;
+            // 已经等于下限则没有视觉意义，直接显示正确值
+            if (Math.Abs(target - Minimum) < 0.0001)
+            {
+                UpdateDisplay();
+                return;
+            }
 
             _isEntryAnimating = true;
+            int token = ++_entryToken;
 
-            // 从最小值起步（会触发 ValueChanged → 刷新文本为 min 值）
-            PART_Slider.Value = Minimum;
+            // 文本从最小值开始滚动
             UpdateDisplayFromValue(Minimum);
 
             var anim = new DoubleAnimation
             {
                 From = Minimum,
                 To = target,
-                Duration = TimeSpan.FromMilliseconds(durationMs),
+                Duration = TimeSpan.FromMilliseconds(Math.Max(1, durationMs)),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
                 FillBehavior = FillBehavior.HoldEnd
             };
 
             anim.Completed += (s, e) =>
             {
+                // 已被新一轮动画/取消取代：丢弃过期回调
+                if (token != _entryToken) return;
+
                 _isEntryAnimating = false;
 
-                // 先清除动画，再落 CLR 值
+                // 清除动画即可落回真实值：绑定基值就是 Value（=target），
+                // 无需（也不应）再写一次 PART_Slider.Value。
                 PART_Slider.BeginAnimation(Slider.ValueProperty, null);
-                PART_Slider.Value = target;
-
-                // 最终以真实 Value 刷新一次（保证格式一致）
                 UpdateDisplay();
             };
 
             PART_Slider.BeginAnimation(Slider.ValueProperty, anim);
+        }
+
+        /// <summary>
+        /// 取消正在播放的入场动画并复位状态（页面卸载、用户拖动/点击时调用）。
+        /// 用代次号让旧的 Completed 回调失效，避免动画"卡住"或残留。
+        /// </summary>
+        private void CancelEntryAnimation()
+        {
+            _entryToken++;              // 使所有旧回调失效
+            _isEntryAnimating = false;
+            PART_Slider.BeginAnimation(Slider.ValueProperty, null);
         }
     }
 }

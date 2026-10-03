@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-
 namespace LvchaxsBS.UI.Pages
 {
     public partial class TriggerKeyPage : Page
@@ -65,79 +64,59 @@ namespace LvchaxsBS.UI.Pages
 
         // ============ 建映射 ============
 
+        /// <summary>Content 与键名不一致的按钮（x:Name -> 键名）</summary>
+        private static readonly Dictionary<string, string> NameOverrides = new()
+        {
+            ["KeyNumPlus"] = "Num+",
+            ["KeyNumMinus"] = "Num-",
+            ["KeyNumMultiply"] = "Num*",
+            ["KeyNumDivide"] = "Num/",
+            ["KeyNumDecimal"] = "Num.",
+            ["KeyNumEnter"] = "NumEnter",
+        };
+
+        /// <summary>不参与映射的按钮（右侧修饰键，与左侧同名重复）</summary>
+        private static readonly HashSet<string> UnmappedNames = new()
+        {
+            "KeyRightShift", "KeyRightCtrl", "KeyRightAlt", "KeyRightWin"
+        };
+
+        /// <summary>
+        /// 遍历页面所有按钮自动建立"键名 -> 按钮"映射：
+        /// 键名默认取按钮 Content；小键盘数字键由 x:Name 推导（KeyNum0 → Num0），
+        /// 小键盘符号键由 NameOverrides 纠正（Content 与主键区重复）。
+        /// 以后在 XAML 里加新按键按钮即可自动生效，无需改本文件。
+        /// </summary>
         private void BuildKeyMap()
         {
             if (_keyButtonMap.Count > 0) return;
 
-            Add("A", KeyA); Add("B", KeyB); Add("C", KeyC); Add("D", KeyD);
-            Add("E", KeyE); Add("F", KeyF); Add("G", KeyG); Add("H", KeyH);
-            Add("I", KeyI); Add("J", KeyJ); Add("K", KeyK); Add("L", KeyL);
-            Add("M", KeyM); Add("N", KeyN); Add("O", KeyO); Add("P", KeyP);
-            Add("Q", KeyQ); Add("R", KeyR); Add("S", KeyS); Add("T", KeyT);
-            Add("U", KeyU); Add("V", KeyV); Add("W", KeyW); Add("X", KeyX);
-            Add("Y", KeyY); Add("Z", KeyZ);
+            foreach (var btn in FindVisualChildren<Button>(this))
+            {
+                if (string.IsNullOrEmpty(btn.Name) || UnmappedNames.Contains(btn.Name)) continue;
 
-            Add("0", KeyD0); Add("1", KeyD1); Add("2", KeyD2); Add("3", KeyD3); Add("4", KeyD4);
-            Add("5", KeyD5); Add("6", KeyD6); Add("7", KeyD7); Add("8", KeyD8); Add("9", KeyD9);
+                string keyName;
+                if (btn.Name.Length == 6 && btn.Name.StartsWith("KeyNum") && char.IsDigit(btn.Name[5]))
+                    keyName = "Num" + btn.Name[5];                       // KeyNum0-9 → Num0-9
+                else if (!NameOverrides.TryGetValue(btn.Name, out keyName))
+                    keyName = btn.Content as string ?? "";
 
-            Add("F1", KeyF1); Add("F2", KeyF2); Add("F3", KeyF3); Add("F4", KeyF4);
-            Add("F5", KeyF5); Add("F6", KeyF6); Add("F7", KeyF7); Add("F8", KeyF8);
-            Add("F9", KeyF9); Add("F10", KeyF10); Add("F11", KeyF11); Add("F12", KeyF12);
+                if (string.IsNullOrEmpty(keyName)) continue;
 
-            Add("Esc", KeyEsc);
-            Add("Tab", KeyTab);
-            Add("Caps", KeyCapsLock);
-            Add("Shift", KeyLeftShift);
-            Add("Ctrl", KeyLeftCtrl);
-            Add("Alt", KeyLeftAlt);
-            Add("Win", KeyLeftWin);
-            Add("Space", KeySpace);
-            Add("Enter", KeyEnter);
-            Add("Back", KeyBackspace);
-            Add("Del", KeyDelete);
-            Add("Ins", KeyInsert);
-            Add("Pg↑", KeyPageUp);
-            Add("Pg↓", KeyPageDown);
-
-            Add("`~", KeyTilde);
-            Add("-", KeyMinus);
-            Add("=", KeyEquals);
-            Add("[", KeyLeftBracket);
-            Add("]", KeyRightBracket);
-            Add("\\|", KeyBackslash);
-            Add(";", KeySemicolon);
-            Add("'", KeyApostrophe);
-            Add(",", KeyComma);
-            Add(".", KeyPeriod);
-            Add("/", KeySlash);
-
-            Add("↑", KeyUp); Add("↓", KeyDown); Add("←", KeyLeft); Add("→", KeyRight);
-
-            Add("左键", MouseLeft);
-            Add("中键", MouseMiddle);
-            Add("右键", MouseRight);
-
-            Add("Num0", KeyNum0); Add("Num1", KeyNum1); Add("Num2", KeyNum2);
-            Add("Num3", KeyNum3); Add("Num4", KeyNum4); Add("Num5", KeyNum5);
-            Add("Num6", KeyNum6); Add("Num7", KeyNum7); Add("Num8", KeyNum8);
-            Add("Num9", KeyNum9);
-            Add("Num+", KeyNumPlus);
-            Add("Num-", KeyNumMinus);
-            Add("Num*", KeyNumMultiply);
-            Add("Num/", KeyNumDivide);
-            Add("Num.", KeyNumDecimal);
-            Add("NumEnter", KeyNumEnter);
-            Add("Num", KeyNumLock);
-
-            Add("前进", KeyForward);
-            Add("后退", KeyBack);
+                _keyButtonMap[keyName] = btn;
+                _buttonToName[btn] = keyName;
+            }
         }
 
-        private void Add(string name, Button btn)
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
         {
-            if (btn == null) return;
-            _keyButtonMap[name] = btn;
-            _buttonToName[btn] = name;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T t) yield return t;
+                foreach (var c in FindVisualChildren<T>(child))
+                    yield return c;
+            }
         }
 
         private void BindClickEvents()

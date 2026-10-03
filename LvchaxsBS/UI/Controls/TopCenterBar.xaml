@@ -48,7 +48,7 @@
                           StrokeStartLineCap="Round"
                           StrokeEndLineCap="Round"/>
                     <Ellipse x:Name="IconSliderKnob1"
-                             Width="5" Height="5"
+                             Width="6" Height="6"
                              HorizontalAlignment="Left"
                              VerticalAlignment="Top"
                              Margin="9,3,0,0"
@@ -62,7 +62,7 @@
                           StrokeStartLineCap="Round"
                           StrokeEndLineCap="Round"/>
                     <Ellipse x:Name="IconSliderKnob2"
-                             Width="5" Height="5"
+                             Width="6" Height="6"
                              HorizontalAlignment="Left"
                              VerticalAlignment="Top"
                              Margin="15,9,0,0"
@@ -76,7 +76,7 @@
                           StrokeStartLineCap="Round"
                           StrokeEndLineCap="Round"/>
                     <Ellipse x:Name="IconSliderKnob3"
-                             Width="5" Height="5"
+                             Width="6" Height="6"
                              HorizontalAlignment="Left"
                              VerticalAlignment="Top"
                              Margin="6,15,0,0"

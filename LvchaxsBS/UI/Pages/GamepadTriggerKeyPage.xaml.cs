@@ -32,38 +32,33 @@ namespace LvchaxsBS.UI.Pages
             BindClickEvents();
         }
 
+        /// <summary>
+        /// 遍历页面所有按钮自动建映射：键名 = x:Name 去掉 "Gamepad" 前缀。
+        /// 在 XAML 里加新手柄按键按钮即可自动生效，无需改本文件。
+        /// </summary>
         private void BuildKeyMap()
         {
-            Add("L1", GamepadL1);
-            Add("L2", GamepadL2);
-            Add("R1", GamepadR1);
-            Add("R2", GamepadR2);
+            foreach (var btn in FindVisualChildren<Button>(this))
+            {
+                if (string.IsNullOrEmpty(btn.Name) || !btn.Name.StartsWith("Gamepad")) continue;
 
-            Add("A", GamepadA);
-            Add("B", GamepadB);
-            Add("X", GamepadX);
-            Add("Y", GamepadY);
+                string keyName = btn.Name["Gamepad".Length..];
+                if (keyName.Length == 0) continue;
 
-            Add("DPadUp", GamepadDPadUp);
-            Add("DPadDown", GamepadDPadDown);
-            Add("DPadLeft", GamepadDPadLeft);
-            Add("DPadRight", GamepadDPadRight);
-
-            Add("L3", GamepadL3);
-            Add("R3", GamepadR3);
-
-            Add("Create", GamepadCreate);
-            Add("Options", GamepadOptions);
-            Add("PS", GamepadPS);
-            Add("TouchPad", GamepadTouchPad);
-            Add("Mic", GamepadMic);
+                _keyButtonMap[keyName] = btn;
+                _buttonToName[btn] = keyName;
+            }
         }
 
-        private void Add(string name, Button btn)
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
         {
-            if (btn == null) return;
-            _keyButtonMap[name] = btn;
-            _buttonToName[btn] = name;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T t) yield return t;
+                foreach (var c in FindVisualChildren<T>(child))
+                    yield return c;
+            }
         }
 
         private void BindClickEvents()

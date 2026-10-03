@@ -20,11 +20,11 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             var s = ConfigManager.Get<QuickTeleportSettings>();
 
-            QuickTeleportDelaySlider.Value = s.RightCornerDetectDelay_1;
-            DetectThresholdSpinBox.Value = s.DetectThreshold;
-            RightListDelaySlider.Value = s.RightListDetectDelay_1;
-            RightListThresholdSpinBox.Value = s.RightListThreshold;
-            RightListClickDelaySlider.Value = s.RightListClickItemDelay_1;
+            QuickTeleportDelayCard.Value = s.RightCornerDetectDelay_1;
+            QuickTeleportDelayCard.SpinValue = s.DetectThreshold;
+            RightListDelayCard.Value = s.RightListDetectDelay_1;
+            RightListDelayCard.SpinValue = s.RightListThreshold;
+            RightListClickDelayCard.Value = s.RightListClickItemDelay_1;
             RightListFKeyDelaySlider.Value = s.RightListFKeyDelay;
             RightListAbyssFKeyDelaySlider.Value = s.RightListAbyssFKeyDelay;
 
@@ -40,81 +40,61 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void QuickTeleportDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.RightCornerDetectDelay_1 = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightCornerDetectDelay_1 = (int)e.NewValue);
         }
 
         private void DetectThresholdSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.DetectThreshold = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.DetectThreshold = e.NewValue);
         }
 
         private void RightListDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.RightListDetectDelay_1 = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListDetectDelay_1 = (int)e.NewValue);
         }
 
         private void RightListThresholdSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.RightListThreshold = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListThreshold = e.NewValue);
         }
 
         private void RightListClickDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.RightListClickItemDelay_1 = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListClickItemDelay_1 = (int)e.NewValue);
         }
 
         private void RightListFKeyDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.RightListFKeyDelay = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListFKeyDelay = (int)e.NewValue);
         }
 
         private void RightListAbyssFKeyDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.RightListAbyssFKeyDelay = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListAbyssFKeyDelay = (int)e.NewValue);
         }
 
         private void DisableListRecognition_Changed(object sender, RoutedEventArgs e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.DisableListRecognition = DisableListRecognition.IsChecked == true;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.DisableListRecognition = DisableListRecognition.IsChecked == true);
         }
 
         private void DisableAbyssFilter_Changed(object sender, RoutedEventArgs e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.DisableAbyssFilter = DisableAbyssFilter.IsChecked == true;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.DisableAbyssFilter = DisableAbyssFilter.IsChecked == true);
         }
 
         private void SaveScreenshotLog_Changed(object sender, RoutedEventArgs e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickTeleportSettings>();
-            s.SaveScreenshotLog = SaveScreenshotLog.IsChecked == true;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.SaveScreenshotLog = SaveScreenshotLog.IsChecked == true);
         }
     }
 }

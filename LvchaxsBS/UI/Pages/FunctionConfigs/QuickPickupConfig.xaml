@@ -12,87 +12,23 @@
     <ScrollViewer Style="{StaticResource CustomScrollViewer}">
         <StackPanel Margin="5,4,0,0">
 
-            <!-- 卡片1：每次拾取循环的间隔 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <controls:SliderCardControl x:Name="PickupIntervalCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速拾取.png"
+                                        Title="每次拾取循环的间隔"
+                                        Hint="每次循环中 等待下次循环的间隔，(F+滚轮↓)30ms(F+滚轮↓)30ms..."
+                                        Minimum="0" Maximum="100" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="拾取循环间隔"
+                                        ValueChanged="PickupIntervalSlider_ValueChanged"/>
 
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速拾取.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0" Text="每次拾取循环的间隔"
-                                   FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
-
-                        <controls:SpinSliderControl x:Name="PickupIntervalSlider"
-                                                    Grid.Row="1"
-                                                    Minimum="0" Maximum="100"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="PickupIntervalSlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="拾取循环间隔"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="每次循环中 等待下次循环的间隔，(F+滚轮↓)30ms(F+滚轮↓)30ms..."
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
-
-            <!-- 卡片2：(F 和 滚动)之间的延迟 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速拾取.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0" Text="(F 和 滚动)之间的延迟"
-                                   FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
-
-                        <controls:SpinSliderControl x:Name="FAndScrollDelaySlider"
-                                                    Grid.Row="1"
-                                                    Minimum="0" Maximum="100"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="FAndScrollDelaySlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="F与滚轮延迟"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="每次循环中 按下F后等待滚轮↓的间隔，(F 1ms 滚轮↓)+(F 1ms 滚轮↓)..."
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:SliderCardControl x:Name="FAndScrollDelayCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速拾取.png"
+                                        Title="(F 和 滚动)之间的延迟"
+                                        Hint="每次循环中 按下F后等待滚轮↓的间隔，(F 1ms 滚轮↓)+(F 1ms 滚轮↓)..."
+                                        Minimum="0" Maximum="100" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="F与滚轮延迟"
+                                        ValueChanged="FAndScrollDelaySlider_ValueChanged"/>
 
         </StackPanel>
     </ScrollViewer>

@@ -38,10 +38,43 @@ namespace LvchaxsBS.UI.Pages
         private bool _isLoadingSettings = false;
         private long _totalSizeBytes = 0;
 
+        // ===== 静态缓存（跨页面实例复用，避免每次进页都扫盘/重载头像） =====
+
+        /// <summary>扫描结果缓存：目录没变就不重扫</summary>
+        private static (VoiceConfig cfg, long totalBytes, DateTime voiceStamp, DateTime voicesStamp, DateTime picturesStamp)? _scanCache;
+
+        /// <summary>头像图片缓存（已 Freeze，可跨线程/跨实例安全复用）</summary>
+        private static readonly Dictionary<string, BitmapSource?> _avatarCache = new();
+
+        /// <summary>标签颜色缓存（预生成冻结画刷，避免每个标签都 new Brush）</summary>
+        private static readonly Brush[] TagBrushes = CreateTagBrushes();
+
+        /// <summary>搜索防抖定时器</summary>
+        private System.Windows.Threading.DispatcherTimer? _searchTimer;
+
+        private static Brush[] CreateTagBrushes()
+        {
+            string[] hex = { "#60A5FA", "#34D399", "#F87171", "#FB923C", "#A78BFA", "#F472B6", "#2DD4BF", "#818CF8", "#22D3EE" };
+            var brushes = new Brush[hex.Length];
+            for (int i = 0; i < hex.Length; i++)
+            {
+                var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex[i]));
+                b.Freeze();
+                brushes[i] = b;
+            }
+            return brushes;
+        }
+
         public VoicePage()
         {
             InitializeComponent();
             Loaded += VoicePage_Loaded;
+            Unloaded += VoicePage_Unloaded;
+        }
+
+        private void VoicePage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _searchTimer?.Stop();
         }
 
         private void VoicePage_Loaded(object sender, RoutedEventArgs e)
@@ -62,6 +95,11 @@ namespace LvchaxsBS.UI.Pages
 
             _isLoadingSettings = false;
 
+            SubtitleOpacitySlider.ValueChanged -= SubtitleOpacitySlider_ValueChanged;
+            SortFieldSelect.SelectionChanged -= SortFieldSelect_SelectionChanged;
+            SortOrderSelect.SelectionChanged -= SortOrderSelect_SelectionChanged;
+            SearchBox.TextChanged -= SearchBox_TextChanged;
+
             SubtitleOpacitySlider.ValueChanged += SubtitleOpacitySlider_ValueChanged;
             SortFieldSelect.SelectionChanged += SortFieldSelect_SelectionChanged;
             SortOrderSelect.SelectionChanged += SortOrderSelect_SelectionChanged;
@@ -77,19 +115,13 @@ namespace LvchaxsBS.UI.Pages
         private void SubtitleOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoadingSettings) return;
-
-            var voice = ConfigManager.Get<VoiceSettings>();
-            voice.SubtitleOpacity = (int)e.NewValue;
-            ConfigManager.Save(voice);
+            ConfigSync.Mutate<VoiceSettings>(v => v.SubtitleOpacity = (int)e.NewValue);
         }
 
         private void SortFieldSelect_SelectionChanged(object? sender, int idx)
         {
             if (_isLoadingSettings) return;
-
-            var voice = ConfigManager.Get<VoiceSettings>();
-            voice.SortField = idx;
-            ConfigManager.Save(voice);
+            ConfigSync.Mutate<VoiceSettings>(v => v.SortField = idx);
 
             if (_cachedConfig != null)
                 RenderCharacters(_cachedConfig);
@@ -98,10 +130,7 @@ namespace LvchaxsBS.UI.Pages
         private void SortOrderSelect_SelectionChanged(object? sender, int idx)
         {
             if (_isLoadingSettings) return;
-
-            var voice = ConfigManager.Get<VoiceSettings>();
-            voice.SortOrder = idx;
-            ConfigManager.Save(voice);
+            ConfigSync.Mutate<VoiceSettings>(v => v.SortOrder = idx);
 
             if (_cachedConfig != null)
                 RenderCharacters(_cachedConfig);
@@ -109,20 +138,51 @@ namespace LvchaxsBS.UI.Pages
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            // 搜索防抖：连续输入只在停顿 200ms 后过滤一次
+            _searchTimer ??= new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(200)
+            };
+            _searchTimer.Tick -= SearchTimer_Tick;
+            _searchTimer.Tick += SearchTimer_Tick;
+
+            _searchTimer.Stop();
+            _searchTimer.Start();
+        }
+
+        private void SearchTimer_Tick(object? sender, EventArgs e)
+        {
+            _searchTimer?.Stop();
             if (_cachedConfig != null)
                 RenderCharacters(_cachedConfig);
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            _cachedConfig = ScanAndBuildConfig();
+            // 强制重扫：头像缓存一并清空（用户可能刚放进新图片）
+            _avatarCache.Clear();
+            _cachedConfig = ScanAndBuildConfig(force: true);
             SaveConfig(_cachedConfig);
             RenderCharacters(_cachedConfig);
         }
         // ============ 扫描 + 生成 ============
 
-        private VoiceConfig ScanAndBuildConfig()
+        private VoiceConfig ScanAndBuildConfig(bool force = false)
         {
+            // 目录没变 + 非强制刷新 → 直接复用上次扫描结果
+            var voiceStamp = GetDirStamp(VoiceDir);
+            var voicesStamp = GetDirStamp(VoicesDir);
+            var picturesStamp = GetDirStamp(PicturesDir);
+
+            if (!force && _scanCache is { } cache
+                && cache.voiceStamp == voiceStamp
+                && cache.voicesStamp == voicesStamp
+                && cache.picturesStamp == picturesStamp)
+            {
+                _totalSizeBytes = cache.totalBytes;
+                return cache.cfg;
+            }
+
             _totalSizeBytes = 0;
 
             // 整个 Voice/ 文件夹（含子文件夹）的大小
@@ -226,37 +286,50 @@ namespace LvchaxsBS.UI.Pages
                 cfg[NoRoleKey] = cc;
             }
 
+            _scanCache = (cfg, _totalSizeBytes, voiceStamp, voicesStamp, picturesStamp);
             return cfg;
         }
+
+        private static DateTime GetDirStamp(string dir)
+            => Directory.Exists(dir) ? Directory.GetLastWriteTimeUtc(dir) : DateTime.MinValue;
 
         private static void SaveConfig(VoiceConfig cfg)
         {
             try
             {
+                using var ms = new MemoryStream();
+                using (var writer = new Utf8JsonWriter(ms, new JsonWriterOptions
+                {
+                    Indented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                }))
+                {
+                    writer.WriteStartObject();
+                    foreach (var kv in cfg)
+                    {
+                        writer.WritePropertyName(kv.Key);
+                        writer.WriteStartObject();
+
+                        foreach (var w in kv.Value.Wavs)
+                            writer.WriteString(w.Key, w.Value);
+
+                        writer.WriteBoolean("matched", kv.Value.Matched);
+                        writer.WriteEndObject();
+                    }
+                    writer.WriteEndObject();
+                }
+
+                string json = Encoding.UTF8.GetString(ms.ToArray());
+
                 string? dir = Path.GetDirectoryName(ConfigPath);
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
-                using var stream = File.Create(ConfigPath);
-                using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions
-                {
-                    Indented = true,
-                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                });
+                // 内容没变就不写盘
+                if (File.Exists(ConfigPath) && File.ReadAllText(ConfigPath) == json)
+                    return;
 
-                writer.WriteStartObject();
-                foreach (var kv in cfg)
-                {
-                    writer.WritePropertyName(kv.Key);
-                    writer.WriteStartObject();
-
-                    foreach (var w in kv.Value.Wavs)
-                        writer.WriteString(w.Key, w.Value);
-
-                    writer.WriteBoolean("matched", kv.Value.Matched);
-                    writer.WriteEndObject();
-                }
-                writer.WriteEndObject();
+                File.WriteAllText(ConfigPath, json);
             }
             catch { }
         }
@@ -361,11 +434,7 @@ namespace LvchaxsBS.UI.Pages
             }
 
             foreach (var kv in others)
-            {
-                var card = CreateCharacterCard(kv.Key, kv.Value);
-                if (card != null)
-                    DynamicCharacterPanel.Children.Add(card);
-            }
+                DynamicCharacterPanel.Children.Add(CreateCard(kv.Key, kv.Value));
 
             if (cfg.TryGetValue(NoRoleKey, out var noRoleCc))
             {
@@ -373,11 +442,7 @@ namespace LvchaxsBS.UI.Pages
                     || noRoleCc.Wavs.Keys.Any(k => k.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
 
                 if (showNoRole)
-                {
-                    var card = CreateNoRoleCard(noRoleCc);
-                    if (card != null)
-                        DynamicCharacterPanel.Children.Add(card);
-                }
+                    DynamicCharacterPanel.Children.Add(CreateCard("?", noRoleCc));
             }
 
             UpdateStats(cfg);
@@ -397,12 +462,6 @@ namespace LvchaxsBS.UI.Pages
         {
             if (string.IsNullOrEmpty(keyword)) return true;
             return name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        private static bool HasAvatar(string name)
-        {
-            if (string.IsNullOrEmpty(name)) return false;
-            return File.Exists(Path.Combine(PicturesDir, name + ".png"));
         }
 
         private static List<string> GetWavValues(CharacterConfig cc)
@@ -430,7 +489,11 @@ namespace LvchaxsBS.UI.Pages
             }
         }
 
-        private Border? CreateCharacterCard(string name, CharacterConfig cc)
+        /// <summary>
+        /// 统一的角色卡片创建（原 CreateCharacterCard / CreateNoRoleCard 合并，
+        /// 两者只差头像与名字）。名字传 "?" 即为"未分类"卡片。
+        /// </summary>
+        private Border CreateCard(string name, CharacterConfig cc)
         {
             var card = new Border();
             card.SetResourceReference(Border.StyleProperty, "ModuleFunctionCardAutoStyle");
@@ -441,7 +504,7 @@ namespace LvchaxsBS.UI.Pages
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            bool hasAvatar = HasAvatar(name);
+            var avatar = LoadAvatar(name);
 
             var avatarBorder = new Border
             {
@@ -449,37 +512,18 @@ namespace LvchaxsBS.UI.Pages
                 Height = 48,
                 CornerRadius = new CornerRadius(24),
                 ClipToBounds = true,
-                Margin = new Thickness(0, 0, 8, 0)
-            };
-            avatarBorder.SetResourceReference(Border.BackgroundProperty, "Gray100Brush");
-
-            if (hasAvatar)
-            {
-                string imgPath = Path.Combine(PicturesDir, name + ".png");
-                try
-                {
-                    var bmp = new BitmapImage();
-                    bmp.BeginInit();
-                    bmp.CacheOption = BitmapCacheOption.OnLoad;
-                    bmp.UriSource = new Uri(imgPath, UriKind.Absolute);
-                    bmp.EndInit();
-                    bmp.Freeze();
-
-                    avatarBorder.Child = new Image
+                Margin = new Thickness(0, 0, 8, 0),
+                Child = avatar != null
+                    ? new Image
                     {
-                        Source = bmp,
+                        Source = avatar,
                         Width = 48,
                         Height = 48,
                         Stretch = Stretch.UniformToFill
-                    };
-                }
-                catch { avatarBorder.Child = CreateQuestionMark(); }
-            }
-            else
-            {
-                avatarBorder.Child = CreateQuestionMark();
-            }
-
+                    }
+                    : CreateQuestionMark()
+            };
+            avatarBorder.SetResourceReference(Border.BackgroundProperty, "Gray100Brush");
             Grid.SetColumn(avatarBorder, 0);
             grid.Children.Add(avatarBorder);
 
@@ -531,76 +575,31 @@ namespace LvchaxsBS.UI.Pages
             return card;
         }
 
-        private Border? CreateNoRoleCard(CharacterConfig cc)
+        /// <summary>加载头像（带静态缓存，Freeze 后可安全复用）。无头像返回 null。</summary>
+        private static BitmapSource? LoadAvatar(string name)
         {
-            var card = new Border();
-            card.SetResourceReference(Border.StyleProperty, "ModuleFunctionCardAutoStyle");
+            if (string.IsNullOrEmpty(name)) return null;
+            if (_avatarCache.TryGetValue(name, out var cached)) return cached;
 
-            var grid = new Grid { Margin = new Thickness(10, 8, 10, 8) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-            var avatarBorder = new Border
+            BitmapSource? src = null;
+            string imgPath = Path.Combine(PicturesDir, name + ".png");
+            if (File.Exists(imgPath))
             {
-                Width = 48,
-                Height = 48,
-                CornerRadius = new CornerRadius(24),
-                ClipToBounds = true,
-                Margin = new Thickness(0, 0, 8, 0),
-                Child = CreateQuestionMark()
-            };
-            avatarBorder.SetResourceReference(Border.BackgroundProperty, "Gray100Brush");
-            Grid.SetColumn(avatarBorder, 0);
-            grid.Children.Add(avatarBorder);
-
-            var nameBlock = new TextBlock
-            {
-                Text = "?",
-                FontSize = 14,
-                FontWeight = FontWeights.SemiBold,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 6, 0)
-            };
-            nameBlock.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
-            Grid.SetColumn(nameBlock, 1);
-            grid.Children.Add(nameBlock);
-
-            var values = GetWavValues(cc);
-
-            var countText = new TextBlock
-            {
-                Text = values.Count.ToString(),
-                FontSize = 9,
-                FontWeight = FontWeights.Bold
-            };
-            countText.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
-
-            var countBorder = new Border
-            {
-                CornerRadius = new CornerRadius(3),
-                Padding = new Thickness(4, 1, 4, 1),
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 6, 0),
-                Child = countText
-            };
-            countBorder.SetResourceReference(Border.BackgroundProperty, "Gray200Brush");
-            Grid.SetColumn(countBorder, 2);
-            grid.Children.Add(countBorder);
-
-            var tagPanel = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
-            Grid.SetColumn(tagPanel, 3);
-
-            foreach (var v in values)
-            {
-                string content = ExtractVoiceText(v);
-                tagPanel.Children.Add(CreateVoiceTag(content));
+                try
+                {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.UriSource = new Uri(imgPath, UriKind.Absolute);
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    src = bmp;
+                }
+                catch { src = null; }
             }
 
-            grid.Children.Add(tagPanel);
-            card.Child = grid;
-            return card;
+            _avatarCache[name] = src;
+            return src;
         }
 
         private static string ExtractVoiceText(string value)
@@ -637,9 +636,8 @@ namespace LvchaxsBS.UI.Pages
 
         private Brush GetTagColor(string content)
         {
-            string[] colors = { "#60A5FA", "#34D399", "#F87171", "#FB923C", "#A78BFA", "#F472B6", "#2DD4BF", "#818CF8", "#22D3EE" };
             int hash = content.GetHashCode() & 0x7FFFFFFF;
-            return (Brush)new BrushConverter().ConvertFromString(colors[hash % colors.Length])!;
+            return TagBrushes[hash % TagBrushes.Length];
         }
 
         // ============ JSON 数据结构 ============

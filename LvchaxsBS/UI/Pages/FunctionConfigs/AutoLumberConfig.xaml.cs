@@ -19,8 +19,8 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void AutoLumberConfig_Loaded(object sender, RoutedEventArgs e)
         {
             var s = ConfigManager.Get<AutoLumberSettings>();
-            AutoLumberIntervalSlider.Value = s.AutoLumberInterval;
-            DetectThresholdSpinBox.Value = s.DetectThreshold;
+            AutoLumberCard.Value = s.AutoLumberInterval;
+            AutoLumberCard.SpinValue = s.DetectThreshold;
             _isLoading = false;
 
             SliderEntryAnimator.PlayAll(this);
@@ -29,17 +29,13 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void AutoLumberIntervalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoLumberSettings>();
-            s.AutoLumberInterval = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoLumberSettings>(s => s.AutoLumberInterval = (int)e.NewValue);
         }
 
         private void DetectThresholdSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoLumberSettings>();
-            s.DetectThreshold = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoLumberSettings>(s => s.DetectThreshold = e.NewValue);
         }
     }
 }

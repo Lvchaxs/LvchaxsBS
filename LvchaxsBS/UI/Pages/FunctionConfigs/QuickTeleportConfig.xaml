@@ -13,176 +13,46 @@
         <StackPanel Margin="5,4,0,0">
 
             <!-- 卡片1：传送延迟检测 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Grid.Column="0" Text="传送延迟检测"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="右下角匹配度:"
-                                       FontSize="13"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="2,0,0,0"/>
-                            <controls:SpinTextBoxControl x:Name="DetectThresholdSpinBox"
-                                                         Grid.Column="3"
-                                                         Minimum="0" Maximum="1"
-                                                         Step="0.01"
-                                                         Unit="" NumericFormat="F2"
-                                                         TextBoxWidth="45"
-                                                         VerticalAlignment="Center"
-                                                         Margin="2,0,6,0"
-                                                         ValueChanged="DetectThresholdSpinBox_ValueChanged"
-                                                         ui:ToastNotifier.Message="右下角匹配度"/>
-                        </Grid>
-
-                        <controls:SpinSliderControl x:Name="QuickTeleportDelaySlider"
-                                                    Grid.Row="1"
-                                                    Minimum="0" Maximum="200"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="QuickTeleportDelaySlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="传送延迟检测"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="地图界面中 按下触发键后等待右下角/右侧列表UI出现后再执行的延迟"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:SliderCardControl x:Name="QuickTeleportDelayCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
+                                        Title="传送延迟检测"
+                                        Hint="地图界面中 按下触发键后等待右下角/右侧列表UI出现后再执行的延迟"
+                                        Minimum="0" Maximum="200" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="传送延迟检测"
+                                        ValueChanged="QuickTeleportDelaySlider_ValueChanged"
+                                        SpinLabel="右下角匹配度:"
+                                        SpinMinimum="0" SpinMaximum="1" SpinStep="0.01"
+                                        SpinNumericFormat="F2"
+                                        SpinToast="右下角匹配度"
+                                        SpinValueChanged="DetectThresholdSpinBox_ValueChanged"/>
 
             <!-- 卡片2：传送检测时长 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="传送检测时长"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="右列表匹配度:"
-                                       FontSize="13"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="2,0,0,0"/>
-                            <controls:SpinTextBoxControl x:Name="RightListThresholdSpinBox"
-                                                         Grid.Column="3"
-                                                         Minimum="0" Maximum="1"
-                                                         Step="0.01"
-                                                         Unit="" NumericFormat="F2"
-                                                         TextBoxWidth="45"
-                                                         VerticalAlignment="Center"
-                                                         Margin="2,0,6,0"
-                                                         ValueChanged="RightListThresholdSpinBox_ValueChanged"
-                                                         ui:ToastNotifier.Message="右列表匹配度"/>
-                        </Grid>
-
-                        <controls:SpinSliderControl x:Name="RightListDelaySlider"
-                                                    Grid.Row="1"
-                                                    Minimum="0" Maximum="500"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="RightListDelaySlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="传送检测时长"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="触发后持续循环检测右下角+右侧列表，任意一个检测到直接命中"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
+            <controls:SliderCardControl x:Name="RightListDelayCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
+                                        Title="传送检测时长"
+                                        Hint="触发后持续循环检测右下角+右侧列表，任意一个检测到直接命中"
+                                        Minimum="0" Maximum="500" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="传送检测时长"
+                                        ValueChanged="RightListDelaySlider_ValueChanged"
+                                        SpinLabel="右列表匹配度:"
+                                        SpinMinimum="0" SpinMaximum="1" SpinStep="0.01"
+                                        SpinNumericFormat="F2"
+                                        SpinToast="右列表匹配度"
+                                        SpinValueChanged="RightListThresholdSpinBox_ValueChanged"/>
 
             <!-- 卡片3：右侧列表点击延迟 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <controls:SliderCardControl x:Name="RightListClickDelayCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
+                                        Title="右侧列表点击延迟"
+                                        Hint="循环检测中如果检测到的是右侧列表中的目标时 先等待此处设置的延迟 之后再点击列表中检测到的目标位置"
+                                        Minimum="0" Maximum="500" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="右侧列表点击延迟"
+                                        ValueChanged="RightListClickDelaySlider_ValueChanged"/>
 
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <Grid Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="13"/>
-                        </Grid.RowDefinitions>
-
-                        <TextBlock Grid.Row="0" Text="右侧列表点击延迟"
-                                   FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
-
-                        <controls:SpinSliderControl x:Name="RightListClickDelaySlider"
-                                                    Grid.Row="1"
-                                                    Minimum="0" Maximum="500"
-                                                    Step="1"
-                                                    Unit="ms" NumericFormat="F0"
-                                                    Height="26"
-                                                    ValueChanged="RightListClickDelaySlider_ValueChanged"
-                                                    ui:ToastNotifier.Message="右侧列表点击延迟"/>
-
-                        <TextBlock Grid.Row="2"
-                                   Text="循环检测中如果检测到的是右侧列表中的目标时 先等待此处设置的延迟 之后再点击列表中检测到的目标位置"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextDisabledBrush}"/>
-                    </Grid>
-                </Grid>
-            </Border>
-
-            <!-- 卡片4：右侧列表F键延迟 + 秘境F延迟 -->
+            <!-- 卡片4：右侧列表F键延迟 + 秘境F延迟（双滑条，特殊布局） -->
             <Border Style="{StaticResource ModuleFunctionCardStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>

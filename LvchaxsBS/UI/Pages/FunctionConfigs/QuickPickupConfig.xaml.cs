@@ -19,8 +19,8 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void QuickPickupConfig_Loaded(object sender, RoutedEventArgs e)
         {
             var s = ConfigManager.Get<QuickPickupSettings>();
-            PickupIntervalSlider.Value = s.PickupInterval;
-            FAndScrollDelaySlider.Value = s.FAndScrollDelay;
+            PickupIntervalCard.Value = s.PickupInterval;
+            FAndScrollDelayCard.Value = s.FAndScrollDelay;
             _isLoading = false;
 
             SliderEntryAnimator.PlayAll(this);
@@ -29,17 +29,13 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void PickupIntervalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickPickupSettings>();
-            s.PickupInterval = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickPickupSettings>(s => s.PickupInterval = (int)e.NewValue);
         }
 
         private void FAndScrollDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<QuickPickupSettings>();
-            s.FAndScrollDelay = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<QuickPickupSettings>(s => s.FAndScrollDelay = (int)e.NewValue);
         }
     }
 }

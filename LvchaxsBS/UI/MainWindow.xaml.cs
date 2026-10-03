@@ -183,7 +183,17 @@ namespace LvchaxsBS.UI
 
         private void TopRight_ThemeToggleClicked(object? sender, EventArgs e)
         {
-            ThemeService.Toggle();
+            if (ThemeFog == null)
+            {
+                ThemeService.Toggle();
+                return;
+            }
+
+            // 迷雾从主题按钮处扩散（两个方向共用同一套雾色）
+            var origin = TopRight.GetThemeButtonCenter(ThemeFog);
+
+            if (!ThemeFog.Play(origin, ThemeService.Toggle))
+                return;   // 动画播放中，忽略本次点击
         }
 
         private void TopRight_ToggleClicked(object? sender, EventArgs e)

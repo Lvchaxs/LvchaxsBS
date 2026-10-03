@@ -1,0 +1,22 @@
+<UserControl x:Class="LvchaxsBS.UI.Controls.ThemeFogOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             Focusable="False"
+             IsHitTestVisible="False">
+
+    <!-- 主题切换迷雾过渡层：平时不绘制、不拦点击。
+         两层都是铺满整个窗口的矩形，径向渐变从点击处展开——
+         不用任何尺寸/偏移几何，所以永远不会"只盖住一个角"。
+         填充画刷、渐变、变换全部在代码里创建（避免被冻结后无法改色/动画）。 -->
+    <Grid Background="Transparent" IsHitTestVisible="False">
+
+        <!-- 雾体：完全覆盖的一层，负责在换主题那一瞬挡住跳变 -->
+        <Rectangle x:Name="FogCore"/>
+
+        <!-- 雾纹：噪声纹理（alpha 作遮罩），给雾质感与破碎的雾边 -->
+        <Rectangle x:Name="FogNoise"/>
+    </Grid>
+</UserControl>

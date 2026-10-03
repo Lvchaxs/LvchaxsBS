@@ -117,21 +117,10 @@ namespace LvchaxsBS.UI.Pages
         private void LoadToggleState(string moduleName)
         {
             var s = ConfigManager.Get<HomePageSettings>();
-
-            bool state = moduleName switch
-            {
-                "快速传送" => s.QuickTeleport,
-                "快速拾取" => s.QuickPickup,
-                "剧情对话" => s.StoryDialogue,
-                "自动烹饪" => s.AutoCook,
-                "钓鱼辅助" => s.FishingAssist,
-                "自动伐木" => s.AutoLumber,
-                "手柄拾取" => s.ControllerPickup,
-                _ => false
-            };
+            var module = ModuleRegistry.ByName(moduleName);
 
             _isLoadingToggle = true;
-            PART_Toggle.IsChecked = state;
+            PART_Toggle.IsChecked = module?.IsEnabled(s) ?? false;
             _isLoadingToggle = false;
 
             PART_Toggle.Opacity = s.MasterSwitch ? 1.0 : 0.4;
@@ -159,24 +148,15 @@ namespace LvchaxsBS.UI.Pages
             if (_isLoadingToggle) return;
             if (string.IsNullOrEmpty(CurrentModuleName)) return;
 
+            var module = ModuleRegistry.ByName(CurrentModuleName);
+            if (module == null) return;
+
             var s = ConfigManager.Get<HomePageSettings>();
-
-            switch (CurrentModuleName)
-            {
-                case "快速传送": s.QuickTeleport = isChecked; break;
-                case "快速拾取": s.QuickPickup = isChecked; break;
-                case "剧情对话": s.StoryDialogue = isChecked; break;
-                case "自动烹饪": s.AutoCook = isChecked; break;
-                case "钓鱼辅助": s.FishingAssist = isChecked; break;
-                case "自动伐木": s.AutoLumber = isChecked; break;
-                case "手柄拾取": s.ControllerPickup = isChecked; break;
-                default: return;
-            }
-
+            module.SetEnabled(s, isChecked);
             ConfigManager.Save(s);
 
             if (Application.Current?.MainWindow is UI.MainWindow mw)
-                mw.ShowToast($"{CurrentModuleName}: {(isChecked ? "已启用" : "已关闭")}", isChecked);
+                mw.ShowToast($"{module.Name}: {(isChecked ? "已启用" : "已关闭")}", isChecked);
         }
 
         // ============ Tags ============
@@ -232,31 +212,19 @@ namespace LvchaxsBS.UI.Pages
                     ShowKeyToast("触发键", keyName);
                 };
 
-            _getKey = () => keyConfigTag switch
+            var module = ModuleRegistry.ByKeyTag(keyConfigTag);
+
+            _getKey = () =>
             {
-                "QuickTeleportKey" => ConfigManager.Get<HomePageSettings>().QuickTeleportKey,
-                "QuickPickupKey" => ConfigManager.Get<HomePageSettings>().QuickPickupKey,
-                "StoryDialogueKey" => ConfigManager.Get<HomePageSettings>().StoryDialogueKey,
-                "AutoCookKey" => ConfigManager.Get<HomePageSettings>().AutoCookKey,
-                "FishingAssistKey" => ConfigManager.Get<HomePageSettings>().FishingAssistKey,
-                "AutoLumberKey" => ConfigManager.Get<HomePageSettings>().AutoLumberKey,
-                "ControllerPickupKey" => ConfigManager.Get<HomePageSettings>().ControllerPickupKey,
-                _ => "未设置"
+                var s = ConfigManager.Get<HomePageSettings>();
+                return module?.GetKey(s) ?? "未设置";
             };
 
             _setKey = (keyName) =>
             {
+                if (module == null) return;
                 var settings = ConfigManager.Get<HomePageSettings>();
-                switch (keyConfigTag)
-                {
-                    case "QuickTeleportKey": settings.QuickTeleportKey = keyName; break;
-                    case "QuickPickupKey": settings.QuickPickupKey = keyName; break;
-                    case "StoryDialogueKey": settings.StoryDialogueKey = keyName; break;
-                    case "AutoCookKey": settings.AutoCookKey = keyName; break;
-                    case "FishingAssistKey": settings.FishingAssistKey = keyName; break;
-                    case "AutoLumberKey": settings.AutoLumberKey = keyName; break;
-                    case "ControllerPickupKey": settings.ControllerPickupKey = keyName; break;
-                }
+                module.SetKey(settings, keyName);
                 ConfigManager.Save(settings);
             };
         }

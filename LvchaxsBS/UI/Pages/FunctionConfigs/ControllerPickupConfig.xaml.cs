@@ -18,7 +18,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
 
         private void ControllerPickupConfig_Loaded(object sender, RoutedEventArgs e)
         {
-            TriggerDelaySlider.Value = ConfigManager.Get<ControllerPickupSettings>().TriggerDelay;
+            TriggerDelayCard.Value = ConfigManager.Get<ControllerPickupSettings>().TriggerDelay;
             _isLoading = false;
 
             SliderEntryAnimator.PlayAll(this);
@@ -27,9 +27,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void TriggerDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<ControllerPickupSettings>();
-            s.TriggerDelay = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<ControllerPickupSettings>(s => s.TriggerDelay = (int)e.NewValue);
         }
     }
 }

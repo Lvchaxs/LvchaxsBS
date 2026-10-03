@@ -49,27 +49,21 @@ namespace LvchaxsBS.UI.Pages
         private void CaptureModeSelect_Changed(object? sender, int idx)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AppSettings>();
-            s.CaptureMode = idx;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AppSettings>(s => s.CaptureMode = idx);
         }
 
         // ============ 界面检测间隔 ============
         private void MainWindowCheckIntervalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AppSettings>();
-            s.MainWindowCheckInterval_1 = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AppSettings>(s => s.MainWindowCheckInterval_1 = (int)e.NewValue);
         }
 
         // ============ DPI（只保存，重启生效） ============
         private void DpiScaleSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AppSettings>();
-            s.DpiScalePercent_1 = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AppSettings>(s => s.DpiScalePercent_1 = (int)e.NewValue);
         }
 
         // ============ 超链接跳转到浏览器 ============

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Windows.Threading;
 using LvchaxsBS.Config.FunctionConfigs;
 
 namespace LvchaxsBS.Config
@@ -17,6 +18,12 @@ namespace LvchaxsBS.Config
             WriteIndented = true
         };
 
+        /// <summary>
+        /// 防抖延迟：同一类型的多次 Save 只在最后一次之后延迟落盘一次。
+        /// 值太小防抖效果弱，太大则退出前落盘窗口长；300ms 对滑条拖动足够。
+        /// </summary>
+        private static readonly TimeSpan FlushDelay = TimeSpan.FromMilliseconds(300);
+
         // ===== 核心：基础数据 + 缓存 =====
         // _configs: 类型 -> 从磁盘加载的配置实例（基础数据）
         // _cache  : 类型 -> 当前生效的配置实例（读取都走这里）
@@ -24,6 +31,10 @@ namespace LvchaxsBS.Config
         private static readonly Dictionary<Type, object> _configs = new();
         private static readonly Dictionary<Type, object> _cache = new();
         private static readonly Dictionary<Type, string> _paths = new();
+
+        // 待落盘的类型集合 + 防抖定时器
+        private static readonly HashSet<Type> _dirty = new();
+        private static DispatcherTimer? _flushTimer;
 
         /// <summary>
         /// 全局缓存是否就绪（所有配置已加载）
@@ -83,6 +94,8 @@ namespace LvchaxsBS.Config
 
             _configs.Clear();
             _cache.Clear();
+            _dirty.Clear();
+            StopTimer();
 
             foreach (var kvp in _paths)
             {
@@ -96,7 +109,7 @@ namespace LvchaxsBS.Config
 
             CacheReady = true;
 
-            // 核对清理：把内存实例重新写回磁盘，
+            // 核对清理：内容有变化才写回磁盘，
             // 自动丢弃"类里没有、JSON 里有"的废弃字段。
             PurgeDeprecatedFields();
         }
@@ -127,7 +140,7 @@ namespace LvchaxsBS.Config
         }
 
         /// <summary>
-        /// 核对清理：将所有配置实例重新序列化并写回磁盘。
+        /// 核对清理：将所有配置实例重新序列化并与磁盘比对，仅内容变化时写回。
         /// System.Text.Json 只序列化类中实际存在的属性，
         /// JSON 里多出来的旧字段会在重写时被自动丢弃。
         /// </summary>
@@ -137,16 +150,7 @@ namespace LvchaxsBS.Config
             {
                 Type type = kvp.Key;
                 if (!_paths.TryGetValue(type, out var path)) continue;
-
-                try
-                {
-                    SaveToFile(type, kvp.Value, path);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine(
-                        $"配置核对清理失败 [{type.Name}]: {ex.Message}");
-                }
+                SaveToFile(type, kvp.Value, path);
             }
         }
 
@@ -176,24 +180,24 @@ namespace LvchaxsBS.Config
         }
 
         /// <summary>
-        /// 保存配置到磁盘，并刷新缓存。
+        /// 保存配置：内存缓存立即生效，磁盘写入做防抖合并。
+        /// 拖动滑条等连续触发的场景下，只在停顿后落盘一次。
         /// </summary>
         public static void Save<T>(T settings) where T : class, new()
         {
             EnsureRegistered();
 
-            if (!_paths.TryGetValue(typeof(T), out var path))
+            _configs[typeof(T)] = settings;
+            _cache[typeof(T)] = settings;
+
+            if (!_paths.TryGetValue(typeof(T), out _))
             {
                 System.Diagnostics.Debug.WriteLine(
                     $"类型 {typeof(T).Name} 未标注 [ConfigFile]，仅更新内存。");
-                _configs[typeof(T)] = settings;
-                _cache[typeof(T)] = settings;
                 return;
             }
 
-            _configs[typeof(T)] = settings;
-            _cache[typeof(T)] = settings;
-            SaveToFile(typeof(T), settings, path);
+            MarkDirty(typeof(T));
         }
 
         /// <summary>
@@ -206,6 +210,7 @@ namespace LvchaxsBS.Config
 
         /// <summary>
         /// 从磁盘强制重新加载指定类型（不走缓存）。
+        /// 会丢弃该类型尚未落盘的防抖写入。
         /// </summary>
         public static void Reload<T>() where T : class, new()
         {
@@ -214,16 +219,94 @@ namespace LvchaxsBS.Config
             if (!_paths.TryGetValue(typeof(T), out var path))
                 return;
 
+            _dirty.Remove(typeof(T));
+
             object instance = LoadOrCreate(typeof(T), path);
             _configs[typeof(T)] = instance;
             _cache[typeof(T)] = instance;
         }
 
+        /// <summary>
+        /// 立即把所有待落盘的配置写回磁盘。
+        /// App 退出时调用，防止防抖延迟导致丢配置。
+        /// </summary>
+        public static void FlushAll()
+        {
+            StopTimer();
+
+            if (_dirty.Count == 0) return;
+
+            foreach (var type in _dirty.ToList())
+            {
+                if (_paths.TryGetValue(type, out var path) &&
+                    _configs.TryGetValue(type, out var instance))
+                {
+                    SaveToFile(type, instance, path);
+                }
+            }
+            _dirty.Clear();
+        }
+
+        #endregion
+
+        #region 防抖落盘
+
+        private static void MarkDirty(Type type)
+        {
+            _dirty.Add(type);
+
+            if (_flushTimer == null)
+            {
+                var dispatcher = System.Windows.Application.Current?.Dispatcher;
+                if (dispatcher == null)
+                {
+                    // 无 UI 环境兜底：直接同步写盘
+                    FlushAll();
+                    return;
+                }
+
+                _flushTimer = new DispatcherTimer(DispatcherPriority.Background)
+                {
+                    Interval = FlushDelay
+                };
+                _flushTimer.Tick += (s, e) => FlushAll();
+            }
+
+            _flushTimer.Stop();
+            _flushTimer.Start();
+        }
+
+        private static void StopTimer()
+        {
+            _flushTimer?.Stop();
+        }
+
+        #endregion
+
+        #region 磁盘读写
+
+        /// <summary>
+        /// 序列化并与磁盘内容比对，相同则跳过写入；
+        /// 全程吞异常（配置写入从 UI 事件调用，文件被占用不应导致崩溃）。
+        /// </summary>
         private static void SaveToFile(Type type, object instance, string path)
         {
-            EnsureDirectory(path);
-            string json = JsonSerializer.Serialize(instance, type, JsonOptions);
-            File.WriteAllText(path, json);
+            try
+            {
+                string json = JsonSerializer.Serialize(instance, type, JsonOptions);
+
+                EnsureDirectory(path);
+
+                if (File.Exists(path) && File.ReadAllText(path) == json)
+                    return;   // 内容无变化，跳过写入
+
+                File.WriteAllText(path, json);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"配置写入失败 [{type.Name}]: {ex.Message}");
+            }
         }
 
         private static void EnsureDirectory(string filePath)

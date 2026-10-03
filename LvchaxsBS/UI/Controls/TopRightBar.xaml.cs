@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using LvchaxsBS.Config;
 using LvchaxsBS.Services;
 
@@ -59,6 +60,25 @@ namespace LvchaxsBS.UI.Controls
         {
             IconSun.Visibility = isDark ? Visibility.Collapsed : Visibility.Visible;
             IconMoon.Visibility = isDark ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// 主题按钮中心点（相对指定元素），用于让主题切换迷雾从按钮处扩散。
+        /// 用 TransformToVisual 而不是 TransformToAncestor：两个元素只要求在同一棵可视化树里，
+        /// 不要求是祖先/后代关系（迷雾层和按钮其实是兄弟节点）。
+        /// 取不到时返回 NaN，由调用方回退到窗口中心。
+        /// </summary>
+        public Point GetThemeButtonCenter(Visual relativeTo)
+        {
+            try
+            {
+                var t = ButtonTheme.TransformToVisual(relativeTo);
+                return t.Transform(new Point(ButtonTheme.ActualWidth / 2, ButtonTheme.ActualHeight / 2));
+            }
+            catch
+            {
+                return new Point(double.NaN, double.NaN);
+            }
         }
 
         public void SetToggleState(bool isOn)

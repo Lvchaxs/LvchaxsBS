@@ -153,6 +153,12 @@
                    NavigationUIVisibility="Hidden"
                    FocusVisualStyle="{x:Null}"
                    Margin="5,0,10,10"/>
+
+            <!-- ============ 主题切换迷雾过渡层 ============ -->
+            <controls:ThemeFogOverlay x:Name="ThemeFog"
+                                      Grid.Row="0"
+                                      Grid.RowSpan="4"
+                                      Panel.ZIndex="99"/>
         </Grid>
     </Border>
 </Window>

@@ -19,9 +19,9 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void StoryDialogueConfig_Loaded(object sender, RoutedEventArgs e)
         {
             var s = ConfigManager.Get<StoryDialogueSettings>();
-            StoryDialogueIntervalSlider.Value = s.StoryDialogueInterval;
-            DetectThresholdSpinBox.Value = s.DetectThreshold;
-            FKeyIntervalSlider.Value = s.FKeyInterval;
+            StoryDialogueCard.Value = s.StoryDialogueInterval;
+            StoryDialogueCard.SpinValue = s.DetectThreshold;
+            FKeyIntervalCard.Value = s.FKeyInterval;
             _isLoading = false;
 
             SliderEntryAnimator.PlayAll(this);
@@ -30,25 +30,19 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void StoryDialogueIntervalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<StoryDialogueSettings>();
-            s.StoryDialogueInterval = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<StoryDialogueSettings>(s => s.StoryDialogueInterval = (int)e.NewValue);
         }
 
         private void DetectThresholdSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<StoryDialogueSettings>();
-            s.DetectThreshold = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<StoryDialogueSettings>(s => s.DetectThreshold = e.NewValue);
         }
 
         private void FKeyIntervalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<StoryDialogueSettings>();
-            s.FKeyInterval = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<StoryDialogueSettings>(s => s.FKeyInterval = (int)e.NewValue);
         }
     }
 }

@@ -27,7 +27,9 @@
                 VerticalAlignment="Center"
                 Focusable="False"
                 ValueChanged="PART_Slider_ValueChanged"
+                Thumb.DragStarted="PART_Slider_DragStarted"
                 Thumb.DragCompleted="PART_Slider_DragCompleted"
+                PreviewMouseLeftButtonDown="PART_Slider_PreviewMouseLeftButtonDown"
                 PreviewMouseLeftButtonUp="PART_Slider_PreviewMouseLeftButtonUp"/>
 
         <!-- 数值显示 -->

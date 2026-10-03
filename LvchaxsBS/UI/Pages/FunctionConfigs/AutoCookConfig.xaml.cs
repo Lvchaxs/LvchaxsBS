@@ -60,12 +60,12 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             var s = ConfigManager.Get<AutoCookSettings>();
 
-            AutoCookIntervalSlider.Value = s.AutoCookInterval;
-            DetectThresholdSpinBox.Value = s.DetectThreshold;
-            NormalJudgePercentSlider.Value = s.NormalJudgePercent;
-            PerfectJudgePercentSlider.Value = s.PerfectJudgePercent;
-            NormalBinarizeToleranceSpinBox.Value = s.NormalBinarizeTolerance;
-            PerfectBinarizeToleranceSpinBox.Value = s.PerfectBinarizeTolerance;
+            AutoCookIntervalCard.Value = s.AutoCookInterval;
+            AutoCookIntervalCard.SpinValue = s.DetectThreshold;
+            NormalJudgeCard.Value = s.NormalJudgePercent;
+            NormalJudgeCard.SpinValue = s.NormalBinarizeTolerance;
+            PerfectJudgeCard.Value = s.PerfectJudgePercent;
+            PerfectJudgeCard.SpinValue = s.PerfectBinarizeTolerance;
 
             MedicineTotalLimitSpinBox.Value = s.MedicineTotalLimit;
             MedicineIntervalSpinBox.Value = s.MedicineInterval_1;
@@ -178,81 +178,61 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             string item = (ItemSelect.SelectedIndex >= 0 && ItemSelect.SelectedIndex < items.Count)
                 ? items[ItemSelect.SelectedIndex] : "未选择";
 
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.AutoClearMedicineSelection = $"{type},{star},{item}";
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.AutoClearMedicineSelection = $"{type},{star},{item}");
         }
 
         private void AutoCookIntervalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.AutoCookInterval = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.AutoCookInterval = (int)e.NewValue);
         }
 
         private void DetectThresholdSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.DetectThreshold = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.DetectThreshold = e.NewValue);
         }
 
         private void NormalJudgePercentSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.NormalJudgePercent = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.NormalJudgePercent = (int)e.NewValue);
         }
 
         private void PerfectJudgePercentSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.PerfectJudgePercent = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.PerfectJudgePercent = (int)e.NewValue);
         }
 
         private void NormalBinarizeToleranceSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.NormalBinarizeTolerance = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.NormalBinarizeTolerance = (int)e.NewValue);
         }
 
         private void PerfectBinarizeToleranceSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.PerfectBinarizeTolerance = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.PerfectBinarizeTolerance = (int)e.NewValue);
         }
 
         private void MedicineTotalLimitSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.MedicineTotalLimit = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.MedicineTotalLimit = (int)e.NewValue);
         }
 
         private void MedicineIntervalSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.MedicineInterval_1 = (int)e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.MedicineInterval_1 = (int)e.NewValue);
         }
 
         private void MedicineDetectThresholdSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            var s = ConfigManager.Get<AutoCookSettings>();
-            s.MedicineDetectThreshold = e.NewValue;
-            ConfigManager.Save(s);
+            ConfigSync.Mutate<AutoCookSettings>(s => s.MedicineDetectThreshold = e.NewValue);
         }
     }
 }
