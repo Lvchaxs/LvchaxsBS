@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Controls
 {
@@ -112,16 +113,25 @@ namespace LvchaxsBS.UI.Controls
 
             var border = new Border
             {
-                Background = (Brush)Application.Current.Resources["CardBackgroundBrush"],
+                // 弹窗是浮在内容之上的，必须用不透明背景
+                // （不能用 CardBackgroundBrush —— 那个键会被"控件透明度"改成带 alpha 的画刷）
+                Background = Application.Current.TryFindResource("PopupBackgroundBrush") as Brush
+                             ?? Application.Current.TryFindResource("CardBackgroundBrush") as Brush,
                 BorderBrush = (Brush)Application.Current.Resources["BorderStrongBrush"],
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(6),
                 Padding = new Thickness(2),
-                MinWidth = ActualWidth
+                // 弹窗是独立视觉树，下面会再整体放大 UiScale.Current 倍，
+                // 所以这里先除掉，保证显示宽度和下拉框一致
+                MinWidth = ActualWidth / UiScale.Current
             };
             border.Child = stack;
 
+            // 跟随界面缩放（Popup 不继承窗口 RootBorder 的 LayoutTransform）
+            UiScale.ApplyTo(border);
+
             bool up = DropDirection == 1;
+            double gap = 2 * UiScale.Current;
 
             _popup = new Popup
             {
@@ -131,7 +141,7 @@ namespace LvchaxsBS.UI.Controls
                 StaysOpen = false,
                 AllowsTransparency = true,
                 PopupAnimation = PopupAnimation.Fade,
-                VerticalOffset = up ? -2 : 2
+                VerticalOffset = up ? -gap : gap
             };
 
             // 箭头动画（找模板里的 ArrowRotate）

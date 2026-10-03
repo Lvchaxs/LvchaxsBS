@@ -190,17 +190,36 @@
         </Style.Triggers>
     </Style>
 
-    <!-- ============ 5. 标题栏按钮 ============ -->
-    <Style x:Key="TitleBarButtonStyle"
-           TargetType="Button"
-           BasedOn="{StaticResource BaseButtonStyle}">
+    <!-- ============ 5. 标题栏按钮（最小化 / 最大化） ============ -->
+    <!-- 刻意不继承 BaseButtonStyle：窗口按钮不需要那套 1.15 倍悬停放大动画，
+         悬停/按下只换主题背景色（Gray200/Gray300），深浅色主题下都低调不刺眼。 -->
+    <Style x:Key="TitleBarButtonStyle" TargetType="Button">
         <Setter Property="Width" Value="36"/>
         <Setter Property="Height" Value="32"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <!-- 背景走 TemplateBinding，这样 Style 里改 Background 就能生效；
+                         圆角交给外层 RootBorder.Clip 处理，保证贴着窗口圆角一起裁 -->
+                    <Border Background="{TemplateBinding Background}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{DynamicResource Gray200Brush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource Gray300Brush}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -212,7 +231,11 @@
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
-                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
             </Trigger>
         </Style.Triggers>
     </Style>

@@ -98,7 +98,7 @@
                                                         Step="1"
                                                         Unit="ms" NumericFormat="F0"
                                                         Height="26"
-                                                        Margin="10,0,0,0"
+                                                        Margin="10,0,6,0"
                                                         ValueChanged="RightListAbyssFKeyDelaySlider_ValueChanged"
                                                         ui:ToastNotifier.Message="秘境F键延迟"/>
                         </Grid>

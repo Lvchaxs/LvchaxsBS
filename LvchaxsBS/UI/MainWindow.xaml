@@ -38,6 +38,31 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
+            <!-- ============ 壁纸层（主题底色之上、所有内容之下） ============ -->
+            <!-- 透明度走 Image.Opacity；模糊走 BlurEffect；缩放/旋转/位移走 TransformGroup -->
+            <Image x:Name="WallpaperImage"
+                   Grid.Row="0"
+                   Grid.RowSpan="4"
+                   Stretch="Uniform"
+                   Visibility="Collapsed"
+                   IsHitTestVisible="False"
+                   RenderOptions.BitmapScalingMode="HighQuality"
+                   RenderTransformOrigin="0.5,0.5">
+                <Image.Effect>
+                    <BlurEffect x:Name="WallpaperBlurEffect"
+                                Radius="0"
+                                KernelType="Gaussian"
+                                RenderingBias="Performance"/>
+                </Image.Effect>
+                <Image.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="WallpaperScale" ScaleX="1" ScaleY="1"/>
+                        <RotateTransform x:Name="WallpaperRotate" Angle="0"/>
+                        <TranslateTransform x:Name="WallpaperTranslate" X="0" Y="0"/>
+                    </TransformGroup>
+                </Image.RenderTransform>
+            </Image>
+
             <!-- ============ 标题栏 ============ -->
             <Border Grid.Row="0"
                     x:Name="TitleBarBorder"
@@ -78,35 +103,22 @@
                     <StackPanel Grid.Column="2"
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center">
+                        <!-- 注意：这里不要内联 Background/Foreground，
+                             局部值优先级高于样式触发器，会把悬停变色压掉 -->
                         <Button x:Name="MinimizeButton"
                                 Content="─"
-                                Width="36" Height="32"
                                 FontSize="14"
-                                Foreground="{DynamicResource TextSecondaryBrush}"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Cursor="Hand"
-                                Focusable="False"
+                                Style="{StaticResource TitleBarButtonStyle}"
                                 Click="MinimizeButton_Click"/>
                         <Button x:Name="MaximizeButton"
                                 Content="☐"
-                                Width="36" Height="32"
                                 FontSize="12"
-                                Foreground="{DynamicResource TextSecondaryBrush}"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Cursor="Hand"
-                                Focusable="False"
+                                Style="{StaticResource TitleBarButtonStyle}"
                                 Click="MaximizeButton_Click"/>
                         <Button x:Name="CloseButton"
                                 Content="✕"
-                                Width="36" Height="32"
                                 FontSize="12"
-                                Foreground="{DynamicResource TextSecondaryBrush}"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Cursor="Hand"
-                                Focusable="False"
+                                Style="{StaticResource TitleBarCloseButtonStyle}"
                                 Click="CloseButton_Click"/>
                     </StackPanel>
                 </Grid>
@@ -152,7 +164,7 @@
                    Grid.Row="3"
                    NavigationUIVisibility="Hidden"
                    FocusVisualStyle="{x:Null}"
-                   Margin="5,0,10,10"/>
+                   Margin="5,0,5,10"/>
 
             <!-- ============ 主题切换迷雾过渡层 ============ -->
             <controls:ThemeFogOverlay x:Name="ThemeFog"

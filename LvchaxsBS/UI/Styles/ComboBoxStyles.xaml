@@ -77,7 +77,8 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="bg" Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+                            <!-- 弹窗里的悬停色：用不参与"控件透明度"的专用色，保证悬停反馈始终可见 -->
+                            <Setter TargetName="bg" Property="Background" Value="{DynamicResource PopupHoverBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

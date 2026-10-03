@@ -1,0 +1,105 @@
+﻿<UserControl x:Class="LvchaxsBS.UI.Controls.VoiceTagItem"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             Focusable="False"
+             VerticalAlignment="Center"
+             x:Name="Root">
+
+    <StackPanel Orientation="Horizontal" Margin="0,0,4,2">
+
+        <!-- 显示模式：标签按钮 -->
+        <!-- VerticalAlignment=Center：不被同排更高的兄弟拉伸（WrapPanel 会按行内最高者排版） -->
+        <Button x:Name="PART_TagButton"
+                Style="{StaticResource VoiceTagButtonStyle}"
+                Content="{Binding Text, ElementName=Root}"
+                VerticalAlignment="Center"
+                Click="TagButton_Click"
+                Visibility="Visible"/>
+
+        <!-- 编辑模式：输入框。高度与标签的自然高度一致，
+             这样进编辑态时 WrapPanel 的行高不会变，同排其它标签也不会被拉高 -->
+        <Border x:Name="PART_EditBorder"
+                Height="16"
+                Background="White"
+                BorderBrush="#3B82F6"
+                BorderThickness="1"
+                CornerRadius="3"
+                Padding="4,0"
+                VerticalAlignment="Center"
+                Visibility="Collapsed">
+            <TextBox x:Name="PART_EditBox"
+                     Text="{Binding Text, ElementName=Root, Mode=OneWay}"
+                     FontSize="11"
+                     FontWeight="Medium"
+                     Foreground="#374151"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Padding="0"
+                     MinHeight="0"
+                     MinWidth="60"
+                     VerticalContentAlignment="Center"
+                     IsTabStop="False"
+                     KeyDown="EditBox_KeyDown"
+                     LostFocus="EditBox_LostFocus"/>
+        </Border>
+
+        <!-- 编辑按钮（16x16：不超过标签的自然高度，避免把行撑高） -->
+        <Button x:Name="PART_EditButton"
+                Width="16" Height="16"
+                Padding="0"
+                Margin="0,0,2,0"
+                BorderThickness="0"
+                Background="Transparent"
+                Cursor="Hand"
+                VerticalAlignment="Center"
+                Click="EditButton_Click"
+                Style="{StaticResource TransparentButtonStyle}">
+            <Button.RenderTransform>
+                <ScaleTransform x:Name="EditScale" ScaleX="1" ScaleY="1" CenterX="9" CenterY="9"/>
+            </Button.RenderTransform>
+            <Button.Triggers>
+                <EventTrigger RoutedEvent="Button.MouseEnter">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="EditScale" Storyboard.TargetProperty="ScaleX" To="1.15" Duration="0:0:0.15">
+                                <DoubleAnimation.EasingFunction>
+                                    <QuadraticEase EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="EditScale" Storyboard.TargetProperty="ScaleY" To="1.15" Duration="0:0:0.15">
+                                <DoubleAnimation.EasingFunction>
+                                    <QuadraticEase EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+                <EventTrigger RoutedEvent="Button.MouseLeave">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="EditScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15">
+                                <DoubleAnimation.EasingFunction>
+                                    <QuadraticEase EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="EditScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15">
+                                <DoubleAnimation.EasingFunction>
+                                    <QuadraticEase EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Button.Triggers>
+            <TextBlock Text="&#xE70F;"
+                       FontFamily="Segoe MDL2 Assets"
+                       FontSize="12"
+                       Foreground="#6B7280"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Button>
+    </StackPanel>
+</UserControl>

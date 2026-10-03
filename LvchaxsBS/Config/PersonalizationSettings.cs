@@ -20,14 +20,14 @@
         public double WallpaperRotation { get; set; } = 0;
 
         // 卡片4 滑块 + 文本
-        public double TitleOpacity { get; set; } = 10;       // 窗口圆角
+        public double TitleOpacity { get; set; } = 10;       // 窗口圆角（历史命名）
         public double WindowOpacity { get; set; } = 5;     // 窗口透明度
-        public double TitleFontSize { get; set; } = 12;     // 标题字体大小
+        public double TitleFontSize { get; set; } = 12;     // 签名字体大小（历史命名）
         public string WindowTitle { get; set; } = "才识是年岁的冠冕，正如思念是我们共度的时间。"; // 窗口标题
         public string WindowTitleColor { get; set; } = "#FF4B5563"; // 窗口标题颜色
 
         // 卡片5 复选框
         public bool EnableMirror { get; set; } = false;      // 启用镜像
-        public bool EnableCompression { get; set; } = false; // 画质压缩
+        public bool EnableWallpaper { get; set; } = false;   // 启用壁纸
     }
 }

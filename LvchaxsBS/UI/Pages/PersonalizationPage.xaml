@@ -34,7 +34,7 @@
                                    VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <controls:SpinSliderControl x:Name="WallpaperOpacitySlider"
                                                     Grid.Column="1"
-                                                    Minimum="1" Maximum="100"
+                                                    Minimum="0" Maximum="100"
                                                     Step="1"
                                                     Unit="%" NumericFormat="F0"
                                                     VerticalAlignment="Center" Height="26"
@@ -63,7 +63,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="卡片透明度" FontSize="11"
+                        <TextBlock Grid.Column="0" Text="控件透明度" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <controls:SpinSliderControl x:Name="CardOpacitySlider"
@@ -72,25 +72,36 @@
                                                     Step="1"
                                                     Unit="%" NumericFormat="F0"
                                                     VerticalAlignment="Center" Height="26"
-                                                    ui:ToastNotifier.Message="卡片透明度"/>
+                                                    ui:ToastNotifier.Message="控件透明度"/>
                     </Grid>
 
                     <StackPanel Grid.Row="1" Grid.Column="1"
-                                Orientation="Horizontal"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Margin="10,0,0,0">
-                        <CheckBox x:Name="EnableCompressionCheckBox"
-                                  Content="画质压缩"
-                                  Style="{StaticResource PurpleCheckBoxStyle}"
-                                  VerticalAlignment="Center"
-                                  Margin="0,0,20,0"
-                                  ui:ToastNotifier.Message="画质压缩"/>
+            Orientation="Horizontal"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
+            Margin="10,0,0,0">
+                        <CheckBox x:Name="EnableWallpaperCheckBox"
+              Content="启用壁纸"
+              Style="{StaticResource PurpleCheckBoxStyle}"
+              VerticalAlignment="Center"
+              Margin="0,0,20,0"
+              ui:ToastNotifier.Message="启用壁纸"/>
                         <CheckBox x:Name="EnableMirrorCheckBox"
-                                  Content="启用镜像"
-                                  Style="{StaticResource PurpleCheckBoxStyle}"
-                                  VerticalAlignment="Center"
-                                  ui:ToastNotifier.Message="启用镜像"/>
+              Content="启用镜像"
+              Style="{StaticResource PurpleCheckBoxStyle}"
+              VerticalAlignment="Center"
+              Margin="0,0,10,0"
+              ui:ToastNotifier.Message="启用镜像"/>
+
+                        <Button x:Name="SelectBackgroundButton"
+            Style="{StaticResource FolderIconButtonStyle}"
+            VerticalAlignment="Center"
+            Click="SelectBackgroundButton_Click"/>
+
+                        <TextBlock Text="更换壁纸"
+               FontSize="12"
+               Foreground="{DynamicResource TextPrimaryBrush}"
+               VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -194,7 +205,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="标题字体大小" FontSize="11"
+                        <TextBlock Grid.Column="0" Text="签名字体大小" FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <controls:SpinSliderControl x:Name="TitleFontSizeSlider"
@@ -203,7 +214,7 @@
                                                     Step="0.1"
                                                     Unit="x" NumericFormat="F1"
                                                     VerticalAlignment="Center" Height="26"
-                                                    ui:ToastNotifier.Message="标题字体大小"/>
+                                                    ui:ToastNotifier.Message="签名字体大小"/>
                     </Grid>
 
                     <Grid Grid.Row="0" Grid.Column="1" Margin="10,0,0,0">
@@ -216,7 +227,7 @@
                                    VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <controls:SpinSliderControl x:Name="TitleOpacitySlider"
                                                     Grid.Column="1"
-                                                    Minimum="0" Maximum="30"
+                                                    Minimum="0" Maximum="20"
                                                     Step="1"
                                                     Unit="px" NumericFormat="F0"
                                                     VerticalAlignment="Center" Height="26"

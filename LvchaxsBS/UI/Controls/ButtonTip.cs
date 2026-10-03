@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Controls
 {
@@ -82,6 +83,11 @@ namespace LvchaxsBS.UI.Controls
             if (popup.Child is Border border && border.Child is TextBlock tb)
                 tb.Text = text;
 
+            // 跟随界面缩放：Popup 是独立视觉树，不会继承窗口 RootBorder 的 LayoutTransform，
+            // 不处理的话 DPI 缩放下就会"字体和间距永远不变"。每次打开时更新，缩放改了也能生效。
+            if (popup.Child is FrameworkElement content)
+                UiScale.ApplyTo(content);
+
             popup.IsOpen = true;
         }
 
@@ -125,7 +131,10 @@ namespace LvchaxsBS.UI.Controls
             popup.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
             {
                 double x = (targetSize.Width - popupSize.Width) / 2.0;
-                double y = -popupSize.Height - 8;
+
+                // 与按钮的间隙同样跟着缩放，否则界面放大后气泡会贴到按钮上
+                double gap = 8 * UiScale.Current;
+                double y = -popupSize.Height - gap;
 
                 return new[]
                 {

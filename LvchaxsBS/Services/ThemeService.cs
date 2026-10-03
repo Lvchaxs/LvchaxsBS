@@ -36,6 +36,10 @@ namespace LvchaxsBS.Services
             // 3. 已删除（不再重新加载 CardStyles.xaml）
 
             Current = theme;
+
+            // 4. 主题色变了，按新主题重新计算 控件/窗口 透明度覆盖色
+            AppearanceService.ReapplyOpacities();
+
             ThemeChanged?.Invoke(null, theme);
         }
 

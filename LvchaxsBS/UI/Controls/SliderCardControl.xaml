@@ -63,8 +63,11 @@
                                                  ui:ToastNotifier.Message="{Binding SpinToast, ElementName=Root}"/>
                 </Grid>
 
+                <!-- 第二行滑块：右边距与第一行数字框（Margin 2,0,6,0）保持一致，
+                     这样两行末尾的 ▲▼ 按钮在同一竖直线上，也不会贴着卡片右边框 -->
                 <controls:SpinSliderControl x:Name="PART_Slider"
                                             Grid.Row="1"
+                                            Margin="0,0,6,0"
                                             Minimum="{Binding Minimum, ElementName=Root}"
                                             Maximum="{Binding Maximum, ElementName=Root}"
                                             Step="{Binding Step, ElementName=Root}"

@@ -8,6 +8,10 @@
     <SolidColorBrush x:Key="HoverBackgroundBrush" Color="#2D2D30"/>
     <SolidColorBrush x:Key="PressedBackgroundBrush" Color="#3E3E42"/>
 
+    <!-- ============ 浮层（下拉弹窗等）：不参与"控件透明度"，始终不透明 ============ -->
+    <SolidColorBrush x:Key="PopupBackgroundBrush" Color="#252526"/>
+    <SolidColorBrush x:Key="PopupHoverBrush" Color="#2D2D30"/>
+
     <!-- ============ 文字层 ============ -->
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A0A0A0"/>

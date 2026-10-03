@@ -29,7 +29,7 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0"
-                               Text="字幕悬浮窗"
+                               Text="字幕透明度"
                                FontSize="11"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center"
