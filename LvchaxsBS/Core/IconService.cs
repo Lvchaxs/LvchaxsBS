@@ -941,18 +941,26 @@ namespace LvchaxsBS.Core
 
         /// <summary>
         /// 钓鱼辅助当前应显示的图标（唯一判定入口，供图标刷新与悬浮窗构建共用）。
-        /// - 钓鱼1：功能未运行
-        /// - 钓鱼2：运行中且"正在钓鱼" —— 检测到鱼竿状态（未抛钩/已抛钩/上钩了 任意一个），
-        ///          或处于张力阶段（上钩后等张力区结果）
-        /// - 钓鱼3：运行中但以上都没有（仅仅"在主界面"不算钓鱼，必须是钓鱼信号）
-        /// 注意：上钩后鱼竿状态检测是被设计性停掉的（进入张力阶段），
-        ///       此时必须保持钓鱼2 等待张力区结果，不能因"检测不到鱼竿状态"而掉成钓鱼3。
+        /// - 钓鱼1：功能未运行（"在主界面"只是触发键启动时的准入条件，见 CanStartModule）
+        /// - 钓鱼3：非主界面一律 3（在菜单/秘境/读条等场景）；在主界面但当前检测不到东西也是 3
+        /// - 钓鱼2：在主界面 且 检测到东西 —— 鱼竿状态（未抛钩/已抛钩/上钩了 任意一个）
+        ///          或张力区（检测到结果）
+        /// 说明：启动之后"在主界面"就不参与判定了，只作为"非主界面一律 3"的护栏。
+        ///       上钩后鱼竿状态检测会被设计性停掉（进入张力阶段），此时靠张力区结果保持 钓鱼2。
         /// </summary>
         private static string GetFishingAssistIconName()
         {
             if (!IsRunning("钓鱼辅助")) return "钓鱼1.png";
 
-            return FishingAssistLogic.IsFishingActive ? "钓鱼2.png" : "钓鱼3.png";
+            if (!_isInMainWindow) return "钓鱼3.png";
+
+            // 鱼竿状态：_fishingRodStatus 只可能是 未抛钩/已抛钩/上钩了 或 ""（检测不到）
+            bool rodDetected = !string.IsNullOrEmpty(_fishingRodStatus);
+
+            // 张力区：检测到时会给出滑动方向，检测不到是"未发现"
+            bool tensionDetected = _fishingTensionDir == "向右滑动" || _fishingTensionDir == "向左滑动";
+
+            return (rodDetected || tensionDetected) ? "钓鱼2.png" : "钓鱼3.png";
         }
 
         private static void UpdateAutoLumberIcon()
