@@ -25,11 +25,21 @@ namespace LvchaxsBS.Core
         private const int TENSION_LOST_THRESHOLD = 5;
         private const int TENSION_TIMEOUT_SECONDS = 3;
 
-        /// <summary>最近一次检测到"鱼竿状态/张力区"的时刻（用于判断是否还在钓鱼流程中）。</summary>
+        /// <summary>最近一次检测到"鱼竿状态/张力区"的时刻（用于钓鱼流程的衔接与宽限）。</summary>
         private static DateTime _lastFishingSignalAt = DateTime.MinValue;
 
-        /// <summary>钓鱼流程宽限期（毫秒）：这么久没检测到任何钓鱼信号才算离开钓鱼流程。</summary>
-        private const int FishingFlowGraceMs = 3000;
+        /// <summary>
+        /// 阶段衔接窗口（毫秒）：刚从一个阶段切到下一个阶段（例如张力阶段结束→回到鱼竿状态检测）时，
+        /// 用这段时间兜住空档，避免图标瞬间掉成"无信号"再跳回来。
+        /// </summary>
+        private const int StageHandoffWindowMs = 1000;
+
+        /// <summary>
+        /// 流程判定窗口（毫秒）：比衔接窗口长得多。
+        /// 用途是决定"功能是否还需要继续运行"——窗口偏长是安全的（最多多跑一会儿），
+        /// 但偏短会在检测间隔较大时把功能误暂停，导致张力区检测被停掉。
+        /// </summary>
+        private const int FlowWindowMs = 5000;
 
         // UI 更新事件（仅用于配置页显示，不参与状态管理）
         public static event Action<double, long, double, string>? DetectionResultUpdated;
@@ -43,13 +53,27 @@ namespace LvchaxsBS.Core
         public static bool IsInTensionMode => _isInTensionMode;
 
         /// <summary>
-        /// 是否处于"钓鱼流程中"：张力阶段，或刚刚（宽限期内）检测到鱼竿状态/张力区。
-        /// 用于上层判断"功能是不是正在为钓鱼工作"——因为钓鱼时游戏会隐藏常规 HUD，
-        /// 上层原本依赖的"是否在主界面"会失效，不能拿它来决定暂停或图标状态。
+        /// 是否"正在钓鱼"，专供图标判定：
+        /// 处于张力阶段，或**当前就检测到鱼竿状态**（未抛钩/已抛钩/上钩了 任意一个），
+        /// 或刚完成阶段衔接（衔接窗口内）。
+        /// 注意：仅仅"处于主界面"不算钓鱼，不能拿它当依据；这里看的是真实检测结果，
+        /// 所以不受检测间隔设置影响。
+        /// </summary>
+        public static bool IsFishingActive
+            => _isInTensionMode
+            || !string.IsNullOrEmpty(_currentStatus)
+            || SignalFresh(StageHandoffWindowMs);
+
+        /// <summary>
+        /// 是否仍处于钓鱼流程中（决定功能是否需要继续运行）。
+        /// 因为钓鱼时游戏会隐藏常规 HUD，上层依赖的"是否在主界面"会失效，
+        /// 所以这里用更长的窗口兜住整个钓鱼过程。
         /// </summary>
         public static bool IsInFishingFlow
-            => _isInTensionMode
-            || (DateTime.Now - _lastFishingSignalAt).TotalMilliseconds < FishingFlowGraceMs;
+            => IsFishingActive || SignalFresh(FlowWindowMs);
+
+        private static bool SignalFresh(int windowMs)
+            => (DateTime.Now - _lastFishingSignalAt).TotalMilliseconds < windowMs;
 
         /// <summary>
         /// 启动前检测：是否满足启动条件（检测到鱼竿状态）。

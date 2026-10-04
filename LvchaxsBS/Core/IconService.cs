@@ -942,8 +942,9 @@ namespace LvchaxsBS.Core
         /// <summary>
         /// 钓鱼辅助当前应显示的图标（唯一判定入口，供图标刷新与悬浮窗构建共用）。
         /// - 钓鱼1：功能未运行
-        /// - 钓鱼2：运行中且"正在为钓鱼工作"（在主界面，或处于钓鱼流程：张力阶段 / 刚检测到鱼竿状态或张力区）
-        /// - 钓鱼3：运行中但完全没有信号
+        /// - 钓鱼2：运行中且"正在钓鱼" —— 检测到鱼竿状态（未抛钩/已抛钩/上钩了 任意一个），
+        ///          或处于张力阶段（上钩后等张力区结果）
+        /// - 钓鱼3：运行中但以上都没有（仅仅"在主界面"不算钓鱼，必须是钓鱼信号）
         /// 注意：上钩后鱼竿状态检测是被设计性停掉的（进入张力阶段），
         ///       此时必须保持钓鱼2 等待张力区结果，不能因"检测不到鱼竿状态"而掉成钓鱼3。
         /// </summary>
@@ -951,8 +952,7 @@ namespace LvchaxsBS.Core
         {
             if (!IsRunning("钓鱼辅助")) return "钓鱼1.png";
 
-            bool working = _isInMainWindow || FishingAssistLogic.IsInFishingFlow;
-            return working ? "钓鱼2.png" : "钓鱼3.png";
+            return FishingAssistLogic.IsFishingActive ? "钓鱼2.png" : "钓鱼3.png";
         }
 
         private static void UpdateAutoLumberIcon()
