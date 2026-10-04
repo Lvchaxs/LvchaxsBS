@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using LvchaxsBS.Config;
+using LvchaxsBS.Core;
 using LvchaxsBS.Services;
 using LvchaxsBS.Services.Hooks;
 using LvchaxsBS.Toolbox;
@@ -571,6 +572,12 @@ namespace LvchaxsBS.UI
             else if (MainFrame.Content is Pages.ConfigContainerPage container)
             {
                 container.RefreshMasterSwitchVisual();
+            }
+
+            // 功能总开关关闭 → 立即停止所有正在运行的功能
+            if (!TopRight.IsToggleOn)
+            {
+                IconService.StopAllModules();
             }
 
             ShowToast($"功能总开关: {(TopRight.IsToggleOn ? "已开启" : "已关闭")}", TopRight.IsToggleOn);

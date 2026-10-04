@@ -112,6 +112,10 @@ namespace LvchaxsBS.Core
         private static void OnQuickTeleportTriggered()
         {
             var settings = ConfigManager.Get<HomePageSettings>();
+
+            // 功能总开关关闭 → 快速传送也不执行
+            if (!settings.MasterSwitch) return;
+
             bool isLeftButton = settings.QuickTeleportKey == "左键";
 
             QuickTeleportLogic.Execute(_isFocused, _isInMainWindow, isLeftButton);

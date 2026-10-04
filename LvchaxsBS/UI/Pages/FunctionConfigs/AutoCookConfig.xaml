@@ -73,7 +73,6 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
@@ -177,14 +176,6 @@
                                                          ui:ToastNotifier.Message="清药匹配度"/>
                         </StackPanel>
                     </Grid>
-
-                    <Button Grid.Column="2"
-                            x:Name="AutoClearMedicineRunBtn"
-                            Content="运行"
-                            Width="60" Height="28"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource SettingsButtonStyleRound6}"/>
                 </Grid>
             </Border>
 

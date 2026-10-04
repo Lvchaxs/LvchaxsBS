@@ -145,6 +145,7 @@ namespace LvchaxsBS.Core
 
             AutoCookLogic.Stopped += OnAutoCookStopped;
             AutoLumberLogic.Stopped += OnAutoLumberStopped;
+            AutoClearMedicineLogic.Stopped += OnAutoClearMedicineStopped;
 
             if (WindowFocusService.IsTargetFocused)
             {
@@ -173,6 +174,7 @@ namespace LvchaxsBS.Core
             FishingAssistLogic.TensionResultUpdated -= OnFishingTensionUpdated;
             AutoCookLogic.Stopped -= OnAutoCookStopped;
             AutoLumberLogic.Stopped -= OnAutoLumberStopped;
+            AutoClearMedicineLogic.Stopped -= OnAutoClearMedicineStopped;
 
             DetectionManager.Shutdown();
             CloseOverlay();
@@ -317,6 +319,39 @@ namespace LvchaxsBS.Core
                 if (IsRunning("自动伐木")) StopModule("自动伐木");
                 if (IsRunning("钓鱼辅助")) StopModule("钓鱼辅助");
                 if (IsRunning("自动烹饪")) StopModule("自动烹饪");
+            });
+        }
+
+        /// <summary>
+        /// 停止所有正在运行的功能（含自动清药）。功能总开关关闭时调用。
+        /// </summary>
+        public static void StopAllModules()
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                // 自动清药是独立循环，且在启动时暂停了检测循环，停止后要把检测恢复回来
+                if (AutoClearMedicineLogic.IsRunning)
+                {
+                    AutoClearMedicineLogic.Stop();
+                    ResumeDetectionFromAutoClearMedicine();
+                }
+
+                foreach (var module in _runningStates.Keys.ToList())
+                {
+                    if (IsRunning(module)) StopModule(module);
+                }
+            });
+        }
+
+        /// <summary>
+        /// 自动清药结束：恢复被它暂停的检测循环。
+        /// 挂在引擎里而不是页面上——旧实现只在 AutoCook 配置页订阅，页面没打开过就不会恢复。
+        /// </summary>
+        private static void OnAutoClearMedicineStopped()
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                ResumeDetectionFromAutoClearMedicine();
             });
         }
 
@@ -943,6 +978,10 @@ namespace LvchaxsBS.Core
         private static void ProcessKeyPress(string keyName)
         {
             var settings = ConfigManager.Get<HomePageSettings>();
+
+            // 功能总开关关闭 → 所有功能都不可执行（即使单个功能开关是开的）
+            if (!settings.MasterSwitch) return;
+
             string? matchedModule = null;
 
             if (IsRunning("快速拾取") && !QuickPickupLogic.IsPaused)
@@ -1000,6 +1039,9 @@ namespace LvchaxsBS.Core
         {
             if (!_isFocused) return;
             if (SimulationService.IsSimulating) return;
+
+            // 功能总开关关闭 → 所有功能都不可执行
+            if (!ConfigManager.Get<HomePageSettings>().MasterSwitch) return;
 
             string eventDisplayName = GlobalMouseHookService.GetMouseEventName(args.EventType);
 
