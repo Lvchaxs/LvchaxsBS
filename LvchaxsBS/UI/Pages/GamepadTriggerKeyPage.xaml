@@ -9,9 +9,7 @@
 
     <Page.Resources>
 
-        <!-- ============ 按键外观 ============ -->
-
-        <!-- 基础按键：小圆角方块 -->
+        <!-- 手柄上的按键：小圆角方块 -->
         <Style x:Key="GpBtn" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -44,9 +42,9 @@
             </Setter>
         </Style>
 
-        <!-- 圆形按键（ABXY / 摇杆帽 / 系统圆键） -->
+        <!-- 圆形按键（ABXY / 摇杆按下）：带轻微落影，做出"有厚度"的层次 -->
         <Style x:Key="GpRound" TargetType="Button" BasedOn="{StaticResource GpBtn}">
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -56,6 +54,10 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="100">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#000000" Opacity="0.18"
+                                                  BlurRadius="6" ShadowDepth="2" Direction="270"/>
+                            </Border.Effect>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -69,68 +71,17 @@
             </Setter>
         </Style>
 
-        <!-- ABXY 功能键：圆形 + 字母用 Xbox 配色（A 绿 / B 红 / X 蓝 / Y 黄） -->
-        <Style x:Key="GpAB" TargetType="Button" BasedOn="{StaticResource GpRound}">
-            <Setter Property="FontSize" Value="15"/>
-        </Style>
-
-        <!-- 肩键 / 扳机：胶囊形 -->
-        <Style x:Key="GpPill" TargetType="Button" BasedOn="{StaticResource GpBtn}">
-            <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="100">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background"
-                                        Value="{DynamicResource HoverBackgroundBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- 系统小按键（View / Menu / 触摸板 / 麦克风） -->
+        <!-- 系统小按键（View / Xbox / Menu / 触摸板 / 麦克风） -->
         <Style x:Key="GpMini" TargetType="Button" BasedOn="{StaticResource GpBtn}">
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="Height" Value="26"/>
         </Style>
 
-        <Style x:Key="GpMiniRound" TargetType="Button" BasedOn="{StaticResource GpMini}">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="100">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background"
-                                        Value="{DynamicResource HoverBackgroundBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- 方向键：叠在"盘状十字"上的透明热区，默认不抢视觉 -->
+        <!-- 方向键：叠在盘状十字上的透明热区，不再用方格拼 -->
         <Style x:Key="GpDPad" TargetType="Button" BasedOn="{StaticResource GpBtn}">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="15"/>
             <Setter Property="Width" Value="30"/>
             <Setter Property="Height" Value="30"/>
             <Setter Property="Template">
@@ -156,151 +107,135 @@
 
     </Page.Resources>
 
-    <!-- 用 Grid + "*" 行把可用高度交给手柄卡片：
-         这样 Viewbox 拿到的是有界高度，会自动缩放到刚好放得下（之前套了 ScrollViewer，
-         它给内容"无限高度"，Viewbox 就不缩放、按原始尺寸撑出页面外被裁掉）。 -->
+    <!-- 用 Grid + "*" 行约束高度：Viewbox 才能拿到有界尺寸自动缩放。
+         外层不能再套 ScrollViewer（它给内容无限高度，会让 Viewbox 失效、内容溢出被裁）。 -->
     <Grid Margin="5,4,5,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- 卡片1：手柄造型（画布已收紧到图形外接框 600x412，最大化缩放比例） -->
+        <!-- 卡片1：手柄造型
+             画布收紧到图形外接框（664x312）：内容用一个 -60 偏移的内层 Canvas 承载，
+             不用改动任何既有坐标，又能省掉缩放时的空白浪费、把手柄画得更大。 -->
         <Border Grid.Row="0" Style="{StaticResource ModuleFunctionCardAutoStyle}">
             <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="2,4,2,4">
-                <Canvas Width="600" Height="412" Background="Transparent">
+                <Canvas Width="664" Height="312" Background="Transparent">
+                    <Canvas Canvas.Left="-60">
 
-                    <!-- ===== 手柄外壳 =====
-                         轮廓：拱形顶盖 → 圆肩外扩 → 近直两侧 → 底部两段握把 + 平滑 V 形缺口 -->
-                    <Path Fill="{DynamicResource CardBackgroundBrush}"
-                          Stroke="{DynamicResource BorderStrongBrush}"
-                          StrokeThickness="1.5"
-                          IsHitTestVisible="False"
-                          Data="M 76,62
-                                C 158,42 438,42 520,62
-                                C 556,70 572,92 576,132
-                                C 582,182 586,232 584,272
-                                C 582,318 570,362 548,382
-                                C 524,402 482,404 450,390
-                                C 426,380 406,352 396,322
-                                C 386,292 360,266 328,256
-                                C 310,250 286,250 268,256
-                                C 236,266 210,292 200,322
-                                C 190,352 170,380 146,390
-                                C 114,404 72,402 48,382
-                                C 26,362 14,318 12,272
-                                C 10,232 14,182 20,132
-                                C 24,92 40,70 76,62 Z">
-                        <Path.Effect>
-                            <DropShadowEffect Color="#000000" Opacity="0.30"
-                                              BlurRadius="20" ShadowDepth="7" Direction="270"/>
-                        </Path.Effect>
-                    </Path>
+                        <!-- ===== 手柄外壳（纯装饰，不参与点击） ===== -->
+                        <Path IsHitTestVisible="False"
+                              Fill="{DynamicResource CardBackgroundBrush}"
+                              Stroke="{DynamicResource BorderStrongBrush}"
+                              StrokeThickness="1.5"
+                              Data="M 165,58 L 615,58
+                                    C 665,58 700,80 706,130
+                                    C 712,185 700,250 655,278
+                                    C 610,305 555,285 528,238
+                                    C 505,199 455,190 390,190
+                                    C 325,190 275,199 252,238
+                                    C 225,285 170,305 125,278
+                                    C 80,250 68,185 74,130
+                                    C 80,80 115,58 165,58 Z">
+                            <Path.Effect>
+                                <DropShadowEffect Color="#000000" Opacity="0.32"
+                                                  BlurRadius="18" ShadowDepth="6" Direction="270"/>
+                            </Path.Effect>
+                        </Path>
 
-                    <!-- ===== 顶部：扳机 LT/RT（外）+ 肩键 LB/RB（内）===== -->
-                    <Button x:Name="GamepadL2" Style="{StaticResource GpPill}" Content="LT"
-                            Canvas.Left="20" Canvas.Top="0" Width="84" Height="28"/>
-                    <Button x:Name="GamepadL1" Style="{StaticResource GpPill}" Content="LB"
-                            Canvas.Left="16" Canvas.Top="30" Width="88" Height="26"/>
+                        <!-- ===== 顶部：扳机 LT/RT（外）+ 肩键 LB/RB（内）===== -->
+                        <Button x:Name="GamepadL2" Style="{StaticResource GpBtn}" Content="LT"
+                                Canvas.Left="128" Canvas.Top="8" Width="76"/>
+                        <Button x:Name="GamepadL1" Style="{StaticResource GpBtn}" Content="LB"
+                                Canvas.Left="128" Canvas.Top="42" Width="76"/>
 
-                    <Button x:Name="GamepadR2" Style="{StaticResource GpPill}" Content="RT"
-                            Canvas.Left="492" Canvas.Top="0" Width="84" Height="28"/>
-                    <Button x:Name="GamepadR1" Style="{StaticResource GpPill}" Content="RB"
-                            Canvas.Left="492" Canvas.Top="30" Width="88" Height="26"/>
+                        <Button x:Name="GamepadR2" Style="{StaticResource GpBtn}" Content="RT"
+                                Canvas.Left="576" Canvas.Top="8" Width="76"/>
+                        <Button x:Name="GamepadR1" Style="{StaticResource GpBtn}" Content="RB"
+                                Canvas.Left="576" Canvas.Top="42" Width="76"/>
 
-                    <!-- ===== 中部：View / Xbox / Menu ===== -->
-                    <Button x:Name="GamepadCreate" Style="{StaticResource GpMiniRound}" Content="View"
-                            Canvas.Left="200" Canvas.Top="98" Width="28" Height="28"/>
-                    <Button x:Name="GamepadPS" Style="{StaticResource GpMiniRound}"
-                            Canvas.Left="274" Canvas.Top="90" Width="48" Height="48"
-                            ToolTip="Xbox 指南键">
-                        <Path Stroke="{DynamicResource TextPrimaryBrush}"
-                              StrokeThickness="2.3"
+                        <!-- ===== 中部：系统按键 ===== -->
+                        <Button x:Name="GamepadCreate" Style="{StaticResource GpMini}" Content="View"
+                                Canvas.Left="292" Canvas.Top="74" Width="56"/>
+                        <Button x:Name="GamepadPS" Style="{StaticResource GpMini}" Content="Xbox"
+                                Canvas.Left="352" Canvas.Top="74" Width="48"/>
+                        <Button x:Name="GamepadOptions" Style="{StaticResource GpMini}" Content="Menu"
+                                Canvas.Left="404" Canvas.Top="74" Width="62"/>
+
+                        <Button x:Name="GamepadTouchPad" Style="{StaticResource GpMini}" Content="触摸板"
+                                Canvas.Left="286" Canvas.Top="108" Width="88"/>
+                        <Button x:Name="GamepadMic" Style="{StaticResource GpMini}" Content="麦克风"
+                                Canvas.Left="378" Canvas.Top="108" Width="88"/>
+
+                        <!-- ===== 左翼：左摇杆 L3（上）+ 方向键（下）===== -->
+                        <Ellipse Canvas.Left="134" Canvas.Top="84" Width="76" Height="76"
+                                 Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1.5"
+                                 Fill="Transparent"
+                                 IsHitTestVisible="False"/>
+                        <Ellipse Canvas.Left="142" Canvas.Top="92" Width="60" Height="60"
+                                 Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1"
+                                 Opacity="0.6" Fill="Transparent"
+                                 IsHitTestVisible="False"/>
+                        <Button x:Name="GamepadL3" Style="{StaticResource GpRound}" Content="L3"
+                                Canvas.Left="148" Canvas.Top="98" Width="48" Height="48"/>
+
+                        <!-- 方向键：盘状底 + 十字凸脊（原来的四个方格已去掉） -->
+                        <Ellipse Canvas.Left="110" Canvas.Top="166" Width="120" Height="120"
+                                 Fill="{DynamicResource CardBackgroundBrush}"
+                                 Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1.5"
+                                 IsHitTestVisible="False"/>
+                        <Path Stroke="{DynamicResource BorderStrongBrush}"
+                              StrokeThickness="26"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M 3,3 L 15,15 M 15,3 L 3,15"
-                              Width="18" Height="18" Stretch="Uniform"/>
-                    </Button>
-                    <Button x:Name="GamepadOptions" Style="{StaticResource GpMiniRound}" Content="Menu"
-                            Canvas.Left="368" Canvas.Top="98" Width="28" Height="28"/>
+                              Opacity="0.28"
+                              Data="M 170,190 L 170,262 M 134,226 L 206,226"
+                              IsHitTestVisible="False"/>
 
-                    <!-- 触摸板 / 麦克风 -->
-                    <Button x:Name="GamepadTouchPad" Style="{StaticResource GpPill}" Content="触摸板"
-                            Canvas.Left="194" Canvas.Top="144" Width="100" Height="26"/>
-                    <Button x:Name="GamepadMic" Style="{StaticResource GpPill}" Content="麦克风"
-                            Canvas.Left="302" Canvas.Top="144" Width="100" Height="26"/>
+                        <Button x:Name="GamepadDPadUp" Style="{StaticResource GpDPad}" Content="↑"
+                                Canvas.Left="155" Canvas.Top="185"/>
+                        <Button x:Name="GamepadDPadDown" Style="{StaticResource GpDPad}" Content="↓"
+                                Canvas.Left="155" Canvas.Top="237"/>
+                        <Button x:Name="GamepadDPadLeft" Style="{StaticResource GpDPad}" Content="←"
+                                Canvas.Left="129" Canvas.Top="211"/>
+                        <Button x:Name="GamepadDPadRight" Style="{StaticResource GpDPad}" Content="→"
+                                Canvas.Left="181" Canvas.Top="211"/>
 
-                    <!-- ===== 左翼：左摇杆 L3（上）+ 盘状方向键（下）===== -->
+                        <!-- ===== 右翼：功能键 ABXY（上，字母用 Xbox 配色）+ 右摇杆 R3（下）===== -->
+                        <Button x:Name="GamepadY" Style="{StaticResource GpRound}"
+                                Canvas.Left="587" Canvas.Top="71" Width="46" Height="46">
+                            <TextBlock Text="Y" FontWeight="Bold" Foreground="#E5A50A"/>
+                        </Button>
+                        <Button x:Name="GamepadX" Style="{StaticResource GpRound}"
+                                Canvas.Left="541" Canvas.Top="117" Width="46" Height="46">
+                            <TextBlock Text="X" FontWeight="Bold" Foreground="#3080E0"/>
+                        </Button>
+                        <Button x:Name="GamepadB" Style="{StaticResource GpRound}"
+                                Canvas.Left="633" Canvas.Top="117" Width="46" Height="46">
+                            <TextBlock Text="B" FontWeight="Bold" Foreground="#E5484D"/>
+                        </Button>
+                        <Button x:Name="GamepadA" Style="{StaticResource GpRound}"
+                                Canvas.Left="587" Canvas.Top="163" Width="46" Height="46">
+                            <TextBlock Text="A" FontWeight="Bold" Foreground="#23A55A"/>
+                        </Button>
 
-                    <!-- 摇杆：外圈凹槽 + 摇杆帽 + 帽内同心圈 -->
-                    <Ellipse Canvas.Left="58" Canvas.Top="94" Width="100" Height="100"
-                             Fill="{DynamicResource CardBackgroundBrush}"
-                             Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1.5"
-                             IsHitTestVisible="False"/>
-                    <Button x:Name="GamepadL3" Style="{StaticResource GpRound}" Content="L3"
-                            Canvas.Left="75" Canvas.Top="111" Width="66" Height="66"/>
-                    <Ellipse Canvas.Left="84" Canvas.Top="120" Width="48" Height="48"
-                             Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1"
-                             Opacity="0.7" Fill="Transparent"
-                             IsHitTestVisible="False"/>
+                        <Ellipse Canvas.Left="572" Canvas.Top="206" Width="76" Height="76"
+                                 Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1.5"
+                                 Fill="Transparent"
+                                 IsHitTestVisible="False"/>
+                        <Ellipse Canvas.Left="582" Canvas.Top="216" Width="56" Height="56"
+                                 Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1"
+                                 Opacity="0.6" Fill="Transparent"
+                                 IsHitTestVisible="False"/>
+                        <Button x:Name="GamepadR3" Style="{StaticResource GpRound}" Content="R3"
+                                Canvas.Left="586" Canvas.Top="220" Width="48" Height="48"/>
 
-                    <!-- 方向键：盘状底 + 十字凸脊 + 四个热区 -->
-                    <Ellipse Canvas.Left="46" Canvas.Top="212" Width="92" Height="92"
-                             Fill="{DynamicResource CardBackgroundBrush}"
-                             Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1.5"
-                             IsHitTestVisible="False"/>
-                    <Path Stroke="{DynamicResource BorderStrongBrush}"
-                          StrokeThickness="24"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                          Opacity="0.28"
-                          Data="M 92,228 L 92,288 M 62,258 L 122,258"
-                          IsHitTestVisible="False"/>
-
-                    <Button x:Name="GamepadDPadUp" Style="{StaticResource GpDPad}" Content="↑"
-                            Canvas.Left="77" Canvas.Top="217"/>
-                    <Button x:Name="GamepadDPadDown" Style="{StaticResource GpDPad}" Content="↓"
-                            Canvas.Left="77" Canvas.Top="269"/>
-                    <Button x:Name="GamepadDPadLeft" Style="{StaticResource GpDPad}" Content="←"
-                            Canvas.Left="51" Canvas.Top="243"/>
-                    <Button x:Name="GamepadDPadRight" Style="{StaticResource GpDPad}" Content="→"
-                            Canvas.Left="103" Canvas.Top="243"/>
-
-                    <!-- ===== 右翼：ABXY（上，字母用 Xbox 配色）+ 右摇杆 R3（下）===== -->
-
-                    <Button x:Name="GamepadY" Style="{StaticResource GpAB}"
-                            Canvas.Left="468" Canvas.Top="84" Width="40" Height="40">
-                        <TextBlock Text="Y" FontWeight="Bold" Foreground="#E5A50A"/>
-                    </Button>
-                    <Button x:Name="GamepadX" Style="{StaticResource GpAB}"
-                            Canvas.Left="428" Canvas.Top="124" Width="40" Height="40">
-                        <TextBlock Text="X" FontWeight="Bold" Foreground="#3080E0"/>
-                    </Button>
-                    <Button x:Name="GamepadB" Style="{StaticResource GpAB}"
-                            Canvas.Left="508" Canvas.Top="124" Width="40" Height="40">
-                        <TextBlock Text="B" FontWeight="Bold" Foreground="#E5484D"/>
-                    </Button>
-                    <Button x:Name="GamepadA" Style="{StaticResource GpAB}"
-                            Canvas.Left="468" Canvas.Top="164" Width="40" Height="40">
-                        <TextBlock Text="A" FontWeight="Bold" Foreground="#23A55A"/>
-                    </Button>
-
-                    <!-- 右摇杆 -->
-                    <Ellipse Canvas.Left="446" Canvas.Top="208" Width="100" Height="100"
-                             Fill="{DynamicResource CardBackgroundBrush}"
-                             Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1.5"
-                             IsHitTestVisible="False"/>
-                    <Button x:Name="GamepadR3" Style="{StaticResource GpRound}" Content="R3"
-                            Canvas.Left="463" Canvas.Top="225" Width="66" Height="66"/>
-                    <Ellipse Canvas.Left="472" Canvas.Top="234" Width="48" Height="48"
-                             Stroke="{DynamicResource BorderStrongBrush}" StrokeThickness="1"
-                             Opacity="0.7" Fill="Transparent"
-                             IsHitTestVisible="False"/>
-
+                    </Canvas>
                 </Canvas>
             </Viewbox>
         </Border>
 
         <!-- 卡片2：说明 + 当前触发键 -->
-        <Border Grid.Row="1" Style="{StaticResource ModuleFunctionCardStyle}">
+        <Border Grid.Row="1" Style="{StaticResource ModuleFunctionCardStyle}" Height="70">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                 <TextBlock FontSize="13"
                            Foreground="{DynamicResource TextSecondaryBrush}"
