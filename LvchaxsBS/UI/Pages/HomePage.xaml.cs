@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using LvchaxsBS.Config;
+using LvchaxsBS.Core;
 using LvchaxsBS.Services;
 
 namespace LvchaxsBS.UI.Pages
@@ -28,6 +29,9 @@ namespace LvchaxsBS.UI.Pages
 
             var s = ConfigManager.Get<HomePageSettings>();
             ModuleList.ItemsSource = ModuleRegistry.All.Select(m => new ModuleCardItem(m, s)).ToList();
+
+            // 手柄拾取是常驻监听（不走触发键通道），需要在进入主页时同步启停
+            ControllerPickupLogic.SyncWithSettings();
 
             // 等容器生成 + 绑定初始化全部跑完，再应用总开关视觉并放开事件
             Dispatcher.BeginInvoke(new Action(() =>
@@ -66,6 +70,9 @@ namespace LvchaxsBS.UI.Pages
             var settings = ConfigManager.Get<HomePageSettings>();
             item.Module.SetEnabled(settings, isChecked);
             ConfigManager.Save(settings);
+
+            // 手柄拾取需要跟随开关即时启停监听
+            ControllerPickupLogic.SyncWithSettings();
 
             if (Application.Current.MainWindow is UI.MainWindow mw)
                 mw.ShowToast($"{item.Module.Name}: {(isChecked ? "已启用" : "已关闭")}", isChecked);

@@ -68,6 +68,21 @@ namespace LvchaxsBS.Core
             Debug.WriteLine("【手柄拾取】已停止");
         }
 
+        /// <summary>
+        /// 依据「功能开关 + 功能总开关」同步监听状态：
+        /// 两个开关都打开时才监听手柄，否则停止。
+        /// 由 HomePage 开关、程序启动、功能总开关切换调用（幂等）。
+        /// </summary>
+        public static void SyncWithSettings()
+        {
+            var s = ConfigManager.Get<HomePageSettings>();
+
+            if (s.ControllerPickup && s.MasterSwitch)
+                Start();
+            else
+                Stop();
+        }
+
         private static void OnFocusChanged(object? sender, bool focused)
         {
             _isFocused = focused;
@@ -81,6 +96,9 @@ namespace LvchaxsBS.Core
             if (SimulationService.IsSimulating) return;
 
             var settings = ConfigManager.Get<HomePageSettings>();
+
+            // 手柄拾取不走触发键通道（是常驻监听），所以总开关要在执行前再判一次
+            if (!settings.MasterSwitch) return;
             if (!settings.ControllerPickup) return;
 
             string buttonName = args.Button.ToString();

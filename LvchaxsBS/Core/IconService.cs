@@ -368,6 +368,9 @@ namespace LvchaxsBS.Core
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                // 手柄拾取是常驻监听、不走触发键通道，需单独跟随总开关同步
+                ControllerPickupLogic.SyncWithSettings();
+
                 if (!enabled)
                 {
                     StopAllModules();
