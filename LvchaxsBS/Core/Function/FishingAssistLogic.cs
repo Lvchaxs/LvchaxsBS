@@ -25,6 +25,12 @@ namespace LvchaxsBS.Core
         private const int TENSION_LOST_THRESHOLD = 5;
         private const int TENSION_TIMEOUT_SECONDS = 3;
 
+        /// <summary>最近一次检测到"鱼竿状态/张力区"的时刻（用于判断是否还在钓鱼流程中）。</summary>
+        private static DateTime _lastFishingSignalAt = DateTime.MinValue;
+
+        /// <summary>钓鱼流程宽限期（毫秒）：这么久没检测到任何钓鱼信号才算离开钓鱼流程。</summary>
+        private const int FishingFlowGraceMs = 3000;
+
         // UI 更新事件（仅用于配置页显示，不参与状态管理）
         public static event Action<double, long, double, string>? DetectionResultUpdated;
         public static event Action<double, long, double, string>? TensionResultUpdated;
@@ -32,6 +38,18 @@ namespace LvchaxsBS.Core
         public static bool IsRunning => _isRunning;
         public static bool IsPaused => _isPaused;
         public static string CurrentStatus => _currentStatus;
+
+        /// <summary>是否处于张力阶段（上钩后正在等/读张力区结果）。</summary>
+        public static bool IsInTensionMode => _isInTensionMode;
+
+        /// <summary>
+        /// 是否处于"钓鱼流程中"：张力阶段，或刚刚（宽限期内）检测到鱼竿状态/张力区。
+        /// 用于上层判断"功能是不是正在为钓鱼工作"——因为钓鱼时游戏会隐藏常规 HUD，
+        /// 上层原本依赖的"是否在主界面"会失效，不能拿它来决定暂停或图标状态。
+        /// </summary>
+        public static bool IsInFishingFlow
+            => _isInTensionMode
+            || (DateTime.Now - _lastFishingSignalAt).TotalMilliseconds < FishingFlowGraceMs;
 
         /// <summary>
         /// 启动前检测：是否满足启动条件（检测到鱼竿状态）。
@@ -66,6 +84,7 @@ namespace LvchaxsBS.Core
                 _isInTensionMode = false;
                 _tensionTimerStarted = false;
                 _tensionLostCounter = 0;
+                _lastFishingSignalAt = DateTime.Now;
 
                 if (initialResult == "上钩了")
                 {
@@ -96,6 +115,7 @@ namespace LvchaxsBS.Core
                     _isInTensionMode = false;
                     _tensionTimerStarted = false;
                     _tensionLostCounter = 0;
+                    _lastFishingSignalAt = DateTime.MinValue;
                 }
             }
         }
@@ -150,6 +170,8 @@ namespace LvchaxsBS.Core
                                 _tensionTimerStarted = false;
                                 _tensionLostCounter = 0;
                                 _currentStatus = "";
+                                // 刚结束张力阶段，立刻给"钓鱼流程"续期，让鱼竿状态检测能正常接回
+                                _lastFishingSignalAt = DateTime.Now;
                                 TensionResultUpdated?.Invoke(-1, -1, -1, "未发现");
                                 await Task.Delay(settings.TensionInterval, token);
                                 continue;
@@ -162,6 +184,7 @@ namespace LvchaxsBS.Core
                         {
                             _tensionLostCounter = 0;
                             _tensionTimerStarted = false;
+                            _lastFishingSignalAt = DateTime.Now;
                             TensionResultUpdated?.Invoke(1, tensionResult.elapsedMs, 1, tensionResult.direction);
                         }
                         else
@@ -174,6 +197,8 @@ namespace LvchaxsBS.Core
                                 _tensionTimerStarted = false;
                                 _tensionLostCounter = 0;
                                 _currentStatus = "";
+                                // 同上：张力区连续丢失后退出张力阶段，给钓鱼流程续期
+                                _lastFishingSignalAt = DateTime.Now;
                                 TensionResultUpdated?.Invoke(-1, -1, -1, "未发现");
                             }
                             else
@@ -187,6 +212,10 @@ namespace LvchaxsBS.Core
                     }
 
                     var rodResult = await DetectFishingRodStatusWithTime();
+
+                    // 检测到鱼竿状态（未抛钩/已抛钩/上钩了）就算一次钓鱼信号
+                    if (!string.IsNullOrEmpty(rodResult.status))
+                        _lastFishingSignalAt = DateTime.Now;
 
                     if (rodResult.status != _currentStatus)
                     {
@@ -231,6 +260,7 @@ namespace LvchaxsBS.Core
                     _isInTensionMode = false;
                     _tensionTimerStarted = false;
                     _tensionLostCounter = 0;
+                    _lastFishingSignalAt = DateTime.MinValue;
                     if (_cts != null)
                     {
                         _cts.Dispose();

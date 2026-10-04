@@ -54,6 +54,9 @@ namespace LvchaxsBS.Core
 
         private static readonly List<string> _moduleOrder = new();
 
+        /// <summary>各图标位当前显示的图片名，用于避免重复加载/重排。</summary>
+        private static readonly Dictionary<int, string> _iconNameCache = new();
+
         private static readonly Dictionary<string, bool> _runningStates = new()
         {
             ["快速拾取"] = false,
@@ -566,7 +569,10 @@ namespace LvchaxsBS.Core
         {
             if (!IsRunning("钓鱼辅助")) return;
 
-            bool shouldRun = _isFocused && _isInMainWindow;
+            // 钓鱼时游戏会隐藏常规 HUD，"是否在主界面"会失效：
+            // 此时只要还处于钓鱼流程（张力阶段 / 刚检测到鱼竿状态），就必须继续运行，
+            // 否则会被判成"离开主界面"而暂停，张力区检测跟着停掉，鱼就钓不上来了。
+            bool shouldRun = _isFocused && (_isInMainWindow || FishingAssistLogic.IsInFishingFlow);
 
             if (shouldRun)
             {
@@ -661,6 +667,8 @@ namespace LvchaxsBS.Core
                     _fishingHookedLocked = true;
                 }
 
+                // 鱼竿状态是钓鱼信号的来源，图标要跟着实时变化（有信号→钓鱼2，长时间无信号→钓鱼3）
+                UpdateFishingAssistIcon();
                 UpdateFishingSubtitle();
             });
         }
@@ -676,6 +684,8 @@ namespace LvchaxsBS.Core
                     _fishingHookedLocked = false;
                 }
 
+                // 张力区检测到结果 = 也是钓鱼信号，图标随刷新
+                UpdateFishingAssistIcon();
                 UpdateFishingSubtitle();
             });
         }
@@ -926,13 +936,23 @@ namespace LvchaxsBS.Core
             int index = _moduleOrder.IndexOf("钓鱼辅助");
             if (index < 0) return;
 
-            if (!IsRunning("钓鱼辅助"))
-            {
-                UpdateIconAtIndex(index, "钓鱼1.png");
-                return;
-            }
+            UpdateIconAtIndex(index, GetFishingAssistIconName());
+        }
 
-            UpdateIconAtIndex(index, FishingAssistLogic.IsPaused ? "钓鱼3.png" : "钓鱼2.png");
+        /// <summary>
+        /// 钓鱼辅助当前应显示的图标（唯一判定入口，供图标刷新与悬浮窗构建共用）。
+        /// - 钓鱼1：功能未运行
+        /// - 钓鱼2：运行中且"正在为钓鱼工作"（在主界面，或处于钓鱼流程：张力阶段 / 刚检测到鱼竿状态或张力区）
+        /// - 钓鱼3：运行中但完全没有信号
+        /// 注意：上钩后鱼竿状态检测是被设计性停掉的（进入张力阶段），
+        ///       此时必须保持钓鱼2 等待张力区结果，不能因"检测不到鱼竿状态"而掉成钓鱼3。
+        /// </summary>
+        private static string GetFishingAssistIconName()
+        {
+            if (!IsRunning("钓鱼辅助")) return "钓鱼1.png";
+
+            bool working = _isInMainWindow || FishingAssistLogic.IsInFishingFlow;
+            return working ? "钓鱼2.png" : "钓鱼3.png";
         }
 
         private static void UpdateAutoLumberIcon()
@@ -1271,6 +1291,9 @@ namespace LvchaxsBS.Core
 
         private static void UpdateIconAtIndex(int index, string iconName)
         {
+            // 图标没变化就直接返回：钓鱼这类高频刷新（约 10Hz）不该反复从 pack:// 载图并重排悬浮窗
+            if (_iconNameCache.TryGetValue(index, out string? cached) && cached == iconName) return;
+
             if (_overlayWindow?.Content is Canvas canvas)
             {
                 if (index >= canvas.Children.Count) return;
@@ -1283,6 +1306,7 @@ namespace LvchaxsBS.Core
                     image.Source = bitmap;
                     image.Stretch = Stretch.Uniform;
 
+                    _iconNameCache[index] = iconName;
                     UpdateWindowPosition();
                 }
             }
@@ -1418,9 +1442,7 @@ namespace LvchaxsBS.Core
                 "剧情对话" => IsRunning("剧情对话")
                     ? ((!StoryDialogueLogic.IsPaused && StoryDialogueLogic.IsDetected) ? "剧情2.png" : "剧情3.png")
                     : "剧情1.png",
-                "钓鱼辅助" => IsRunning("钓鱼辅助")
-                    ? (FishingAssistLogic.IsPaused ? "钓鱼3.png" : "钓鱼2.png")
-                    : "钓鱼1.png",
+                "钓鱼辅助" => GetFishingAssistIconName(),
                 "快速传送" => _isInMap ? "锚点2.png" : "锚点1.png",
                 "自动伐木" => IsRunning("自动伐木") ? "伐木2.png" : "伐木1.png",
                 "自动烹饪" => IsRunning("自动烹饪") ? "烹饪2.png" : "烹饪1.png",
@@ -1520,6 +1542,9 @@ namespace LvchaxsBS.Core
                 _overlayWindow.Close();
                 _overlayWindow = null;
                 _isOverlayVisible = false;
+
+                // 窗口已销毁：清掉图标缓存，避免下次重建时因"名字相同"而被跳过设置
+                _iconNameCache.Clear();
             }
         }
 
