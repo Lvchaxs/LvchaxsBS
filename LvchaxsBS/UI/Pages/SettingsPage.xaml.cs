@@ -116,12 +116,15 @@ namespace LvchaxsBS.UI.Pages
         private async void TestVersionBtn_Click(object sender, RoutedEventArgs e)
             => await DownloadAndInstallAsync("测试版本", UpdateService.BETA_BASE_URL, showOptionCheckBox: false);
 
-        /// <summary>重置配置：确认后清理根目录（白名单外）并重启。</summary>
-        private async void ClearCacheBtn_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 重置配置：把 Config 目录整体删除并重启，程序会按默认值重新生成配置文件。
+        /// 只影响配置，语音/壁纸/截图日志等数据不受影响。
+        /// </summary>
+        private async void ResetConfigBtn_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new ConfirmDialog(
-                "确认重置",
-                "确定要重置程序吗？\n\n所有配置、日志、缓存、资源都会丢失，程序会自动关闭并重启。请谨慎操作！",
+                "确认重置配置",
+                "确定要重置全部配置吗？\n\n将删除 Config 目录下的配置文件并重启程序，所有设置会恢复为默认值。\n\n（语音、壁纸、截图日志等数据不受影响）",
                 "确定", "取消")
             {
                 Owner = Window.GetWindow(this)
@@ -133,14 +136,14 @@ namespace LvchaxsBS.UI.Pages
 
             try
             {
-                ToastService.Show("重置", "即将清理并重启...");
+                ToastService.Show("重置配置", "即将重置并重启...");
                 await ResetService.PrepareAndLaunchAsync();
                 Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
                 ToastService.Show("重置失败", ex.Message, false);
-                System.Diagnostics.Debug.WriteLine($"重置失败：{ex}");
+                System.Diagnostics.Debug.WriteLine($"重置配置失败：{ex}");
             }
         }
 

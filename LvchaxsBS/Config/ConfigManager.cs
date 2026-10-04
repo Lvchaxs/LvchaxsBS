@@ -11,7 +11,11 @@ namespace LvchaxsBS.Config
 {
     public static class ConfigManager
     {
-        private static readonly string ConfigFolder;
+        /// <summary>
+        /// 配置目录（&lt;程序目录&gt;/Config）。公开出来供「重置配置」使用，
+        /// 避免别处再自行拼路径导致指错目录。
+        /// </summary>
+        public static string ConfigFolder { get; }
 
         private static readonly JsonSerializerOptions JsonOptions = new()
         {

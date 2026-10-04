@@ -257,9 +257,9 @@
                     </Grid>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                        <Button x:Name="ClearCacheBtn" Content="重置配置" Width="70" Height="28" Margin="0,0,10,0"
+                        <Button x:Name="ResetConfigBtn" Content="重置配置" Width="70" Height="28" Margin="0,0,10,0"
                                 Style="{StaticResource FlatButtonStyleRound6}"
-                                Click="ClearCacheBtn_Click"/>
+                                Click="ResetConfigBtn_Click"/>
                         <Button x:Name="TestVersionBtn" Content="测试版本" Width="70" Height="28" Margin="0,0,10,0"
                                 Style="{StaticResource FlatButtonStyleRound6}"
                                 Click="TestVersionBtn_Click"/>
