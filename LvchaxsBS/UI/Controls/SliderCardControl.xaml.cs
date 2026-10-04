@@ -28,6 +28,11 @@ namespace LvchaxsBS.UI.Controls
             DependencyProperty.Register(nameof(Hint), typeof(string), typeof(SliderCardControl),
                 new PropertyMetadata(""));
 
+        /// <summary>标题后紧跟的自定义内容（如运行状态标签），与标题在同一行显示。</summary>
+        public static readonly DependencyProperty TitleContentProperty =
+            DependencyProperty.Register(nameof(TitleContent), typeof(object), typeof(SliderCardControl),
+                new PropertyMetadata(null));
+
         // ===== 滑条 =====
 
         public static readonly DependencyProperty ValueProperty =
@@ -128,6 +133,32 @@ namespace LvchaxsBS.UI.Controls
         public ImageSource? Icon { get => (ImageSource?)GetValue(IconProperty); set => SetValue(IconProperty, value); }
         public string Title { get => (string)GetValue(TitleProperty); set => SetValue(TitleProperty, value); }
         public string Hint { get => (string)GetValue(HintProperty); set => SetValue(HintProperty, value); }
+        public object? TitleContent { get => GetValue(TitleContentProperty); set => SetValue(TitleContentProperty, value); }
+
+        /// <summary>
+        /// 取标题行 <see cref="TitleContent"/> 里第 <paramref name="index"/> 个状态标签。
+        /// <para>
+        /// 页面 XAML 里放进 TitleContent 的元素**不能再写 x:Name** ——
+        /// SliderCardControl 是 UserControl，其内部是独立名称作用域，
+        /// 外部命名会触发 MC3093（"已注册了名称"）。所以只能按声明顺序取。
+        /// </para>
+        /// </summary>
+        public StatusTagPanel? GetTitleTag(int index)
+        {
+            if (TitleContent is not Panel panel) return null;
+
+            int n = 0;
+            foreach (var child in panel.Children)
+            {
+                if (child is StatusTagPanel tag)
+                {
+                    if (n == index) return tag;
+                    n++;
+                }
+            }
+
+            return null;
+        }
 
         public double Value { get => (double)GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
         public double Minimum { get => (double)GetValue(MinimumProperty); set => SetValue(MinimumProperty, value); }

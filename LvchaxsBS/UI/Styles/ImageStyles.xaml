@@ -1,0 +1,24 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        全局图片缩放质量。
+
+        背景：导航栏图标源图约 126x110，实际只显示 33x28（缩到 26%），
+        卡片图标显示 60x60（缩到 48%）。WPF 默认的 BitmapScalingMode 是
+        Unspecified —— 直接用双线性把整张纹理缩小，**没有 mipmap / 盒式降采样**，
+        大幅缩小时会明显出现锯齿、像素感和发糊（DPI 缩放调低时最明显）。
+
+        HighQuality 会让 WPF 按 2 的幂次逐级降采样再双线性放大回去，
+        缩小 4 倍时相当于用 1/4 大小的纹理，锯齿大幅减少。
+
+        注意：这里用「隐式样式」而不是给根元素设属性 ——
+        RenderOptions.BitmapScalingMode 虽然可继承，但 Popup（ButtonTip 气泡、
+        下拉弹窗）是独立视觉树，从窗口根元素继承不到；隐式样式按资源查找链生效，
+        能覆盖到这些地方。
+    -->
+    <Style TargetType="Image">
+        <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+    </Style>
+
+</ResourceDictionary>

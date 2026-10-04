@@ -17,6 +17,7 @@
                 <ResourceDictionary Source="UI/Styles/VoiceCardStyles.xaml"/>
                 <ResourceDictionary Source="UI/Styles/RefreshButtonStyles.xaml"/>
                 <ResourceDictionary Source="UI/Styles/IconButtonStyles.xaml"/>
+                <ResourceDictionary Source="UI/Styles/ImageStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

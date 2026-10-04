@@ -167,6 +167,7 @@
                 Padding="0"
                 Style="{StaticResource ImageButtonStyleRound6NoBorder115}"
                 ui:ButtonTip.Text="启动官服.exe"
+                RenderOptions.BitmapScalingMode="HighQuality"
                 Click="CenterButton1_Click">
             <Button.Background>
                 <ImageBrush ImageSource="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/官服.png"
@@ -181,6 +182,7 @@
                 Padding="0"
                 Style="{StaticResource ImageButtonStyleRound6NoBorder115}"
                 ui:ButtonTip.Text="启动国际服.exe"
+                RenderOptions.BitmapScalingMode="HighQuality"
                 Click="CenterButton2_Click">
             <Button.Background>
                 <ImageBrush ImageSource="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/国际服.png"

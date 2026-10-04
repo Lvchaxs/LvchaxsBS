@@ -38,10 +38,16 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="{Binding Title, ElementName=Root}"
-                               FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               VerticalAlignment="Center"/>
+                    <!-- 标题 + 紧跟标题的自定义内容（如运行状态标签），与标题同行 -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title, ElementName=Root}"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"/>
+
+                        <ContentPresenter Content="{Binding TitleContent, ElementName=Root}"
+                                          VerticalAlignment="Center"/>
+                    </StackPanel>
 
                     <TextBlock x:Name="SpinLabelText" Grid.Column="2"
                                Text="{Binding SpinLabel, ElementName=Root}"

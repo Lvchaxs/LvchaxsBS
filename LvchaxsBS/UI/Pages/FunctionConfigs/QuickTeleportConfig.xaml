@@ -12,6 +12,73 @@
     <ScrollViewer Style="{StaticResource CustomScrollViewer}">
         <StackPanel Margin="5,4,0,0">
 
+            <!-- 卡片0：运行状态 + 复选框（左侧两行标签，右侧三行复选框）-->
+            <Border Style="{StaticResource ModuleFunctionCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左侧：两行标签（第一行右下角，第二行右侧列表）-->
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <controls:StatusTagPanel
+                                                 ScoreLabel="右下角匹配度"
+                                                 TimeLabel="识别耗时"
+                                                 SourceLabel="识别类型"/>
+                        <controls:StatusTagPanel Margin="0,6,0,0"
+                                                 ScoreLabel="右列表匹配度"
+                                                 TimeLabel="识别耗时"
+                                                 SourceLabel="识别类型"/>
+                    </StackPanel>
+
+                    <!-- 右侧：三行复选框 -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,12,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,1,0,1">
+                            <CheckBox x:Name="DisableListRecognition"
+                                      Content=""
+                                      Style="{StaticResource PurpleCheckBoxStyle}"
+                                      VerticalAlignment="Center"
+                                      Checked="DisableListRecognition_Changed"
+                                      Unchecked="DisableListRecognition_Changed"
+                                      ui:ToastNotifier.Message="禁用列表识别"/>
+                            <TextBlock Text="禁用列表识别：勾选后 不再识别右侧列表中的传送目标，仅检测右下角"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,1,0,1">
+                            <CheckBox x:Name="DisableAbyssFilter"
+                                      Content=""
+                                      Style="{StaticResource PurpleCheckBoxStyle}"
+                                      VerticalAlignment="Center"
+                                      Checked="DisableAbyssFilter_Changed"
+                                      Unchecked="DisableAbyssFilter_Changed"
+                                      ui:ToastNotifier.Message="深渊剧诗过滤"/>
+                            <TextBlock Text="深渊剧诗过滤：勾选后 触发键为左键时点击地图右上角区域时不执行传送"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,1,0,1">
+                            <CheckBox x:Name="SaveScreenshotLog"
+                                      Content=""
+                                      Style="{StaticResource PurpleCheckBoxStyle}"
+                                      VerticalAlignment="Center"
+                                      Checked="SaveScreenshotLog_Changed"
+                                      Unchecked="SaveScreenshotLog_Changed"
+                                      ui:ToastNotifier.Message="保存截图日志"/>
+                            <TextBlock Text="保存截图日志：勾选后 仅保存最近一次执行的传送识别截图文件"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <!-- 卡片1：传送延迟检测 -->
             <controls:SliderCardControl x:Name="QuickTeleportDelayCard"
                                         Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
@@ -108,65 +175,6 @@
                                    FontSize="12"
                                    Foreground="{DynamicResource TextDisabledBrush}"/>
                     </Grid>
-                </Grid>
-            </Border>
-
-            <!-- 卡片5：复选框 -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
-                               Width="60" Height="60" Stretch="Uniform"/>
-                    </Border>
-
-                    <StackPanel Grid.Column="1" Margin="12,0,10,0" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
-                            <CheckBox x:Name="DisableListRecognition"
-                                      Content=""
-                                      Style="{StaticResource PurpleCheckBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      Checked="DisableListRecognition_Changed"
-                                      Unchecked="DisableListRecognition_Changed"
-                                      ui:ToastNotifier.Message="禁用列表识别"/>
-                            <TextBlock Text="禁用列表识别：勾选后 不再识别右侧列表中的传送目标，仅检测右下角"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
-                            <CheckBox x:Name="DisableAbyssFilter"
-                                      Content=""
-                                      Style="{StaticResource PurpleCheckBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      Checked="DisableAbyssFilter_Changed"
-                                      Unchecked="DisableAbyssFilter_Changed"
-                                      ui:ToastNotifier.Message="深渊剧诗过滤"/>
-                            <TextBlock Text="深渊剧诗过滤：勾选后 触发键为左键时点击地图右上角区域时不执行传送"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
-                            <CheckBox x:Name="SaveScreenshotLog"
-                                      Content=""
-                                      Style="{StaticResource PurpleCheckBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      Checked="SaveScreenshotLog_Changed"
-                                      Unchecked="SaveScreenshotLog_Changed"
-                                      ui:ToastNotifier.Message="保存截图日志"/>
-                            <TextBlock Text="保存截图日志：勾选后 仅保存最近一次执行的传送识别截图文件"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        </StackPanel>
-                    </StackPanel>
                 </Grid>
             </Border>
 

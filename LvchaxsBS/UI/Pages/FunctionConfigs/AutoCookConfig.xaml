@@ -25,7 +25,17 @@
                                         SpinMinimum="0" SpinMaximum="1" SpinStep="0.01"
                                         SpinNumericFormat="F2"
                                         SpinToast="匹配度"
-                                        SpinValueChanged="DetectThresholdSpinBox_ValueChanged"/>
+                                        SpinValueChanged="DetectThresholdSpinBox_ValueChanged">
+                                        <!-- 运行状态标签（与标题同行）-->
+                                        <controls:SliderCardControl.TitleContent>
+                                            <StackPanel Orientation="Horizontal">
+                                                <controls:StatusTagPanel Margin="8,0,0,0"
+                                                                         ScoreLabel="匹配度"
+                                                                         TimeLabel="耗时"
+                                                                         SourceLabel="类型"/>
+                                            </StackPanel>
+                                        </controls:SliderCardControl.TitleContent>
+            </controls:SliderCardControl>
 
             <!-- 卡片2：一般品质判定 -->
             <controls:SliderCardControl x:Name="NormalJudgeCard"
