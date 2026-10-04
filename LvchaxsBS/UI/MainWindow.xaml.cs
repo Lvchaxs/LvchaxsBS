@@ -74,6 +74,13 @@ namespace LvchaxsBS.UI
                 WindowFocusService.FocusChanged -= OnTargetWindowChanged;
                 WindowFocusService.BoundsChanged -= OnTargetWindowBoundsChanged;
                 WindowFocusService.WindowExistenceChanged -= OnTargetWindowExistenceChanged;
+
+                // 显式结束整个应用。
+                // 不能依赖默认的 ShutdownMode=OnLastWindowClose：引擎会创建常驻的
+                // 浮层窗口（底部图标 / 字幕），它们只是 Hide 并没有 Close，
+                // 主窗口关掉后 Application.Windows 仍非空 → 不会自动退出，
+                // 结果是"界面没了但 exe 还挂在后台"（钩子和检测线程都还在跑）。
+                Application.Current?.Shutdown();
             };
 
             MainFrame.Navigated += MainFrame_Navigated;

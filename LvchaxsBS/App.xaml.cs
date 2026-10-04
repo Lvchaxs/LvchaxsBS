@@ -234,6 +234,12 @@ namespace LvchaxsBS
             ConfigManager.FlushAll();
 
             base.OnExit(e);
+
+            // 兜底强制退出。
+            // 引擎里挂着全局低级钩子、检测循环和常驻浮层窗口，实测出现过
+            // "窗口关了、OnExit 也走完了，但进程仍留在后台"的情况（exe 一直不释放，
+            // 钩子还在响应按键）。清理已在上方做完，这里直接终止进程，确保干净退出。
+            Environment.Exit(e.ApplicationExitCode);
         }
     }
 }

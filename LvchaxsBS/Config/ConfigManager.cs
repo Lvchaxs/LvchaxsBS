@@ -45,6 +45,16 @@ namespace LvchaxsBS.Config
         /// </summary>
         public static bool CacheReady { get; private set; } = false;
 
+        /// <summary>
+        /// 「重置配置」期间置为 true：禁止一切写盘（防抖落盘 / 退出落盘 / 直接 Save）。
+        /// <para>
+        /// 重置的流程是"删掉 Config 目录 → 重启"，但内存里还留着用户的旧配置，
+        /// 只要期间发生任何一次落盘，Config 目录就会被旧值重建，
+        /// 于是表现为"删了等于没删"。置位后所有落盘直接短路。
+        /// </para>
+        /// </summary>
+        public static bool SuppressPersist { get; set; } = false;
+
         static ConfigManager()
         {
             string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -238,6 +248,13 @@ namespace LvchaxsBS.Config
         {
             StopTimer();
 
+            // 重置流程已接管磁盘：清掉待写队列但绝不落盘
+            if (SuppressPersist)
+            {
+                _dirty.Clear();
+                return;
+            }
+
             if (_dirty.Count == 0) return;
 
             foreach (var type in _dirty.ToList())
@@ -295,6 +312,8 @@ namespace LvchaxsBS.Config
         /// </summary>
         private static void SaveToFile(Type type, object instance, string path)
         {
+            if (SuppressPersist) return;   // 重置期间禁止写盘（会重建被删掉的 Config 目录）
+
             try
             {
                 string json = JsonSerializer.Serialize(instance, type, JsonOptions);

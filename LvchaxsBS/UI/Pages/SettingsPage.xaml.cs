@@ -120,7 +120,7 @@ namespace LvchaxsBS.UI.Pages
         /// 重置配置：把 Config 目录整体删除并重启，程序会按默认值重新生成配置文件。
         /// 只影响配置，语音/壁纸/截图日志等数据不受影响。
         /// </summary>
-        private async void ResetConfigBtn_Click(object sender, RoutedEventArgs e)
+        private void ResetConfigBtn_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new ConfirmDialog(
                 "确认重置配置",
@@ -136,12 +136,14 @@ namespace LvchaxsBS.UI.Pages
 
             try
             {
-                ToastService.Show("重置配置", "即将重置并重启...");
-                await ResetService.PrepareAndLaunchAsync();
-                Application.Current.Shutdown();
+                ToastService.Show("重置配置", "正在重置并重启...");
+                // 内部：删 Config → 拉起新实例 → 结束当前进程（正常路径下不会返回）
+                ResetService.ResetAndRestart();
             }
             catch (Exception ex)
             {
+                // 删除/重启失败：恢复写盘，程序继续可用
+                ConfigManager.SuppressPersist = false;
                 ToastService.Show("重置失败", ex.Message, false);
                 System.Diagnostics.Debug.WriteLine($"重置配置失败：{ex}");
             }
