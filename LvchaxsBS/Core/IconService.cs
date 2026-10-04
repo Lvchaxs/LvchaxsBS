@@ -957,7 +957,9 @@ namespace LvchaxsBS.Core
 
         private static void OnKeyboardEvent(object? sender, KeyboardEventArgs args)
         {
-            if (!_isFocused)
+            // 焦点事件可能丢失或时序错位，造成"人在游戏里、程序却判定焦点外"。
+            // 用户按键本身就是最可靠的"我正在用游戏"信号：判定为焦点外时先按需复核一次。
+            if (!_isFocused && !WindowFocusService.Reevaluate())
                 return;
 
             if (SimulationService.IsSimulating)
@@ -1083,7 +1085,8 @@ namespace LvchaxsBS.Core
 
         private static void OnMouseEvent(object? sender, MouseEventArgs args)
         {
-            if (!_isFocused) return;
+            // 同键盘：鼠标按键是离散事件，判定为焦点外时先按需复核一次，避免漏掉操作
+            if (!_isFocused && !WindowFocusService.Reevaluate()) return;
             if (SimulationService.IsSimulating) return;
 
             // 功能总开关关闭 → 所有功能都不可执行

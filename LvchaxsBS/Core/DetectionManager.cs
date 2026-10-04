@@ -27,7 +27,7 @@ namespace LvchaxsBS.Core
         private static bool _isInMap = false;
         private static bool _isSuspended = false;
 
-        public static bool IsRunning => _isLoopRunning;
+        public static bool IsRunning => _isLoopRunning && _loopTask != null && !_loopTask.IsCompleted;
         public static bool IsInMainWindow => _isInMainWindow;
         public static bool IsFocused => _isFocused;
         public static bool IsInMap => _isInMap;
@@ -63,9 +63,14 @@ namespace LvchaxsBS.Core
             {
                 if (_loopTask != null && !_loopTask.IsCompleted) return;
 
-                _isLoopRunning = true;
                 _loopCts = new CancellationTokenSource();
-                _loopTask = Task.Run(() => DetectionLoop(_loopCts.Token));
+
+                // 立刻取出 token：Task.Run 的委托可能在 StopLoop 之后才真正执行，
+                // 那时若还去读 _loopCts 字段就已经是 null 了（会抛 NRE 让循环静默死掉）。
+                var token = _loopCts.Token;
+
+                _isLoopRunning = true;
+                _loopTask = Task.Run(() => DetectionLoop(token));
             }
         }
 
@@ -76,10 +81,14 @@ namespace LvchaxsBS.Core
                 if (!_isLoopRunning && _loopTask == null) return;
 
                 _isLoopRunning = false;
-                _loopCts?.Cancel();
-                _loopCts?.Dispose();
+
+                var cts = _loopCts;
                 _loopCts = null;
                 _loopTask = null;
+
+                // 只取消不 Dispose：循环可能正停在 Task.Delay(_, token) 上，
+                // 立刻释放会让它抛 ObjectDisposedException 打断收尾。让 GC 回收即可。
+                cts?.Cancel();
             }
 
             if (_isInMainWindow)
@@ -234,7 +243,9 @@ namespace LvchaxsBS.Core
                 }
                 catch
                 {
-                    await Task.Delay(1000, token);
+                    // 出错延时用 None：token 对应的 CTS 可能已被取消/释放，
+                    // 继续把它传给 Delay 会让循环直接崩掉（功能会整体失效）。
+                    await Task.Delay(1000);
                 }
             }
         }

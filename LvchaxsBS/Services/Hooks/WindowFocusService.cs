@@ -97,7 +97,17 @@ namespace LvchaxsBS.Services.Hooks
         private const int OBJID_WINDOW = 0;
 
         private const int DebounceMs = 150;
-        private const int PollIntervalMs = 2000;
+
+        /// <summary>
+        /// 焦点兜底轮询间隔。
+        /// 焦点事件（EVENT_SYSTEM_FOREGROUND）存在丢失、延迟与"切换瞬间前台窗口还没变"的问题，
+        /// 只在事件里判定会导致状态永久卡住，因此必须有一个低成本轮询来对齐真实前台窗口。
+        /// </summary>
+        private const int PollIntervalMs = 500;
+
+        /// <summary>每 N 次轮询做一次较重的窗口存在性扫描（EnumWindows），约 2 秒一次。</summary>
+        private const int ExistenceScanEveryNTicks = 4;
+
         private const string TargetWindowClass = "UnityWndClass";
         private const int SW_RESTORE = 9;
 
@@ -139,6 +149,7 @@ namespace LvchaxsBS.Services.Hooks
         private static IntPtr _pendingHwnd = IntPtr.Zero;
 
         private static DispatcherTimer? _pollTimer;
+        private static int _pollTickCount;
 
         #endregion
 
@@ -149,6 +160,17 @@ namespace LvchaxsBS.Services.Hooks
         public static bool IsTargetFocused => _lastFocused && _lastWindowExists;
 
         public static bool IsWindowPresent => _lastWindowExists;
+
+        /// <summary>
+        /// 立即用真实前台窗口重新核对一次焦点，并返回最新结果。
+        /// 供"用户正在操作"的路径（按键/点击）按需调用：即使轮询还没跑到，
+        /// 也能让这一刻的判定对齐真实状态，避免因事件丢失而漏掉一次操作。
+        /// </summary>
+        public static bool Reevaluate()
+        {
+            EvaluateForeground();
+            return IsTargetFocused;
+        }
 
         public static string CurrentTitle => _lastTitle;
 
@@ -319,7 +341,12 @@ namespace LvchaxsBS.Services.Hooks
                 EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
                 IntPtr.Zero, _winEventProc, 0, 0, WINEVENT_OUTOFCONTEXT);
 
-            if (_foregroundHook == IntPtr.Zero) return;
+            // 注意：这里不能因为事件钩子注册失败就直接 return。
+            // 焦点轮询是独立兜底通道，即使钩子装不上，焦点判定依然要能工作。
+            if (_foregroundHook == IntPtr.Zero)
+            {
+                Debug.WriteLine("【焦点】前台事件钩子注册失败，将依赖轮询判定焦点");
+            }
 
             _locationHook = SetWinEventHook(
                 EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE,
@@ -348,6 +375,7 @@ namespace LvchaxsBS.Services.Hooks
             }
 
             _isRunning = true;
+            _pollTickCount = 0;
 
             EvaluateForeground();
             CheckWindowExistence();
@@ -370,6 +398,7 @@ namespace LvchaxsBS.Services.Hooks
             _debounceTimer?.Stop();
             _pollTimer?.Stop();
             _pendingHwnd = IntPtr.Zero;
+            _pollTickCount = 0;
 
             _isRunning = false;
             _lastFocused = false;
@@ -435,8 +464,19 @@ namespace LvchaxsBS.Services.Hooks
 
         private static void OnPollTick(object? sender, EventArgs e)
         {
-            if (_lastFocused) return;
-            CheckWindowExistence();
+            if (!_isRunning) return;
+
+            // 每个轮询周期都对齐一次真实前台窗口。
+            // 焦点事件不可靠（可能丢失、可能在"前台窗口尚未切换"时触发），
+            // 只靠事件会让焦点状态永久卡在错误值上，因此这里做兜底自愈。
+            EvaluateForeground();
+
+            // 窗口存在性扫描较重（EnumWindows + 逐个取进程名），降频执行
+            if (++_pollTickCount >= ExistenceScanEveryNTicks)
+            {
+                _pollTickCount = 0;
+                CheckWindowExistence();
+            }
         }
 
         #endregion
@@ -445,18 +485,22 @@ namespace LvchaxsBS.Services.Hooks
 
         private static void EvaluateForeground()
         {
-            bool focused = IsTargetProcess(GetForegroundWindow());
+            IntPtr fg = GetForegroundWindow();
+
+            // 切换瞬间 GetForegroundWindow 可能返回 0（暂无前台窗口）。
+            // 此时不能据此判定"焦点外"，否则一次误判就会卡住，跳过本次等下一轮即可。
+            if (fg == IntPtr.Zero) return;
+
+            bool focused = IsTargetProcess(fg);
 
             if (focused == _lastFocused) return;
 
             _lastFocused = focused;
             FocusChanged?.Invoke(null, focused);
 
-            UpdatePollingState();
-
             if (focused)
             {
-                EvaluateBounds(GetForegroundWindow(), force: true);
+                EvaluateBounds(fg, force: true);
             }
         }
 
@@ -464,14 +508,8 @@ namespace LvchaxsBS.Services.Hooks
         {
             if (_pollTimer == null) return;
 
-            if (_lastFocused)
-            {
-                if (_pollTimer.IsEnabled) _pollTimer.Stop();
-            }
-            else
-            {
-                if (!_pollTimer.IsEnabled) _pollTimer.Start();
-            }
+            // 轮询不再跟随焦点状态启停：焦点对齐与窗口存在性都依赖它兜底自愈。
+            if (!_pollTimer.IsEnabled) _pollTimer.Start();
         }
 
         private static void CheckWindowExistence()
