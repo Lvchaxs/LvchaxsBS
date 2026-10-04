@@ -64,22 +64,57 @@ namespace LvchaxsBS.UI.Pages
 
         // ============ 建映射 ============
 
-        /// <summary>Content 与键名不一致的按钮（x:Name -> 键名）</summary>
+        /// <summary>
+        /// 键名需要纠正的按钮（x:Name -> 引擎实际使用的键名）。
+        /// 引擎侧键名来自 <c>GlobalKeyboardHookService.GetKeyName</c> / <c>GlobalMouseHookService</c>，
+        /// 与按钮上显示的文本并不总是一致（例如按钮显示 "Back" 而引擎键名是 "Backspace"），
+        /// 这里统一映射，保证存进配置的键名能被引擎正确匹配。
+        /// </summary>
         private static readonly Dictionary<string, string> NameOverrides = new()
         {
+            // 小键盘符号键（Content 与主键区重复，必须纠正）
             ["KeyNumPlus"] = "Num+",
             ["KeyNumMinus"] = "Num-",
             ["KeyNumMultiply"] = "Num*",
             ["KeyNumDivide"] = "Num/",
             ["KeyNumDecimal"] = "Num.",
             ["KeyNumEnter"] = "NumEnter",
+
+            // 导航 / 编辑键
+            ["KeyBackspace"] = "Backspace",
+            ["KeyDelete"] = "Delete",
+            ["KeyInsert"] = "Insert",
+            ["KeyPageUp"] = "PageUp",
+            ["KeyPageDown"] = "PageDown",
+            ["KeyCapsLock"] = "CapsLock",
+            ["KeyNumLock"] = "NumLock",
+            ["KeyForward"] = "前进键",
+            ["KeyBack"] = "后退键",
+
+            // 符号键：引擎返回键帽上的双字符
+            ["KeyMinus"] = "_-",
+            ["KeyEquals"] = "+=",
+            ["KeyLeftBracket"] = "[{",
+            ["KeyRightBracket"] = "]}",
+            ["KeySemicolon"] = ":;",
+            ["KeyApostrophe"] = "'\"",
+            ["KeyComma"] = "<,",
+            ["KeyPeriod"] = ">.",
+            ["KeySlash"] = "?/",
+
+            // 左右修饰键
+            ["KeyLeftShift"] = "左Shift",
+            ["KeyRightShift"] = "右Shift",
+            ["KeyLeftCtrl"] = "左Ctrl",
+            ["KeyRightCtrl"] = "右Ctrl",
+            ["KeyLeftAlt"] = "左Alt",
+            ["KeyRightAlt"] = "右Alt",
+            ["KeyLeftWin"] = "Win",
+            ["KeyRightWin"] = "Win",
         };
 
-        /// <summary>不参与映射的按钮（右侧修饰键，与左侧同名重复）</summary>
-        private static readonly HashSet<string> UnmappedNames = new()
-        {
-            "KeyRightShift", "KeyRightCtrl", "KeyRightAlt", "KeyRightWin"
-        };
+        /// <summary>不参与映射的按钮（无需映射的装饰性按钮）。</summary>
+        private static readonly HashSet<string> UnmappedNames = new();
 
         /// <summary>
         /// 遍历页面所有按钮自动建立"键名 -> 按钮"映射：
@@ -96,8 +131,8 @@ namespace LvchaxsBS.UI.Pages
                 if (string.IsNullOrEmpty(btn.Name) || UnmappedNames.Contains(btn.Name)) continue;
 
                 string keyName;
-                if (btn.Name.Length == 6 && btn.Name.StartsWith("KeyNum") && char.IsDigit(btn.Name[5]))
-                    keyName = "Num" + btn.Name[5];                       // KeyNum0-9 → Num0-9
+                if (btn.Name.Length == 7 && btn.Name.StartsWith("KeyNum") && char.IsDigit(btn.Name[6]))
+                    keyName = "Num" + btn.Name[6];                       // KeyNum0-9 → Num0-9
                 else if (!NameOverrides.TryGetValue(btn.Name, out keyName))
                     keyName = btn.Content as string ?? "";
 

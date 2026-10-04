@@ -5,6 +5,8 @@ using System.Windows;
 using System.Windows.Controls;
 using LvchaxsBS.Config;
 using LvchaxsBS.Config.FunctionConfigs;
+using LvchaxsBS.Core;
+using LvchaxsBS.UI.Controls;
 using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Pages.FunctionConfigs
@@ -12,6 +14,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
     public partial class AutoCookConfig : Page
     {
         private bool _isLoading = true;
+        private StatusTagPanel? _match;
 
         private static readonly string[] MedicineTypes = { "复活药", "体力药" };
 
@@ -54,6 +57,21 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             InitializeComponent();
             Loaded += AutoCookConfig_Loaded;
+            Unloaded += AutoCookConfig_Unloaded;
+        }
+
+        private void AutoCookConfig_Unloaded(object sender, RoutedEventArgs e)
+        {
+            AutoCookLogic.DetectionResultUpdated -= OnDetectionResultUpdated;
+        }
+
+        private void OnDetectionResultUpdated(double matchScore, long elapsedMs, double threshold, string type)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                string? filteredType = (type == "未检测到烹饪") ? null : type;
+                _match?.SetResult(matchScore, elapsedMs, threshold, filteredType);
+            });
         }
 
         private void AutoCookConfig_Loaded(object sender, RoutedEventArgs e)
@@ -90,6 +108,13 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             ItemSelect.SelectionChanged += ItemSelect_Changed;
 
             _isLoading = false;
+
+            _match = AutoCookIntervalCard.GetTitleTag(0);
+
+            // 订阅运行状态（先解绑再绑定，避免重复导航时重复订阅）
+            AutoCookLogic.DetectionResultUpdated -= OnDetectionResultUpdated;
+            AutoCookLogic.DetectionResultUpdated += OnDetectionResultUpdated;
+            _match?.SetEmpty();
 
             SliderEntryAnimator.PlayAll(this);
         }

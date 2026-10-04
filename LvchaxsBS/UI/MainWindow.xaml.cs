@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -8,6 +10,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using LvchaxsBS.Config;
 using LvchaxsBS.Services;
+using LvchaxsBS.Services.Hooks;
+using LvchaxsBS.Toolbox;
 using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI
@@ -65,9 +69,19 @@ namespace LvchaxsBS.UI
             Closed += (s, e) =>
             {
                 AppearanceService.WindowTitleChanged -= AppearanceService_WindowTitleChanged;
+
+                WindowFocusService.FocusChanged -= OnTargetWindowChanged;
+                WindowFocusService.BoundsChanged -= OnTargetWindowBoundsChanged;
+                WindowFocusService.WindowExistenceChanged -= OnTargetWindowExistenceChanged;
             };
 
             MainFrame.Navigated += MainFrame_Navigated;
+
+            // 窗口检测：游戏是否启动 / 分辨率 / 焦点
+            WindowFocusService.FocusChanged += OnTargetWindowChanged;
+            WindowFocusService.BoundsChanged += OnTargetWindowBoundsChanged;
+            WindowFocusService.WindowExistenceChanged += OnTargetWindowExistenceChanged;
+            ApplyTargetWindowState();
 
             // 在窗口显示前应用 DPI，避免瞬移
             var app = ConfigManager.Get<AppSettings>();
@@ -447,8 +461,72 @@ namespace LvchaxsBS.UI
             MainFrame.Navigate(new Pages.VoicePage());
         }
 
-        private void TopLeft_OfficialServerClicked(object? sender, EventArgs e) { }
-        private void TopLeft_InternationalServerClicked(object? sender, EventArgs e) { }
+        private void TopLeft_OfficialServerClicked(object? sender, EventArgs e)
+            => LaunchGameAsync(true);
+
+        private void TopLeft_InternationalServerClicked(object? sender, EventArgs e)
+            => LaunchGameAsync(false);
+
+        // ============ 窗口检测 ============
+
+        private void OnTargetWindowChanged(object? sender, bool focused)
+            => Dispatcher.Invoke(ApplyTargetWindowState);
+
+        private void OnTargetWindowBoundsChanged(object? sender, WindowFocusService.WindowBounds bounds)
+            => Dispatcher.Invoke(ApplyTargetWindowState);
+
+        private void OnTargetWindowExistenceChanged(object? sender, bool exists)
+            => Dispatcher.Invoke(ApplyTargetWindowState);
+
+        /// <summary>
+        /// 根据"游戏是否启动"决定启动按钮显隐（只看 IsWindowPresent，与焦点无关）；
+        /// 有坐标才显示分辨率。
+        /// </summary>
+        private void ApplyTargetWindowState()
+        {
+            bool present = WindowFocusService.IsWindowPresent;
+            var bounds = WindowFocusService.LastBounds;
+
+            TopLeft.SetGameLaunchVisible(!present);
+
+            TopLeft.SetResolution(!bounds.IsEmpty
+                ? $"分辨率: {bounds.Width}×{bounds.Height}"
+                : "分辨率: --");
+        }
+
+        /// <summary>启动官服 / 国际服（路径来自设置页保存的路径）。</summary>
+        private async void LaunchGameAsync(bool official)
+        {
+            string label = official ? "官服" : "国际服";
+
+            try
+            {
+                var settings = ConfigManager.Get<AppSettings>();
+                string path = official ? settings.OfficialServerPath : settings.InternationalServerPath;
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    ShowToast($"{label}: 请先在[设置]中配置路径", false);
+                    return;
+                }
+
+                if (!File.Exists(path))
+                {
+                    ShowToast($"{label}: 文件不存在", false);
+                    return;
+                }
+
+                ShowToast($"{label}: 尝试启动...", true);
+
+                await Task.Run(() => Process.Start(path));
+
+                ShowToast($"{label} 已启动", true);
+            }
+            catch (Exception ex)
+            {
+                ShowToast($"{label} 启动失败: {ex.Message}", false);
+            }
+        }
 
         private void TopCenter_FunctionClicked(object? sender, string functionName)
         {
@@ -498,7 +576,17 @@ namespace LvchaxsBS.UI
             ShowToast($"功能总开关: {(TopRight.IsToggleOn ? "已开启" : "已关闭")}", TopRight.IsToggleOn);
         }
 
-        private void TopRight_ScreenshotClicked(object? sender, EventArgs e) { }
+        private void TopRight_ScreenshotClicked(object? sender, EventArgs e)
+        {
+            try
+            {
+                new ScreenshotToolWindow().ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                ShowToast($"打开截图工具失败: {ex.Message}", false);
+            }
+        }
 
         private void TopRight_RestartClicked(object? sender, EventArgs e)
         {

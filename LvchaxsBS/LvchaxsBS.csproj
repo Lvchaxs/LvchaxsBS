@@ -6,14 +6,24 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<ApplicationIcon>UI\Assets\Images\派蒙.ico</ApplicationIcon>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<Resource Include="UI\Assets\Images\**\*.png" />
 		<Resource Include="UI\Assets\Images\**\*.ico" />
 		<Resource Include="UI\Assets\Images\**\*.jpg" />
 		<Resource Include="UI\Assets\Images\**\*.jpeg" />
+
+		<!-- 旧项目功能引擎所需的图像模板与图标（已裁剪，仅保留实际使用项） -->
+		<Resource Include="Resources\Images\**\*.png" />
+		<Resource Include="Resources\Images\**\*.ico" />
+		<Resource Include="Resources\Template\**\*.png" />
 	</ItemGroup>
 
 </Project>

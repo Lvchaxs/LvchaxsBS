@@ -22,11 +22,11 @@
 
                     <!-- 左侧：两行标签（第一行右下角，第二行右侧列表）-->
                     <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="12,0,0,0">
-                        <controls:StatusTagPanel
+                        <controls:StatusTagPanel x:Name="RightCornerPanel"
                                                  ScoreLabel="右下角匹配度"
                                                  TimeLabel="识别耗时"
                                                  SourceLabel="识别类型"/>
-                        <controls:StatusTagPanel Margin="0,6,0,0"
+                        <controls:StatusTagPanel x:Name="RightListPanel" Margin="0,6,0,0"
                                                  ScoreLabel="右列表匹配度"
                                                  TimeLabel="识别耗时"
                                                  SourceLabel="识别类型"/>

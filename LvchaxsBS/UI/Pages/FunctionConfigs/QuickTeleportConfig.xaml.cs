@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using LvchaxsBS.Config;
 using LvchaxsBS.Config.FunctionConfigs;
+using LvchaxsBS.Core;
 using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Pages.FunctionConfigs
@@ -14,6 +15,37 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             InitializeComponent();
             Loaded += QuickTeleportConfig_Loaded;
+            Unloaded += QuickTeleportConfig_Unloaded;
+        }
+
+        private void QuickTeleportConfig_Unloaded(object sender, RoutedEventArgs e)
+        {
+            QuickTeleportLogic.DetectionResultUpdated -= OnDetectionResultUpdated;
+            QuickTeleportLogic.RightListDetectionResultUpdated -= OnRightListDetectionResultUpdated;
+        }
+
+        // ============ 运行状态标签 ============
+
+        private void OnDetectionResultUpdated(double matchScore, double elapsedMs, double threshold, string source, int count)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                if (matchScore >= 0)
+                    RightCornerPanel.SetResult(matchScore, (long)elapsedMs, threshold, source);
+                else
+                    RightCornerPanel.SetEmpty();
+            });
+        }
+
+        private void OnRightListDetectionResultUpdated(double matchScore, double elapsedMs, double threshold, string source, int count)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                if (matchScore >= 0)
+                    RightListPanel.SetResult(matchScore, (long)elapsedMs, threshold, source);
+                else
+                    RightListPanel.SetEmpty();
+            });
         }
 
         private void QuickTeleportConfig_Loaded(object sender, RoutedEventArgs e)
@@ -33,6 +65,13 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             SaveScreenshotLog.IsChecked = s.SaveScreenshotLog;
 
             _isLoading = false;
+
+            QuickTeleportLogic.DetectionResultUpdated -= OnDetectionResultUpdated;
+            QuickTeleportLogic.DetectionResultUpdated += OnDetectionResultUpdated;
+            QuickTeleportLogic.RightListDetectionResultUpdated -= OnRightListDetectionResultUpdated;
+            QuickTeleportLogic.RightListDetectionResultUpdated += OnRightListDetectionResultUpdated;
+            RightCornerPanel.SetEmpty();
+            RightListPanel.SetEmpty();
 
             SliderEntryAnimator.PlayAll(this);
         }

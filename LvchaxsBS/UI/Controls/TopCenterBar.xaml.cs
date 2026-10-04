@@ -60,6 +60,16 @@ namespace LvchaxsBS.UI.Controls
             ButtonResolution.Content = text;
         }
 
+        /// <summary>
+        /// 控制"官服 / 国际服"启动按钮显隐（游戏未启动时显示，已启动时隐藏）。
+        /// </summary>
+        public void SetGameLaunchVisible(bool visible)
+        {
+            var v = visible ? Visibility.Visible : Visibility.Collapsed;
+            if (CenterButton1 != null) CenterButton1.Visibility = v;
+            if (CenterButton2 != null) CenterButton2.Visibility = v;
+        }
+
         // ============ 当前页高亮 ============
 
         public void SetHomeActive(bool active)

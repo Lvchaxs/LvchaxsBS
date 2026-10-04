@@ -1,0 +1,131 @@
+﻿<Window x:Class="LvchaxsBS.Toolbox.ScreenshotToolWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="截图工具"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        WindowState="Maximized"
+        Cursor="Cross"
+        Focusable="True"
+        RenderOptions.BitmapScalingMode="NearestNeighbor">
+
+    <Canvas x:Name="MainCanvas">
+        <Image x:Name="BackgroundImage" Stretch="Fill" Canvas.ZIndex="0" />
+
+        <Canvas x:Name="SelectionContainer" Canvas.ZIndex="1">
+            <!-- 遮罩层 - 使用Path来实现镂空效果 -->
+            <Path x:Name="MaskPath" Fill="#B2000000" />
+
+            <!-- 选区边框 - 独立绘制，不受镂空影响 -->
+            <Rectangle x:Name="SelectionBorder"
+               Stroke="#1E8CD4"
+               StrokeThickness="3.5"
+               Visibility="Collapsed"
+               Canvas.ZIndex="2" />
+
+            <!-- 尺寸标签 -->
+            <Border x:Name="SizeLabel"
+            Background="#CC000000"
+            BorderBrush="#444"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="6,3"
+            Visibility="Collapsed"
+            Canvas.ZIndex="3">
+                <TextBlock x:Name="SizeText"
+                   Foreground="White"
+                   FontSize="13"
+                   FontFamily="Consolas"
+                   FontWeight="Bold" />
+            </Border>
+        </Canvas>
+
+        <!-- 放大镜 -->
+        <Border x:Name="MagnifierContainer"
+                Background="#1A1A1A"
+                BorderBrush="#444"
+                BorderThickness="1.5"
+                Visibility="Collapsed"
+                CornerRadius="6"
+                Canvas.ZIndex="3">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" Opacity="0.5" ShadowDepth="2" />
+            </Border.Effect>
+            <StackPanel>
+                <Border Background="#2A2A2A"
+                        CornerRadius="4,4,0,0"
+                        Margin="3,3,3,0">
+                    <Canvas x:Name="MagnifierCanvas" 
+                            Width="160" 
+                            Height="112"
+                            Background="#1A1A1A" />
+                </Border>
+
+                <Rectangle Height="1" 
+                           Fill="#444" 
+                           Margin="3,3,3,3" />
+
+                <Border CornerRadius="0,0,4,4"
+                        Padding="8,4"
+                        Margin="3,0,3,3">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock x:Name="MagnifierCoord" 
+                                   Text="(0, 0)" 
+                                   Foreground="#FFFFFF" 
+                                   FontSize="13"
+                                   FontFamily="Consolas"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock x:Name="SelectionCoord" 
+                                   Text="(--, --, --, --)" 
+                                   Foreground="#FFFFFF" 
+                                   FontSize="13"
+                                   FontFamily="Consolas"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,4,0,0" />
+                        <TextBlock x:Name="MagnifierColor" 
+                                   Text="RGB: (0, 0, 0)" 
+                                   Foreground="#FFFFFF" 
+                                   FontSize="13"
+                                   FontFamily="Consolas"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,4,0,0" />
+                        <TextBlock x:Name="TipZ" 
+                                   Text="Z：复制坐标" 
+                                   Foreground="#AAAAAA" 
+                                   FontSize="11"
+                                   FontFamily="Microsoft YaHei"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,6,0,0" />
+                        <TextBlock x:Name="TipX" 
+                                   Text="X：复制区域坐标" 
+                                   Foreground="#AAAAAA" 
+                                   FontSize="11"
+                                   FontFamily="Microsoft YaHei"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,2,0,0" />
+                        <TextBlock x:Name="TipC" 
+                                   Text="C：复制RGB颜色值" 
+                                   Foreground="#AAAAAA" 
+                                   FontSize="11"
+                                   FontFamily="Microsoft YaHei"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,2,0,0" />
+                        <TextBlock x:Name="TipEnter" 
+                                   Text="Enter：截图已选区域" 
+                                   Foreground="#AAAAAA" 
+                                   FontSize="11"
+                                   FontFamily="Microsoft YaHei"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,2,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </Canvas>
+</Window>

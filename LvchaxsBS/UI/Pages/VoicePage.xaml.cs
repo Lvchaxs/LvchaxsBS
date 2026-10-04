@@ -1,4 +1,5 @@
 ﻿using LvchaxsBS.Config;
+using LvchaxsBS.Core;
 using LvchaxsBS.UI.Controls;
 using LvchaxsBS.UI.Helpers;
 using System;
@@ -157,6 +158,7 @@ namespace LvchaxsBS.UI.Pages
             var voice = ConfigManager.Get<VoiceSettings>();
 
             SubtitleOpacitySlider.Value = voice.SubtitleOpacity;
+            SubtitleOverlayService.SetBackgroundOpacity(voice.SubtitleOpacity);
 
             SortFieldSelect.ItemsSource = new[] { "名称", "字数" };
             SortFieldSelect.SelectedIndex = voice.SortField;
@@ -207,6 +209,7 @@ namespace LvchaxsBS.UI.Pages
         {
             if (_isLoadingSettings) return;
             ConfigSync.Mutate<VoiceSettings>(v => v.SubtitleOpacity = (int)e.NewValue);
+            SubtitleOverlayService.SetBackgroundOpacity((int)e.NewValue);
         }
 
         private void SortFieldSelect_SelectionChanged(object? sender, int idx)
@@ -1053,7 +1056,12 @@ namespace LvchaxsBS.UI.Pages
                 TagColor = GetTagColor(content)
             };
 
-            item.TagClicked += (s, e) => PlayVoice(fileBase);
+            item.TagClicked += (s, e) =>
+            {
+                // 播放语音的同时把该条文本写进字幕悬浮窗（与旧项目一致）
+                SubtitleOverlayService.SetSubtitle(content);
+                PlayVoice(fileBase);
+            };
             item.TextCommitted += (s, newText) => CommitVoiceText(fileBase, newText);
 
             return item;

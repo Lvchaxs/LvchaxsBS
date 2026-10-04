@@ -38,24 +38,24 @@
                                        Foreground="{DynamicResource TextPrimaryBrush}"
                                        VerticalAlignment="Center" Margin="0,0,12,0"/>
 
-                            <Border Style="{StaticResource StatusTagStyle}">
-                                <TextBlock Text="检测：运行中" FontSize="11" FontWeight="SemiBold"
+                            <Border x:Name="ServiceTagBorder" Style="{StaticResource StatusTagStyle}">
+                                <TextBlock x:Name="ServiceTagText" Text="检测：运行中" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TagGreenFgBrush}"/>
                             </Border>
-                            <Border Style="{StaticResource StatusTagStyle}">
-                                <TextBlock Text="游戏：已启动" FontSize="11" FontWeight="SemiBold"
+                            <Border x:Name="GameTagBorder" Style="{StaticResource StatusTagStyle}">
+                                <TextBlock x:Name="GameTagText" Text="游戏：已启动" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TagGreenFgBrush}"/>
                             </Border>
-                            <Border Style="{StaticResource StatusTagStyle}">
-                                <TextBlock Text="焦点：焦点内" FontSize="11" FontWeight="SemiBold"
+                            <Border x:Name="FocusTagBorder" Style="{StaticResource StatusTagStyle}">
+                                <TextBlock x:Name="FocusTagText" Text="焦点：焦点内" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TagGreenFgBrush}"/>
                             </Border>
-                            <Border Style="{StaticResource StatusTagStyle}">
-                                <TextBlock Text="坐标：0, 0" FontSize="11" FontWeight="SemiBold"
+                            <Border x:Name="TopLeftTagBorder" Style="{StaticResource StatusTagStyle}">
+                                <TextBlock x:Name="TopLeftTagText" Text="坐标：0, 0" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TagGreenFgBrush}"/>
                             </Border>
-                            <Border Style="{StaticResource StatusTagStyle}">
-                                <TextBlock Text="标题：原神" FontSize="11" FontWeight="SemiBold"
+                            <Border x:Name="TitleTagBorder" Style="{StaticResource StatusTagStyle}">
+                                <TextBlock x:Name="TitleTagText" Text="标题：原神" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TagGreenFgBrush}"/>
                             </Border>
                         </WrapPanel>
@@ -105,16 +105,16 @@
                             <TextBlock Text="界面检测" FontSize="14" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
                                        VerticalAlignment="Center" Margin="0,0,12,0"/>
-                            <Border Style="{StaticResource StatusTagStyle}">
-                                <TextBlock Text="检测：运行中" FontSize="11" FontWeight="SemiBold"
+                            <Border x:Name="DetectionTagBorder" Style="{StaticResource StatusTagStyle}">
+                                <TextBlock x:Name="DetectionTagText" Text="检测：运行中" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TagGreenFgBrush}"/>
                             </Border>
-                            <Border Style="{StaticResource StatusTagStyle}">
-                                <TextBlock Text="耗时：--" FontSize="11" FontWeight="SemiBold"
+                            <Border x:Name="ElapsedTagBorder" Style="{StaticResource StatusTagStyle}">
+                                <TextBlock x:Name="ElapsedTagText" Text="耗时：--" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TagGreenFgBrush}"/>
                             </Border>
-                            <Border Style="{StaticResource StatusTagStyle}">
-                                <TextBlock Text="类型：未检测到" FontSize="11" FontWeight="SemiBold"
+                            <Border x:Name="ResultTagBorder" Style="{StaticResource StatusTagStyle}">
+                                <TextBlock x:Name="ResultTagText" Text="类型：未检测到" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TagGreenFgBrush}"/>
                             </Border>
                         </WrapPanel>
@@ -199,14 +199,16 @@
                         <StackPanel Grid.Row="0" Orientation="Horizontal">
                             <TextBlock Text="官服路径" FontSize="14" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"/>
-                            <TextBlock Text="未设置路径" FontSize="12"
+                            <TextBlock x:Name="OfficialServerPathText" Text="未设置路径" FontSize="12"
+                                       TextTrimming="CharacterEllipsis"
                                        Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Row="1" Orientation="Horizontal">
                             <TextBlock Text="外服路径" FontSize="14" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"/>
-                            <TextBlock Text="未设置路径" FontSize="12"
+                            <TextBlock x:Name="InternationalServerPathText" Text="未设置路径" FontSize="12"
+                                       TextTrimming="CharacterEllipsis"
                                        Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </StackPanel>
 
@@ -255,12 +257,15 @@
                     </Grid>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                        <Button Content="重置配置" Width="70" Height="28" Margin="0,0,10,0"
-                                Style="{StaticResource FlatButtonStyleRound6}"/>
-                        <Button Content="测试版本" Width="70" Height="28" Margin="0,0,10,0"
-                                Style="{StaticResource FlatButtonStyleRound6}"/>
-                        <Button Content="最新版本" Width="70" Height="28"
-                                Style="{StaticResource FlatButtonStyleRound6}"/>
+                        <Button x:Name="ClearCacheBtn" Content="重置配置" Width="70" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ClearCacheBtn_Click"/>
+                        <Button x:Name="TestVersionBtn" Content="测试版本" Width="70" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="TestVersionBtn_Click"/>
+                        <Button x:Name="LatestVersionBtn" Content="最新版本" Width="70" Height="28"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="LatestVersionBtn_Click"/>
                     </StackPanel>
                 </Grid>
             </Border>

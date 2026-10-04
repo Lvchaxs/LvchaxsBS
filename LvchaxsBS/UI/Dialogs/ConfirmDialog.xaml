@@ -5,8 +5,97 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LvchaxsBS.UI.Dialogs"
         mc:Ignorable="d"
-        Title="ConfirmDialog" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="Height"
+        Width="360"
+        ShowInTaskbar="False"
+        Focusable="False"
+        KeyboardNavigation.IsTabStop="False"
+        Title="ConfirmDialog">
+    <Border Background="{DynamicResource CardBackgroundBrush}"
+            CornerRadius="8"
+            BorderBrush="{DynamicResource BorderStrongBrush}"
+            BorderThickness="1"
+            Margin="12">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="15" ShadowDepth="0" Opacity="0.15" Color="Black"/>
+        </Border.Effect>
+
+        <StackPanel Margin="20,18,20,16">
+
+            <TextBlock x:Name="TitleText"
+                       Text="确认"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       Margin="0,0,0,10"/>
+
+            <TextBlock x:Name="MessageText"
+                       Text="确定要执行此操作吗？"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap"
+                       LineHeight="20"
+                       Margin="0,0,0,20"/>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 通用复选框：默认显示，文案/初始值由调用处覆盖 -->
+                <CheckBox x:Name="OptionCheckBox"
+                          Grid.Column="0"
+                          Content=""
+                          Style="{StaticResource PurpleCheckBoxStyle}"
+                          Visibility="Visible"
+                          VerticalAlignment="Center"
+                          Margin="0,0,8,0"/>
+
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+
+                    <Button x:Name="OkBtn"
+                            MinWidth="80" Height="30"
+                            Margin="0,0,8,0"
+                            Padding="10,0"
+                            Style="{StaticResource SettingsButtonStyleRound6}"
+                            Click="OkBtn_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="✓"
+                                       Foreground="{DynamicResource TagGreenFgBrush}"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,5,0"/>
+                            <TextBlock Text="确认" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="CancelBtn"
+                            MinWidth="80" Height="30"
+                            Padding="10,0"
+                            Style="{StaticResource SettingsButtonStyleRound6}"
+                            Click="CancelBtn_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="✕"
+                                       Foreground="{DynamicResource TagRedFgBrush}"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,5,0"/>
+                            <TextBlock Text="取消" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Border>
 </Window>
