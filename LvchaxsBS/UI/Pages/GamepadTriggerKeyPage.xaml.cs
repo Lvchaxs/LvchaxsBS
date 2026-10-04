@@ -15,6 +15,12 @@ namespace LvchaxsBS.UI.Pages
         private readonly Dictionary<string, Button> _keyButtonMap = new();
         private readonly Dictionary<Button, string> _buttonToName = new();
 
+        /// <summary>
+        /// ABXY 按键内部字母的原始颜色（Xbox 配色：A 绿 / B 红 / X 蓝 / Y 黄）。
+        /// 选中时底色变浅红，彩色字母会看不清，所以临时改白；取消选中再还原。
+        /// </summary>
+        private readonly Dictionary<Button, (TextBlock Text, Brush Color)> _letterColors = new();
+
         private Button? _selectedButton;
         private string _currentKeyName = "";
 
@@ -106,6 +112,10 @@ namespace LvchaxsBS.UI.Pages
 
                 _keyButtonMap[keyName] = btn;
                 _buttonToName[btn] = keyName;
+
+                // ABXY 的字母是 TextBlock（带 Xbox 配色），记下原色以便选中/还原
+                if (btn.Content is TextBlock tb && tb.Foreground is not null)
+                    _letterColors[btn] = (tb, tb.Foreground);
             }
         }
 
@@ -175,6 +185,10 @@ namespace LvchaxsBS.UI.Pages
             btn.Background = SelectedBg;
             btn.Foreground = SelectedFg;
             btn.BorderBrush = SelectedBorder;
+
+            // ABXY：字母改白，避免浅红底上看不清彩色字母
+            if (_letterColors.TryGetValue(btn, out var letter))
+                letter.Text.Foreground = SelectedFg;
         }
 
         private void Deselect(Button btn)
@@ -182,6 +196,10 @@ namespace LvchaxsBS.UI.Pages
             btn.ClearValue(Button.BackgroundProperty);
             btn.ClearValue(Button.ForegroundProperty);
             btn.ClearValue(Button.BorderBrushProperty);
+
+            // 还原字母的 Xbox 配色
+            if (_letterColors.TryGetValue(btn, out var letter))
+                letter.Text.Foreground = letter.Color;
         }
 
         private void UpdateCurrentKeyText()
