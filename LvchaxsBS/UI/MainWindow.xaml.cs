@@ -84,6 +84,9 @@ namespace LvchaxsBS.UI
             WindowFocusService.WindowExistenceChanged += OnTargetWindowExistenceChanged;
             ApplyTargetWindowState();
 
+            // 启动时按已保存的总开关状态应用一次（总开关为关时不应启动界面检测/图标窗口）
+            IconService.ApplyMasterSwitchState(TopRight.IsToggleOn);
+
             // 在窗口显示前应用 DPI，避免瞬移
             var app = ConfigManager.Get<AppSettings>();
             ApplyDpiScale(app.DpiScalePercent_1, center: true);
@@ -574,11 +577,8 @@ namespace LvchaxsBS.UI
                 container.RefreshMasterSwitchVisual();
             }
 
-            // 功能总开关关闭 → 立即停止所有正在运行的功能
-            if (!TopRight.IsToggleOn)
-            {
-                IconService.StopAllModules();
-            }
+            // 应用总开关状态：关闭时停止全部功能 + 暂停界面检测 + 隐藏图标窗口
+            IconService.ApplyMasterSwitchState(TopRight.IsToggleOn);
 
             ShowToast($"功能总开关: {(TopRight.IsToggleOn ? "已开启" : "已关闭")}", TopRight.IsToggleOn);
         }

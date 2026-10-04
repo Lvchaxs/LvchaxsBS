@@ -147,7 +147,7 @@ namespace LvchaxsBS.Core
             AutoLumberLogic.Stopped += OnAutoLumberStopped;
             AutoClearMedicineLogic.Stopped += OnAutoClearMedicineStopped;
 
-            if (WindowFocusService.IsTargetFocused)
+            if (WindowFocusService.IsTargetFocused && IsMasterSwitchOn())
             {
                 DetectionManager.StartLoop();
             }
@@ -339,6 +339,49 @@ namespace LvchaxsBS.Core
                 foreach (var module in _runningStates.Keys.ToList())
                 {
                     if (IsRunning(module)) StopModule(module);
+                }
+            });
+        }
+
+        /// <summary>功能总开关是否开启（读配置；读取异常时按“开启”处理，避免误禁用功能）。</summary>
+        private static bool IsMasterSwitchOn()
+        {
+            try
+            {
+                return ConfigManager.Get<HomePageSettings>().MasterSwitch;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"【图标服务】读取功能总开关失败，按开启处理: {ex.Message}");
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 应用功能总开关状态。
+        /// <para>
+        /// 关闭：停止所有功能 + 暂停主界面/地图检测 + 隐藏图标窗口（即使客户区窗口处于焦点）；
+        /// 开启：窗口处于焦点时恢复检测并按需重新显示图标窗口。
+        /// </para>
+        /// </summary>
+        public static void ApplyMasterSwitchState(bool enabled)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                if (!enabled)
+                {
+                    StopAllModules();
+                    DetectionManager.StopLoop();
+                    HideOverlay();
+                }
+                else if (_isFocused)
+                {
+                    if (!_detectionPausedByMedicine)
+                    {
+                        DetectionManager.StartLoop();
+                    }
+
+                    UpdateOverlayVisibility();
                 }
             });
         }
@@ -724,8 +767,8 @@ namespace LvchaxsBS.Core
 
                 if (focused)
                 {
-                    // 清药期间不启动 DetectionManager
-                    if (!_detectionPausedByMedicine)
+                    // 清药期间 / 功能总开关关闭时，都不启动 DetectionManager
+                    if (!_detectionPausedByMedicine && IsMasterSwitchOn())
                     {
                         DetectionManager.StartLoop();
                     }
@@ -1254,6 +1297,13 @@ namespace LvchaxsBS.Core
 
         private static void UpdateOverlayVisibility()
         {
+            // 功能总开关关闭 → 不显示图标窗口（即使客户区窗口处于焦点）
+            if (!IsMasterSwitchOn())
+            {
+                HideOverlay();
+                return;
+            }
+
             if (!_isFocused)
             {
                 HideOverlay();
