@@ -16,7 +16,10 @@
         Focusable="False"
         KeyboardNavigation.IsTabStop="False"
         Title="ConfirmDialog">
-    <Border Background="{DynamicResource CardBackgroundBrush}"
+    <!-- 背景用 PopupBackgroundBrush 而不是 CardBackgroundBrush：
+         卡片色会被「个性化 → 卡片透明度」覆盖成带 alpha 的画刷，
+         弹窗跟着变透明就看不清了；这个键专供浮层、始终不透明。 -->
+    <Border Background="{DynamicResource PopupBackgroundBrush}"
             CornerRadius="8"
             BorderBrush="{DynamicResource BorderStrongBrush}"
             BorderThickness="1"
