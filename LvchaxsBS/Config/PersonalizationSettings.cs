@@ -18,7 +18,7 @@
         // 卡片2
         public double XPosition { get; set; } = 0;
         public double YPosition { get; set; } = 0;
-        public double WallpaperScale { get; set; } = 50;
+        public double WallpaperScale { get; set; } = 55;
         public double WallpaperRotation { get; set; } = 0;
 
         // 卡片3

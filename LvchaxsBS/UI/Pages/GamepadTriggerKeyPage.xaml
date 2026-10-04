@@ -9,19 +9,6 @@
 
     <Page.Resources>
 
-        <!-- 握把防滑颗粒纹理（Series 手柄的标志性细节） -->
-        <DrawingBrush x:Key="GpDots" TileMode="Tile"
-                      Viewport="0,0,10,10" ViewportUnits="Absolute"
-                      Viewbox="0,0,10,10" ViewboxUnits="Absolute">
-            <DrawingBrush.Drawing>
-                <GeometryDrawing Brush="#8A8A93">
-                    <GeometryDrawing.Geometry>
-                        <EllipseGeometry Center="3,3" RadiusX="1.2" RadiusY="1.2"/>
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-            </DrawingBrush.Drawing>
-        </DrawingBrush>
-
         <!-- ============ 按键外观 ============ -->
 
         <!-- 基础按键：小圆角方块 -->
@@ -178,7 +165,7 @@
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <Viewbox Stretch="Uniform" StretchDirection="Both" Margin="0,6,0,6">
-                        <Canvas Width="780" Height="412" Background="Transparent">
+                        <Canvas Width="780" Height="420" Background="Transparent">
 
                             <!-- ===== 手柄外壳 =====
                                  轮廓：拱形顶盖 → 斜肩外扩 → 近直的两侧 → 底部两段圆润握把 + 中间缺口。
@@ -187,58 +174,37 @@
                                   Stroke="{DynamicResource BorderStrongBrush}"
                                   StrokeThickness="1.5"
                                   IsHitTestVisible="False"
-                                  Data="M 168,74
-                                        C 250,46 530,46 612,74
-                                        C 654,86 674,110 678,156
-                                        C 682,206 684,248 680,288
-                                        C 676,334 658,366 622,382
-                                        C 598,394 566,400 538,392
-                                        C 516,384 488,378 476,358
-                                        C 468,326 466,272 456,248
-                                        C 434,234 346,234 324,248
-                                        C 314,272 312,326 304,358
-                                        C 292,378 264,384 242,392
-                                        C 214,400 182,394 158,382
-                                        C 122,366 104,334 100,288
-                                        C 96,248 98,206 102,156
-                                        C 126,110 146,86 168,74 Z">
+                                  Data="M 168,62
+                                        C 250,42 530,42 612,62
+                                        C 648,70 664,92 668,132
+                                        C 674,182 678,232 676,272
+                                        C 674,318 662,362 640,382
+                                        C 616,402 574,404 542,390
+                                        C 518,380 498,352 488,322
+                                        C 478,292 452,266 420,256
+                                        C 402,250 378,250 360,256
+                                        C 328,266 302,292 292,322
+                                        C 282,352 262,380 238,390
+                                        C 206,404 164,402 140,382
+                                        C 118,362 106,318 104,272
+                                        C 102,232 106,182 112,132
+                                        C 116,92 132,70 168,62 Z">
                                 <Path.Effect>
                                     <DropShadowEffect Color="#000000" Opacity="0.30"
                                                       BlurRadius="20" ShadowDepth="7" Direction="270"/>
                                 </Path.Effect>
                             </Path>
 
-                            <!-- ===== 握把防滑纹理：套用同一轮廓，再用矩形 Clip 只截取下半段 ===== -->
-                            <Path Fill="{StaticResource GpDots}"
-                                  Opacity="0.32"
-                                  Clip="M 40,232 L 740,232 L 740,424 L 40,424 Z"
-                                  IsHitTestVisible="False"
-                                  Data="M 168,74
-                                        C 250,46 530,46 612,74
-                                        C 654,86 674,110 678,156
-                                        C 682,206 684,248 680,288
-                                        C 676,334 658,366 622,382
-                                        C 598,394 566,400 538,392
-                                        C 516,384 488,378 476,358
-                                        C 468,326 466,272 456,248
-                                        C 434,234 346,234 324,248
-                                        C 314,272 312,326 304,358
-                                        C 292,378 264,384 242,392
-                                        C 214,400 182,394 158,382
-                                        C 122,366 104,334 100,288
-                                        C 96,248 98,206 102,156
-                                        C 126,110 146,86 168,74 Z"/>
-
                             <!-- ===== 顶部：扳机 LT/RT（外）+ 肩键 LB/RB（内）===== -->
                             <Button x:Name="GamepadL2" Style="{StaticResource GpPill}" Content="LT"
-                                    Canvas.Left="112" Canvas.Top="6" Width="84" Height="28"/>
+                                    Canvas.Left="112" Canvas.Top="2" Width="84" Height="28"/>
                             <Button x:Name="GamepadL1" Style="{StaticResource GpPill}" Content="LB"
-                                    Canvas.Left="108" Canvas.Top="36" Width="88" Height="26"/>
+                                    Canvas.Left="108" Canvas.Top="32" Width="88" Height="26"/>
 
                             <Button x:Name="GamepadR2" Style="{StaticResource GpPill}" Content="RT"
-                                    Canvas.Left="584" Canvas.Top="6" Width="84" Height="28"/>
+                                    Canvas.Left="584" Canvas.Top="2" Width="84" Height="28"/>
                             <Button x:Name="GamepadR1" Style="{StaticResource GpPill}" Content="RB"
-                                    Canvas.Left="584" Canvas.Top="36" Width="88" Height="26"/>
+                                    Canvas.Left="584" Canvas.Top="32" Width="88" Height="26"/>
 
                             <!-- ===== 中部：View / Xbox / Menu ===== -->
                             <Button x:Name="GamepadCreate" Style="{StaticResource GpMiniRound}" Content="View"
