@@ -196,24 +196,55 @@
                             <RowDefinition Height="16"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="0" Orientation="Horizontal">
-                            <TextBlock Text="官服路径" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"/>
-                            <TextBlock x:Name="OfficialServerPathText" Text="未设置路径" FontSize="12"
-                                       TextTrimming="CharacterEllipsis"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </StackPanel>
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal">
-                            <TextBlock Text="外服路径" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"/>
-                            <TextBlock x:Name="InternationalServerPathText" Text="未设置路径" FontSize="12"
-                                       TextTrimming="CharacterEllipsis"
+                            <TextBlock Grid.Column="0" Text="官服路径" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="OfficialServerPathText" Grid.Column="1" Text="未设置路径" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </StackPanel>
+
+                            <!-- 与"字幕设置"同一个刷新按钮（点击缩放 + 旋转一圈），这里按行高缩到 18px -->
+                            <Viewbox Grid.Column="2" Width="18" Height="18" Stretch="Uniform"
+                                     VerticalAlignment="Center" Margin="8,0,0,0">
+                                <Button x:Name="RefreshOfficialPathBtn"
+                                        Style="{StaticResource RefreshIconButtonStyle}"
+                                        controls:ButtonTip.Text="刷新"
+                                        Click="RefreshOfficialPathBtn_Click"/>
+                            </Viewbox>
+                        </Grid>
+
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="国际服路径" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="InternationalServerPathText" Grid.Column="1" Text="未设置路径" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+                            <Viewbox Grid.Column="2" Width="18" Height="18" Stretch="Uniform"
+                                     VerticalAlignment="Center" Margin="8,0,0,0">
+                                <Button x:Name="RefreshInternationalPathBtn"
+                                        Style="{StaticResource RefreshIconButtonStyle}"
+                                        controls:ButtonTip.Text="刷新"
+                                        Click="RefreshInternationalPathBtn_Click"/>
+                            </Viewbox>
+                        </Grid>
 
                         <TextBlock Grid.Row="2"
-                                   Text="自动更新保存启动程序路径，客户区未启动时可在顶部导航栏快速启动"
+                                   Text="游戏运行时点右侧刷新按钮自动保存启动路径，游戏未启动时可在顶部导航栏快速启动"
                                    FontSize="12"
                                    Foreground="{DynamicResource TextDisabledBrush}"/>
                     </Grid>
