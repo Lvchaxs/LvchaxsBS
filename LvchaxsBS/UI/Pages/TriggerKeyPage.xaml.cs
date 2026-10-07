@@ -507,7 +507,6 @@ namespace LvchaxsBS.UI.Pages
             // 改为保持可命中的 Tag=Occupied 样式（Cursor=No），点击在 KeyButton_Click 里拦截。
             btn.Tag = OccupiedTag;
             _occupiedOwner[btn] = module.Name;                 // 点击跳转要知道占用者是谁
-            ButtonTip.SetClickAction(btn, () => OccupiedKeyClicked?.Invoke(this, module.Name));
             ButtonTip.SetText(btn, $"已被「{module.Name}」占用，点击跳转");
 
             _occupiedButtons.Add(btn);
@@ -522,7 +521,6 @@ namespace LvchaxsBS.UI.Pages
             foreach (var btn in _occupiedButtons)
             {
                 btn.ClearValue(FrameworkElement.TagProperty);
-                ButtonTip.SetClickAction(btn, null);
                 ButtonTip.SetText(btn, null);
                 KeyButtonState.SetOccupiedIcon(btn, null);
             }
