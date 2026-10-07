@@ -18,7 +18,7 @@ namespace LvchaxsBS.Services.Hooks
     ///
     /// 性能要点（实测数据）：
     /// - LOCATIONCHANGE 事件在全系统约 380 次/秒，绝大多数与本程序无关。因此事件回调里
-    ///   **只做句柄比对**，绝不查进程名（`Process.GetProcessById().ProcessName` 约 0.018ms/次且会分配，
+    ///   **只做句柄比对**，不查进程名（`Process.GetProcessById().ProcessName` 约 0.018ms/次且会分配，
     ///   更糟的是随后会触发一次带 UI 回调的边界重算）。目标窗口未知时直接不做 location 处理，
     ///   交给前台事件与"非焦点 1 秒轮询"去发现。这是"游戏未启动时 UI 卡顿"的根因。
     /// - 目标窗口已知后，location 事件只保留 150ms 防抖合并，避免拖动时高频重算边界。

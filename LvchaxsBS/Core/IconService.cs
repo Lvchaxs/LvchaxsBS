@@ -47,7 +47,7 @@ namespace LvchaxsBS.Core
             ["快速拾取"] = new[] { "拾取1.png", "拾取2.png", "拾取3.png" },
             ["剧情对话"] = new[] { "剧情1.png", "剧情2.png", "剧情3.png" },
             ["钓鱼辅助"] = new[] { "钓鱼1.png", "钓鱼2.png", "钓鱼3.png" },
-            ["快速传送"] = new[] { "锚点1.png", "锚点2.png" },
+            ["快速传送"] = new[] { "锚点1.png", "锚点2.png", "锚点3.png" },
             ["自动伐木"] = new[] { "伐木1.png", "伐木2.png" },
             ["自动烹饪"] = new[] { "烹饪1.png", "烹饪2.png" },
         };
@@ -595,6 +595,9 @@ namespace LvchaxsBS.Core
 
         private static bool IsOpenMapKey(string keyName)
         {
+            // 开图键不允许是右键：地图界面里右键专用于"取消本次快速传送"
+            if (keyName == "右键") return false;
+
             var openMapKey = ConfigManager.Get<QuickTeleportSettings>().OpenMapKey_1;
             if (string.IsNullOrEmpty(openMapKey)) return false;
 
@@ -625,6 +628,18 @@ namespace LvchaxsBS.Core
         private static bool InOpenMapWindow()
         {
             return DateTime.Now < _openMapWindowUntil;
+        }
+
+        /// <summary>
+        /// 本次是否允许触发快速传送。
+        /// 地图界面会自动满足触发条件，但用户可以用右键取消"这一次"：
+        /// 取消后即使人还在地图界面也不再触发，直到回到主界面自动清除，或再次按右键解除。
+        /// </summary>
+        private static bool CanTriggerQuickTeleport()
+        {
+            if (QuickTeleportLogic.IsTeleportCancelled) return false;
+
+            return InOpenMapWindow() || (!_isInMainWindow && _isInMap);
         }
 
         #endregion
@@ -871,10 +886,17 @@ namespace LvchaxsBS.Core
             {
                 _isInMainWindow = isInMainWindow;
 
+                // 回到主界面 → 清除"取消本次快速传送"标志，下次开图重新可用
+                if (isInMainWindow && QuickTeleportLogic.IsTeleportCancelled)
+                {
+                    QuickTeleportLogic.ClearTeleportCancelled();
+                }
+
                 SyncQuickPickupState();
                 SyncStoryDialogueState();
                 SyncFishingAssistState();
 
+                UpdateQuickTeleportIcon();
                 UpdateOverlayVisibility();
             });
         }
@@ -887,12 +909,7 @@ namespace LvchaxsBS.Core
 
                 SyncStoryDialogueState();
 
-                int quickTeleportIndex = _moduleOrder.IndexOf("快速传送");
-                if (quickTeleportIndex >= 0)
-                {
-                    string iconName = isInMap ? "锚点2.png" : "锚点1.png";
-                    UpdateIconAtIndex(quickTeleportIndex, iconName);
-                }
+                UpdateQuickTeleportIcon();
 
                 UpdateOverlayVisibility();
             });
@@ -901,6 +918,38 @@ namespace LvchaxsBS.Core
         #endregion
 
         #region 图标更新方法
+
+        /// <summary>
+        /// 快速传送图标（三态）：
+        /// - 不在地图界面              → 锚点1（未触发条件）
+        /// - 地图界面、未取消          → 锚点2（条件符合，按触发键即可传送）
+        /// - 地图界面、用户已右键取消  → 锚点3（条件符合但本次被禁用，直到回主界面或再按右键解除）
+        /// 用户主要靠锚点2 / 锚点3 区分"右键取消是否生效"。
+        /// </summary>
+        private static string GetQuickTeleportIconName()
+        {
+            if (!_isInMap) return "锚点1.png";
+
+            return QuickTeleportLogic.IsTeleportCancelled ? "锚点3.png" : "锚点2.png";
+        }
+
+        private static void UpdateQuickTeleportIcon()
+        {
+            int index = _moduleOrder.IndexOf("快速传送");
+            if (index < 0) return;
+
+            UpdateIconAtIndex(index, GetQuickTeleportIconName());
+        }
+
+        /// <summary>
+        /// 地图界面按下右键：切换取消标志并同步图标（锚点2 ⇄ 锚点3）。
+        /// 必须在 UI 线程执行（改的是界面图标）。
+        /// </summary>
+        private static void UpdateQuickTeleportIconAfterCancelToggle()
+        {
+            QuickTeleportLogic.ToggleTeleportCancelled();
+            UpdateQuickTeleportIcon();
+        }
 
         private static void UpdateQuickPickupIconByDetection()
         {
@@ -1080,14 +1129,16 @@ namespace LvchaxsBS.Core
             if (keyName == settings.QuickPickupKey && settings.QuickPickup) matchedModule = "快速拾取";
             else if (keyName == settings.StoryDialogueKey && settings.StoryDialogue) matchedModule = "剧情对话";
             else if (keyName == settings.FishingAssistKey && settings.FishingAssist) matchedModule = "钓鱼辅助";
-            else if (keyName == settings.QuickTeleportKey && settings.QuickTeleport) matchedModule = "快速传送";
+            // 快速传送不能用右键当触发键：地图界面右键是"取消本次传送"的开关
+            else if (keyName == settings.QuickTeleportKey && settings.QuickTeleport && keyName != "右键") matchedModule = "快速传送";
             else if (keyName == settings.AutoLumberKey && settings.AutoLumber) matchedModule = "自动伐木";
             else if (keyName == settings.AutoCookKey && settings.AutoCook) matchedModule = "自动烹饪";
             else if (keyName == settings.ControllerPickupKey && settings.ControllerPickup) matchedModule = "手柄拾取";
 
             if (matchedModule != null)
             {
-                if (matchedModule == "快速传送" && !InOpenMapWindow() && (_isInMainWindow || !_isInMap))
+                // 快速传送：地图界面会自动满足触发条件，但用户可能用右键取消了"这一次"
+                if (matchedModule == "快速传送" && !CanTriggerQuickTeleport())
                     return;
 
                 Application.Current?.Dispatcher.Invoke(() =>
@@ -1121,6 +1172,17 @@ namespace LvchaxsBS.Core
             if (!ConfigManager.Get<HomePageSettings>().MasterSwitch) return;
 
             string eventDisplayName = GlobalMouseHookService.GetMouseEventName(args.EventType);
+
+            // 地图界面 + 右键 = 切换"取消本次快速传送"标志。
+            // 右键在快速传送的触发键/开图键里已被禁选，所以这里可以放心独占：
+            // 条件符合但用户想手动传送时按右键，图标 锚点2 → 锚点3，本次地图内不再启用传送。
+            if (args.EventType == MouseEventType.RightButtonDown
+                && _isInMap
+                && ConfigManager.Get<HomePageSettings>().QuickTeleport)
+            {
+                Application.Current?.Dispatcher.Invoke(UpdateQuickTeleportIconAfterCancelToggle);
+                return;
+            }
 
             if (IsOpenMapKey(eventDisplayName))
             {
@@ -1171,7 +1233,8 @@ namespace LvchaxsBS.Core
                 matchedModule = "剧情对话";
             else if (settings.FishingAssist && settings.FishingAssistKey == eventDisplayName)
                 matchedModule = "钓鱼辅助";
-            else if (settings.QuickTeleport && settings.QuickTeleportKey == eventDisplayName)
+            // 同上：快速传送的触发键不认右键（右键在地图界面专用于取消本次传送）
+            else if (settings.QuickTeleport && settings.QuickTeleportKey == eventDisplayName && eventDisplayName != "右键")
                 matchedModule = "快速传送";
             else if (settings.AutoLumber && settings.AutoLumberKey == eventDisplayName)
                 matchedModule = "自动伐木";
@@ -1182,7 +1245,8 @@ namespace LvchaxsBS.Core
 
             if (matchedModule == null) return;
 
-            if (matchedModule == "快速传送" && !InOpenMapWindow() && (_isInMainWindow || !_isInMap))
+            // 快速传送：地图界面会自动满足触发条件，但用户可能用右键取消了"这一次"
+            if (matchedModule == "快速传送" && !CanTriggerQuickTeleport())
                 return;
 
             Application.Current?.Dispatcher.Invoke(() =>
@@ -1451,7 +1515,7 @@ namespace LvchaxsBS.Core
                     ? ((!StoryDialogueLogic.IsPaused && StoryDialogueLogic.IsDetected) ? "剧情2.png" : "剧情3.png")
                     : "剧情1.png",
                 "钓鱼辅助" => GetFishingAssistIconName(),
-                "快速传送" => _isInMap ? "锚点2.png" : "锚点1.png",
+                "快速传送" => GetQuickTeleportIconName(),
                 "自动伐木" => IsRunning("自动伐木") ? "伐木2.png" : "伐木1.png",
                 "自动烹饪" => IsRunning("自动烹饪") ? "烹饪2.png" : "烹饪1.png",
                 _ => _iconMap[moduleName][0]

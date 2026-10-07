@@ -19,6 +19,9 @@ namespace LvchaxsBS.UI.Pages
         private bool _isMultiSelectMode = false;
         private readonly HashSet<string> _selectedKeys = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>被禁用的键名（SetDisabledKeys 设置）。禁用键不会被回显为选中。</summary>
+        private readonly HashSet<string> _disabledKeys = new(StringComparer.OrdinalIgnoreCase);
+
         // 待加载（Loaded 前调用）
         private string? _pendingLoadKey;
         private string? _pendingLoadPauseKeys;
@@ -234,6 +237,18 @@ namespace LvchaxsBS.UI.Pages
                 return;
             }
 
+            // 已禁用的键（如快速传送的"右键"）不再回显为选中，避免"灰按钮却是选中态"
+            if (_disabledKeys.Contains(keyName))
+            {
+                if (_selectedButton != null)
+                {
+                    Deselect(_selectedButton);
+                    _selectedButton = null;
+                }
+                _currentKeyName = "";
+                return;
+            }
+
             if (_keyButtonMap.TryGetValue(keyName, out var btn))
             {
                 if (_selectedButton != null) Deselect(_selectedButton);
@@ -277,6 +292,9 @@ namespace LvchaxsBS.UI.Pages
                 var key = raw.Trim();
                 if (string.IsNullOrEmpty(key)) continue;
 
+                // 已禁用的键（如快速传送的"右键"）不回显为选中
+                if (_disabledKeys.Contains(key)) continue;
+
                 _selectedKeys.Add(key);
 
                 if (_keyButtonMap.TryGetValue(key, out var btn))
@@ -301,6 +319,8 @@ namespace LvchaxsBS.UI.Pages
                 return;
             }
 
+            _disabledKeys.Clear();
+
             // 先全部启用
             foreach (var kvp in _keyButtonMap)
             {
@@ -312,6 +332,8 @@ namespace LvchaxsBS.UI.Pages
             foreach (var name in disabledKeys)
             {
                 if (string.IsNullOrEmpty(name)) continue;
+
+                _disabledKeys.Add(name);
 
                 if (_keyButtonMap.TryGetValue(name, out var btn))
                 {

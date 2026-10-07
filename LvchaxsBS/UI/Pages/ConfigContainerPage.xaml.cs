@@ -241,7 +241,12 @@ namespace LvchaxsBS.UI.Pages
 
             if (_triggerKeyPage is TriggerKeyPage keyboardPage)
             {
-                keyboardPage.SetDisabledKeys("Win", "Alt", "Ctrl");   // ★ 禁用
+                // ★ 禁用：Win/Alt/Ctrl 通用禁用；
+                //   快速传送再加"右键"——地图界面里右键被用作"取消本次传送"的开关，不能当触发键
+                keyboardPage.SetDisabledKeys(
+                    CurrentModuleName == "快速传送"
+                        ? new[] { "Win", "Alt", "Ctrl", "右键" }
+                        : new[] { "Win", "Alt", "Ctrl" });
                 keyboardPage.LoadKey(savedKey);
             }
             else if (_triggerKeyPage is GamepadTriggerKeyPage gamepadPage)
@@ -297,7 +302,8 @@ namespace LvchaxsBS.UI.Pages
             var savedKeys = ConfigManager.Get<QuickTeleportSettings>().OpenMapKey_1;
             if (_openMapKeyPage is TriggerKeyPage tp)
             {
-                tp.SetDisabledKeys("Win", "Alt", "Ctrl");   // ★ 禁用
+                // ★ 禁用：开图键同样不能有"右键"（地图界面右键 = 取消本次传送）
+                tp.SetDisabledKeys("Win", "Alt", "Ctrl", "右键");
                 tp.LoadPauseKeys(savedKeys);
             }
 

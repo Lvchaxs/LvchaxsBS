@@ -19,6 +19,37 @@ namespace LvchaxsBS.Core
 
         private static int _executeRefCount = 0;
 
+        #region 取消标志（本次地图界面内禁止传送）
+
+        /// <summary>
+        /// 取消标志：这一次"处于地图界面"期间，用户主动禁止快速传送（想自己手动点）。
+        ///
+        /// 背景：地图界面本身会自动满足快速传送的触发条件（按下触发键就执行传送识别），
+        /// 但有时用户虽然开着地图、却想手动传送，不希望被识别结果打断。
+        /// 置位后即使条件仍符合（人还在地图界面）也不再响应触发键。
+        ///
+        /// 生效范围：一直有效，直到
+        /// 1) 检测到主界面 → 自动清除（下次开图重新可用）；或
+        /// 2) 用户在地图界面再次按下鼠标右键 → 手动解除。
+        /// </summary>
+        public static bool IsTeleportCancelled { get; private set; } = false;
+
+        /// <summary>切换取消标志，返回切换后的状态（true = 本次地图已取消传送）。</summary>
+        public static bool ToggleTeleportCancelled()
+        {
+            IsTeleportCancelled = !IsTeleportCancelled;
+            Debug.WriteLine($"【快速传送】取消标志 = {IsTeleportCancelled}");
+            return IsTeleportCancelled;
+        }
+
+        /// <summary>清除取消标志（检测到主界面时自动调用）。</summary>
+        public static void ClearTeleportCancelled()
+        {
+            IsTeleportCancelled = false;
+        }
+
+        #endregion
+
         // ===== 右下角缩放匹配参数 =====
         private const int RIGHT_CORNER_SCALE_FACTOR = 1;        // 右下角模板匹配缩放因子
         private const double RIGHT_CORNER_SCALE_THRESHOLD_DELTA = 0;  // 缩放匹配阈值放宽容差
