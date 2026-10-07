@@ -68,7 +68,8 @@
                             <Trigger Property="Tag" Value="Occupied">
                                 <Setter TargetName="border" Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
                                 <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Gray300Brush}"/>
-                                <Setter Property="Cursor" Value="No"/>
+                                <!-- 手型：这个键点一下会跳到占用它的功能（不是"禁止"） -->
+                                <Setter Property="Cursor" Value="Hand"/>
                                 <Setter TargetName="contentPresenter" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
                         </ControlTemplate.Triggers>

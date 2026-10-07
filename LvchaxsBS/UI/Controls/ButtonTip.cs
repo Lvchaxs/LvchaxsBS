@@ -29,6 +29,20 @@ namespace LvchaxsBS.UI.Controls
         public static void SetText(DependencyObject obj, string value)
             => obj.SetValue(TextProperty, value);
 
+        // ===== 可选：气泡本身可点击（触发键页"点击跳转"用） =====
+        public static readonly DependencyProperty ClickActionProperty =
+            DependencyProperty.RegisterAttached(
+                "ClickAction",
+                typeof(Action),
+                typeof(ButtonTip),
+                new PropertyMetadata(null));
+
+        public static Action? GetClickAction(DependencyObject obj)
+            => (Action?)obj.GetValue(ClickActionProperty);
+
+        public static void SetClickAction(DependencyObject obj, Action? value)
+            => obj.SetValue(ClickActionProperty, value);
+
         // ===== 内部：Popup 缓存（不占 Tag） =====
         private static readonly DependencyProperty CacheProperty =
             DependencyProperty.RegisterAttached(
@@ -83,6 +97,10 @@ namespace LvchaxsBS.UI.Controls
             if (popup.Child is Border border && border.Child is TextBlock tb)
                 tb.Text = text;
 
+            // 手型光标：可点击时显示（每次打开都刷新，避免 SetText/SetClickAction 顺序影响）
+            if (popup.Child is Border b2)
+                b2.Cursor = GetClickAction(fe) != null ? Cursors.Hand : null;
+
             // 跟随界面缩放：Popup 是独立视觉树，不会继承窗口 RootBorder 的 LayoutTransform，
             // 不处理的话 DPI 缩放下就会"字体和间距永远不变"。每次打开时更新，缩放改了也能生效。
             if (popup.Child is FrameworkElement content)
@@ -95,7 +113,26 @@ namespace LvchaxsBS.UI.Controls
         {
             if (sender is not FrameworkElement fe) return;
             var popup = GetCache(fe);
-            if (popup != null) popup.IsOpen = false;
+            if (popup == null) return;
+
+            // 气泡可点击时，鼠标要从按钮移到气泡上才能点中，所以延迟关闭：
+            // 期间如果鼠标已经落在气泡上就保持打开，否则关闭。
+            if (GetClickAction(fe) != null)
+            {
+                var timer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(300)
+                };
+                timer.Tick += (s, _) =>
+                {
+                    timer.Stop();
+                    if (!popup.IsMouseOver) popup.IsOpen = false;
+                };
+                timer.Start();
+                return;
+            }
+
+            popup.IsOpen = false;
         }
 
         private static Popup CreatePopup(FrameworkElement target)
@@ -140,6 +177,18 @@ namespace LvchaxsBS.UI.Controls
                 {
                     new CustomPopupPlacement(new Point(x, y), PopupPrimaryAxis.Horizontal)
                 };
+            };
+
+            // 气泡可点击：点击时取"当前的" ClickAction（不缓存闭包，
+            // 这样先 SetText 后 SetClickAction 也能生效）
+            border.MouseLeftButtonUp += (s, e) =>
+            {
+                var action = GetClickAction(target);
+                if (action == null) return;
+
+                e.Handled = true;
+                popup.IsOpen = false;
+                action();
             };
 
             return popup;
