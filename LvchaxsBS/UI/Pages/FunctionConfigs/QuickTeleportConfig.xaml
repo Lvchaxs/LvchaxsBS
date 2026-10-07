@@ -35,14 +35,14 @@
                     <!-- 右侧：三行复选框 -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,12,0">
                         <StackPanel Orientation="Horizontal" Margin="0,1,0,1">
-                            <CheckBox x:Name="DisableListRecognition"
+                            <CheckBox x:Name="EnableListRecognition"
                                       Content=""
                                       Style="{StaticResource PurpleCheckBoxStyle}"
                                       VerticalAlignment="Center"
-                                      Checked="DisableListRecognition_Changed"
-                                      Unchecked="DisableListRecognition_Changed"
-                                      ui:ToastNotifier.Message="禁用列表识别"/>
-                            <TextBlock Text="禁用列表识别：勾选后 不再识别右侧列表中的传送目标，仅检测右下角"
+                                      Checked="EnableListRecognition_Changed"
+                                      Unchecked="EnableListRecognition_Changed"
+                                      ui:ToastNotifier.Message="右侧列表识别"/>
+                            <TextBlock Text="右侧列表识别：执行时也对右侧列表也进行识别包含/神像/秘境/宅邸/列车/临时锚点..."
                                        FontSize="11"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -56,7 +56,7 @@
                                       Checked="DisableAbyssFilter_Changed"
                                       Unchecked="DisableAbyssFilter_Changed"
                                       ui:ToastNotifier.Message="深渊剧诗过滤"/>
-                            <TextBlock Text="深渊剧诗过滤：勾选后 触发键为左键时点击地图右上角区域时不执行传送"
+                            <TextBlock Text="深渊剧诗过滤：左键触发键时点击地图右上角深渊和剧诗区域时不执行传送"
                                        FontSize="11"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -70,7 +70,7 @@
                                       Checked="EnableRightClickCancel_Changed"
                                       Unchecked="EnableRightClickCancel_Changed"
                                       ui:ToastNotifier.Message="右键取消传送"/>
-                            <TextBlock Text="右键取消传送：勾选后 左键触发时可以通过按下右键临时禁用传送"
+                            <TextBlock Text="右键取消传送：左键触发键时可以通过按下右键临时禁用传送"
                                        FontSize="11"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="8,0,0,0"/>

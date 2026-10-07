@@ -60,7 +60,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             RightListFKeyDelaySlider.Value = s.RightListFKeyDelay;
             RightListAbyssFKeyDelaySlider.Value = s.RightListAbyssFKeyDelay;
 
-            DisableListRecognition.IsChecked = s.DisableListRecognition;
+            EnableListRecognition.IsChecked = s.EnableListRecognition;
             DisableAbyssFilter.IsChecked = s.DisableAbyssFilter;
             EnableRightClickCancel.IsChecked = s.EnableRightClickCancel;
 
@@ -118,10 +118,10 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListAbyssFKeyDelay = (int)e.NewValue);
         }
 
-        private void DisableListRecognition_Changed(object sender, RoutedEventArgs e)
+        private void EnableListRecognition_Changed(object sender, RoutedEventArgs e)
         {
             if (_isLoading) return;
-            ConfigSync.Mutate<QuickTeleportSettings>(s => s.DisableListRecognition = DisableListRecognition.IsChecked == true);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.EnableListRecognition = EnableListRecognition.IsChecked == true);
         }
 
         private void DisableAbyssFilter_Changed(object sender, RoutedEventArgs e)

@@ -45,9 +45,11 @@ namespace LvchaxsBS.Config.FunctionConfigs
         public int RightListFKeyDelay { get; set; } = 50;
 
         /// <summary>
-        /// 禁用列表识别
+        /// 右侧列表识别：勾选后执行传送时也对右侧列表进行识别
+        /// （包含 神像 / 秘境 / 宅邸 / 列车 / 临时锚点 等）。
+        /// 取消勾选则只循环检测右下角，不跑右侧列表。
         /// </summary>
-        public bool DisableListRecognition { get; set; } = false;
+        public bool EnableListRecognition { get; set; } = true;
 
         /// <summary>
         /// 禁用快速切图

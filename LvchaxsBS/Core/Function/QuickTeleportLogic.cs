@@ -388,10 +388,10 @@ namespace LvchaxsBS.Core
                         "快速传送_青玄乘阳华盖",
                     };
 
-                    // 禁用列表识别：只循环右下角，不跑右侧列表
-                    if (settings.DisableListRecognition)
+                    // 未启用列表识别：只循环右下角，不跑右侧列表
+                    if (!settings.EnableListRecognition)
                     {
-                        Debug.WriteLine("【快速传送】已禁用列表识别，仅循环右下角检测");
+                        Debug.WriteLine("【快速传送】未启用列表识别，仅循环右下角检测");
 
                         int maxDetectTime = settings.RightListDetectDelay_1;
 
