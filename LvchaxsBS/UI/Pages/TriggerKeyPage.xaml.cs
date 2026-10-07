@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;   // VisualTreeHelper
+using System.Windows.Media.Imaging;
+using LvchaxsBS.Config;
+using LvchaxsBS.Services;
+using LvchaxsBS.UI.Controls;
+using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Pages
 {
@@ -10,6 +15,12 @@ namespace LvchaxsBS.UI.Pages
     {
         public event EventHandler<string>? KeySelected;
         public event EventHandler<string>? PauseKeysChanged;
+
+        /// <summary>
+        /// 点击了被其他功能占用的键，参数 = 占用它的功能名（如 "自动烹饪"）。
+        /// 容器页订阅它来跳转到那个功能的触发键页。
+        /// </summary>
+        public event EventHandler<string>? OccupiedKeyClicked;
 
         private readonly Dictionary<string, Button> _keyButtonMap = new();
         private readonly Dictionary<Button, string> _buttonToName = new();
@@ -34,6 +45,21 @@ namespace LvchaxsBS.UI.Pages
         /// 与容器页"触发键/开图键/暂停键/配置"标签页的选中态是同一组资源，切主题会一起变。
         /// </summary>
         private const string SelectedTag = "Selected";
+
+        /// <summary>
+        /// 被其他功能占用标记（与 SelectedTag 互斥，当前功能自己选中的键不会被标成占用）。
+        /// 由 KeyButtonStyle 的 Trigger(Tag=Occupied) 消费。
+        /// </summary>
+        private const string OccupiedTag = "Occupied";
+
+        /// <summary>当前页面已标记占用的按钮，便于整页清理。</summary>
+        private readonly List<Button> _occupiedButtons = new();
+
+        /// <summary>占用按钮 → 占用它的功能名（点击跳转用）。</summary>
+        private readonly Dictionary<Button, string> _occupiedOwner = new();
+
+        // 待加载（Loaded 前调用）
+        private string? _pendingOccupiedModule;
 
         public TriggerKeyPage()
         {
@@ -65,6 +91,13 @@ namespace LvchaxsBS.UI.Pages
                 var keys = _pendingDisabledKeys;
                 _pendingDisabledKeys = null;
                 SetDisabledKeys(keys);
+            }
+            // 应用暂存的占用
+            if (!string.IsNullOrEmpty(_pendingOccupiedModule))
+            {
+                var m = _pendingOccupiedModule;
+                _pendingOccupiedModule = null;
+                SetOccupiedKeys(m);
             }
         }
 
@@ -175,6 +208,14 @@ namespace LvchaxsBS.UI.Pages
         {
             if (sender is not Button btn) return;
             if (!_buttonToName.TryGetValue(btn, out var keyName)) return;
+
+            // 被其他功能占用的键：点击 = 跳转到占用它的功能的触发键页
+            if ((string?)btn.Tag == OccupiedTag)
+            {
+                if (_occupiedOwner.TryGetValue(btn, out var owner))
+                    OccupiedKeyClicked?.Invoke(this, owner);
+                return;
+            }
 
             if (_isMultiSelectMode)
             {
@@ -384,6 +425,106 @@ namespace LvchaxsBS.UI.Pages
                 }
                 _selectedKeys.Remove(keyName);
             }
+        }
+
+        // ============ 被其他功能占用 ============
+
+        /// <summary>
+        /// 把「其他功能已经设置过的触发键」标记为不可选，并在按钮背景显示那个功能的图标，
+        /// 让用户一眼看出这个键被谁用了（例如剧情对话用了「←」，其他功能打开触发键页时
+        /// 「←」按钮的背景就是 剧情对话.png）。
+        ///
+        /// 排除项：
+        /// - 当前功能自己（自己已选的键保持选中样式，不做任何标记）；
+        /// - 手柄拾取：它用的是手柄按键页，键位体系和键盘页完全不同，不参与冲突。
+        /// </summary>
+        /// <param name="currentModuleName">当前正在设置的功能名（ModuleRegistry 的 Name）。</param>
+        public void SetOccupiedKeys(string currentModuleName)
+        {
+            if (_keyButtonMap.Count == 0)
+            {
+                _pendingOccupiedModule = currentModuleName;
+                return;
+            }
+
+            ClearOccupiedKeys();
+
+            if (string.IsNullOrEmpty(currentModuleName)) return;
+
+            var settings = ConfigManager.Get<HomePageSettings>();
+
+            // 键名 -> 占用它的功能
+            var occupied = new Dictionary<string, ModuleInfo>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var module in ModuleRegistry.All)
+            {
+                if (module.Name == currentModuleName) continue;
+                if (module.UseGamepad) continue;          // 手柄拾取不参与
+
+                var key = module.GetKey(settings);
+                if (string.IsNullOrEmpty(key) || key == "未设置") continue;
+
+                // 旧配置里万一有重复，后注册的功能覆盖前面的（只是显示，不影响引擎）
+                occupied[key] = module;
+            }
+
+            if (occupied.Count == 0) return;
+
+            foreach (var kvp in _buttonToName)
+            {
+                var btn = kvp.Key;
+                string keyName = kvp.Value;
+
+                if (!occupied.TryGetValue(keyName, out var module)) continue;
+
+                // 当前功能自己已选的键不标占用（保持选中样式）
+                if (btn == _selectedButton) continue;
+
+                MarkOccupied(btn, module);
+            }
+        }
+
+        private void MarkOccupied(Button btn, ModuleInfo module)
+        {
+            if (!string.IsNullOrEmpty(module.IconPath))
+            {
+                try
+                {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.UriSource = new Uri(module.IconPath, UriKind.RelativeOrAbsolute);
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;   // 立刻加载，避免文件句柄被占用
+                    bmp.EndInit();
+                    KeyButtonState.SetOccupiedIcon(btn, bmp);
+                }
+                catch
+                {
+                    // 图标加载失败不影响可用性：退化为纯"不可选"样式
+                }
+            }
+
+            // 不设 IsEnabled=false：禁用元素不触发 MouseEnter，ButtonTip 会弹不出来。
+            // 改为保持可命中的 Tag=Occupied 样式（Cursor=No），点击在 KeyButton_Click 里拦截。
+            btn.Tag = OccupiedTag;
+            ButtonTip.SetText(btn, $"「{module.Name}」已占用，点击跳转");
+
+            _occupiedButtons.Add(btn);
+
+            // 多选模式下（暂停键/开图键不会走到这里，保险起见）从选中集合里剔除
+            _selectedKeys.Remove(_buttonToName.TryGetValue(btn, out var n) ? n : "");
+        }
+
+        /// <summary>清除本页所有占用标记（切页/重设时调用）。</summary>
+        private void ClearOccupiedKeys()
+        {
+            foreach (var btn in _occupiedButtons)
+            {
+                btn.ClearValue(FrameworkElement.TagProperty);
+                ButtonTip.SetText(btn, null);
+                KeyButtonState.SetOccupiedIcon(btn, null);
+            }
+            _occupiedButtons.Clear();
+            _occupiedOwner.Clear();
         }
     }
 }

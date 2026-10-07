@@ -3,6 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:helpers="clr-namespace:LvchaxsBS.UI.Helpers"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Background="Transparent">
@@ -27,7 +28,19 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="5">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Grid>
+                                <!-- 被其他功能占用：底层铺该功能图标（Source 为 null 时自动不显示） -->
+                                <Image Source="{Binding Path=(helpers:KeyButtonState.OccupiedIcon),
+                                                        RelativeSource={RelativeSource TemplatedParent}}"
+                                       Stretch="Uniform"
+                                       Opacity="1"
+                                       IsHitTestVisible="False"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Margin="2"/>
+                                <ContentPresenter x:Name="contentPresenter"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -49,6 +62,14 @@
                                 <Setter TargetName="border" Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
                                 <Setter Property="Foreground" Value="{DynamicResource PrimaryDarkBrush}"/>
                                 <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                            <!-- 占用：已被其他功能的触发键使用（整个按钮显示那个功能的图标，
+                                 不再显示键名）。放在 IsEnabled=False 之后，覆盖"系统禁用"的红色样式 -->
+                            <Trigger Property="Tag" Value="Occupied">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Gray300Brush}"/>
+                                <Setter Property="Cursor" Value="No"/>
+                                <Setter TargetName="contentPresenter" Property="Visibility" Value="Collapsed"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

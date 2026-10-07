@@ -92,7 +92,11 @@ namespace LvchaxsBS.UI.Pages
             NavigateToModule(item.Module.Name, showTriggerKey: false);
         }
 
-        private static void NavigateToModule(string moduleName, bool showTriggerKey)
+        /// <summary>
+        /// 导航到指定功能的配置容器页（可直跳触发键页）。
+        /// 供各处复用：首页卡片、触发键页的"点击占用键跳转"。
+        /// </summary>
+        public static void NavigateToModule(string moduleName, bool showTriggerKey)
         {
             var container = CreateContainerFor(moduleName);
             if (container == null) return;

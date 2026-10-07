@@ -200,11 +200,17 @@ namespace LvchaxsBS.UI.Pages
             _triggerKeyPage = page;
 
             if (page is TriggerKeyPage keyboardPage)
+            {
                 keyboardPage.KeySelected += (s, keyName) =>
                 {
                     _setKey?.Invoke(keyName);
                     ShowKeyToast("触发键", keyName);
                 };
+
+                // ★ 点击"被其他功能占用"的键 → 跳转到那个功能的触发键页
+                keyboardPage.OccupiedKeyClicked += (s, ownerModule) =>
+                    HomePage.NavigateToModule(ownerModule, showTriggerKey: true);
+            }
             else if (page is GamepadTriggerKeyPage gamepadPage)
                 gamepadPage.KeySelected += (s, keyName) =>
                 {
@@ -248,6 +254,9 @@ namespace LvchaxsBS.UI.Pages
                         ? new[] { "Win", "Alt", "Ctrl", "右键" }
                         : new[] { "Win", "Alt", "Ctrl" });
                 keyboardPage.LoadKey(savedKey);
+                // ★ 其他功能已经用掉的触发键不可再选，按钮背景显示对应功能图标
+                //   （必须在 LoadKey 之后：当前功能自己已选的键要保持选中样式）
+                keyboardPage.SetOccupiedKeys(CurrentModuleName);
             }
             else if (_triggerKeyPage is GamepadTriggerKeyPage gamepadPage)
             {
