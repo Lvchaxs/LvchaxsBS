@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using System.Windows.Media;   // VisualTreeHelper
+
 namespace LvchaxsBS.UI.Pages
 {
     public partial class TriggerKeyPage : Page
@@ -27,10 +28,12 @@ namespace LvchaxsBS.UI.Pages
         private string? _pendingLoadPauseKeys;
         private string[]? _pendingDisabledKeys;
 
-        // 选中样式
-        private static readonly Brush SelectedBg = new SolidColorBrush(Color.FromRgb(0x93, 0xC5, 0xFD));
-        private static readonly Brush SelectedFg = Brushes.White;
-        private static readonly Brush SelectedBorder = new SolidColorBrush(Color.FromRgb(0x3B, 0x82, 0xF6));
+        /// <summary>
+        /// 选中标记：写在按钮 Tag 上，由 KeyButtonStyle 里的 Trigger(Tag=Selected) 消费。
+        /// 颜色走 DynamicResource（PrimaryLightBrush/PrimaryDarkBrush/PrimaryBrush），
+        /// 与容器页"触发键/开图键/暂停键/配置"标签页的选中态是同一组资源，切主题会一起变。
+        /// </summary>
+        private const string SelectedTag = "Selected";
 
         public TriggerKeyPage()
         {
@@ -210,12 +213,12 @@ namespace LvchaxsBS.UI.Pages
 
         private void Select(Button btn)
         {
+            // 清掉历史遗留的本地值，否则会盖掉样式 Trigger 里的选中色
             btn.ClearValue(Button.BackgroundProperty);
             btn.ClearValue(Button.ForegroundProperty);
             btn.ClearValue(Button.BorderBrushProperty);
-            btn.Background = SelectedBg;
-            btn.Foreground = SelectedFg;
-            btn.BorderBrush = SelectedBorder;
+
+            btn.Tag = SelectedTag;
         }
 
         private void Deselect(Button btn)
@@ -223,6 +226,8 @@ namespace LvchaxsBS.UI.Pages
             btn.ClearValue(Button.BackgroundProperty);
             btn.ClearValue(Button.ForegroundProperty);
             btn.ClearValue(Button.BorderBrushProperty);
+
+            btn.ClearValue(FrameworkElement.TagProperty);
         }
 
         // ============ 单选 ============

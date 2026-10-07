@@ -43,6 +43,13 @@
                                 <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                                 <Setter Property="Cursor" Value="No"/>
                             </Trigger>
+                            <!-- 选中：与上方"触发键/开图键/暂停键/配置"标签页的选中态完全同色
+                                 （PrimaryLight 底 + PrimaryDark 字 + Primary 边），跟随主题切换 -->
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryDarkBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
