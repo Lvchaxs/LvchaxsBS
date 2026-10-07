@@ -1,8 +1,10 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 using LvchaxsBS.Config;
 using LvchaxsBS.Config.FunctionConfigs;
 using LvchaxsBS.Core;
+using LvchaxsBS.Services;
 using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Pages.FunctionConfigs
@@ -134,11 +136,36 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             if (_isLoading) return;
 
-            ConfigSync.Mutate<QuickTeleportSettings>(s => s.EnableRightClickCancel = EnableRightClickCancel.IsChecked == true);
+            bool enabled = EnableRightClickCancel.IsChecked == true;
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.EnableRightClickCancel = enabled);
 
-            // 关掉开关时把可能残留的取消标志清掉，避免它继续挡着后续传送
-            if (EnableRightClickCancel.IsChecked != true)
+            if (enabled)
+            {
+                // 打开开关后右键被独占为"取消本次传送"，不能再当触发键，需要纠正旧的右键配置
+                ResetTriggerKeyIfRightButton();
+            }
+            else
+            {
+                // 关掉开关时把可能残留的取消标志清掉，避免它继续挡着后续传送
                 QuickTeleportLogic.ClearTeleportCancelled();
+            }
+        }
+
+        /// <summary>
+        /// 勾选开关后右键被独占为"取消本次传送"，不能再当触发键。
+        /// 如果之前（未勾选时）已经把触发键设成了右键，这里自动改回默认值（左键），
+        /// 避免"设了却用不了"。
+        /// </summary>
+        private void ResetTriggerKeyIfRightButton()
+        {
+            if (!string.Equals(ConfigManager.Get<HomePageSettings>().QuickTeleportKey,
+                               "右键", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            string defaultKey = new HomePageSettings().QuickTeleportKey;   // 配置类里的默认值：左键
+            ConfigSync.Mutate<HomePageSettings>(s => s.QuickTeleportKey = defaultKey);
+
+            ToastService.Show("快速传送", $"右键已被取消传送功能占用，触发键已改回「{defaultKey}」");
         }
     }
 }
