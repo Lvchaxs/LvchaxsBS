@@ -62,7 +62,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
 
             DisableListRecognition.IsChecked = s.DisableListRecognition;
             DisableAbyssFilter.IsChecked = s.DisableAbyssFilter;
-            SaveScreenshotLog.IsChecked = s.SaveScreenshotLog;
+            EnableRightClickCancel.IsChecked = s.EnableRightClickCancel;
 
             _isLoading = false;
 
@@ -130,10 +130,15 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             ConfigSync.Mutate<QuickTeleportSettings>(s => s.DisableAbyssFilter = DisableAbyssFilter.IsChecked == true);
         }
 
-        private void SaveScreenshotLog_Changed(object sender, RoutedEventArgs e)
+        private void EnableRightClickCancel_Changed(object sender, RoutedEventArgs e)
         {
             if (_isLoading) return;
-            ConfigSync.Mutate<QuickTeleportSettings>(s => s.SaveScreenshotLog = SaveScreenshotLog.IsChecked == true);
+
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.EnableRightClickCancel = EnableRightClickCancel.IsChecked == true);
+
+            // 关掉开关时把可能残留的取消标志清掉，避免它继续挡着后续传送
+            if (EnableRightClickCancel.IsChecked != true)
+                QuickTeleportLogic.ClearTeleportCancelled();
         }
     }
 }

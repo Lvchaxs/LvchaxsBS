@@ -595,8 +595,8 @@ namespace LvchaxsBS.Core
 
         private static bool IsOpenMapKey(string keyName)
         {
-            // 开图键不允许是右键：地图界面里右键专用于"取消本次快速传送"
-            if (keyName == "右键") return false;
+            // 开图键不允许是右键（仅在该开关打开时）：地图界面里右键专用于"取消本次快速传送"
+            if (keyName == "右键" && QuickTeleportLogic.IsRightClickCancelEnabled) return false;
 
             var openMapKey = ConfigManager.Get<QuickTeleportSettings>().OpenMapKey_1;
             if (string.IsNullOrEmpty(openMapKey)) return false;
@@ -637,7 +637,7 @@ namespace LvchaxsBS.Core
         /// </summary>
         private static bool CanTriggerQuickTeleport()
         {
-            if (QuickTeleportLogic.IsTeleportCancelled) return false;
+            if (QuickTeleportLogic.IsCancelledEffective) return false;
 
             return InOpenMapWindow() || (!_isInMainWindow && _isInMap);
         }
@@ -930,7 +930,7 @@ namespace LvchaxsBS.Core
         {
             if (!_isInMap) return "锚点1.png";
 
-            return QuickTeleportLogic.IsTeleportCancelled ? "锚点3.png" : "锚点2.png";
+            return QuickTeleportLogic.IsCancelledEffective ? "锚点3.png" : "锚点2.png";
         }
 
         private static void UpdateQuickTeleportIcon()
@@ -1129,8 +1129,9 @@ namespace LvchaxsBS.Core
             if (keyName == settings.QuickPickupKey && settings.QuickPickup) matchedModule = "快速拾取";
             else if (keyName == settings.StoryDialogueKey && settings.StoryDialogue) matchedModule = "剧情对话";
             else if (keyName == settings.FishingAssistKey && settings.FishingAssist) matchedModule = "钓鱼辅助";
-            // 快速传送不能用右键当触发键：地图界面右键是"取消本次传送"的开关
-            else if (keyName == settings.QuickTeleportKey && settings.QuickTeleport && keyName != "右键") matchedModule = "快速传送";
+            // 快速传送不能用右键当触发键（仅在该开关打开时）：地图界面右键是"取消本次传送"的开关
+            else if (keyName == settings.QuickTeleportKey && settings.QuickTeleport
+                     && !(keyName == "右键" && QuickTeleportLogic.IsRightClickCancelEnabled)) matchedModule = "快速传送";
             else if (keyName == settings.AutoLumberKey && settings.AutoLumber) matchedModule = "自动伐木";
             else if (keyName == settings.AutoCookKey && settings.AutoCook) matchedModule = "自动烹饪";
             else if (keyName == settings.ControllerPickupKey && settings.ControllerPickup) matchedModule = "手柄拾取";
@@ -1178,6 +1179,7 @@ namespace LvchaxsBS.Core
             // 条件符合但用户想手动传送时按右键，图标 锚点2 → 锚点3，本次地图内不再启用传送。
             if (args.EventType == MouseEventType.RightButtonDown
                 && _isInMap
+                && QuickTeleportLogic.IsRightClickCancelEnabled
                 && ConfigManager.Get<HomePageSettings>().QuickTeleport)
             {
                 Application.Current?.Dispatcher.Invoke(UpdateQuickTeleportIconAfterCancelToggle);
@@ -1233,8 +1235,9 @@ namespace LvchaxsBS.Core
                 matchedModule = "剧情对话";
             else if (settings.FishingAssist && settings.FishingAssistKey == eventDisplayName)
                 matchedModule = "钓鱼辅助";
-            // 同上：快速传送的触发键不认右键（右键在地图界面专用于取消本次传送）
-            else if (settings.QuickTeleport && settings.QuickTeleportKey == eventDisplayName && eventDisplayName != "右键")
+            // 同上：快速传送的触发键不认右键（右键在地图界面专用于取消本次传送，开关打开时才屏蔽）
+            else if (settings.QuickTeleport && settings.QuickTeleportKey == eventDisplayName
+                     && !(eventDisplayName == "右键" && QuickTeleportLogic.IsRightClickCancelEnabled))
                 matchedModule = "快速传送";
             else if (settings.AutoLumber && settings.AutoLumberKey == eventDisplayName)
                 matchedModule = "自动伐木";

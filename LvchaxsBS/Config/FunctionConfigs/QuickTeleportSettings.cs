@@ -60,9 +60,11 @@ namespace LvchaxsBS.Config.FunctionConfigs
         public bool DisableAbyssFilter { get; set; } = true;
 
         /// <summary>
-        /// 保存截图日志
+        /// 右键取消传送：勾选后，处于地图界面且触发键为左键时，
+        /// 按下鼠标右键可临时禁用本次传送（图标 锚点2 → 锚点3），
+        /// 直到检测到主界面自动清除，或再次按下右键解除。
         /// </summary>
-        public bool SaveScreenshotLog { get; set; } = false;
+        public bool EnableRightClickCancel { get; set; } = true;
 
         /// <summary>
         /// 开图键：快速传送模块专用的地图打开按键（多选，逗号分隔）

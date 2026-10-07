@@ -248,9 +248,12 @@ namespace LvchaxsBS.UI.Pages
             if (_triggerKeyPage is TriggerKeyPage keyboardPage)
             {
                 // ★ 禁用（所有功能的触发键都禁）：Win / Alt / Ctrl（含左右，页面里显示为红色不可选）；
-                //   快速传送再加"右键"——地图界面里右键被用作"取消本次传送"的开关，不能当触发键
+                //   快速传送再加"右键"——但只在"右键取消传送"开关打开时禁，
+                //   开关关掉后右键就是普通按键，可以拿来当触发键
+                bool rightClickCancel = ConfigManager.Get<QuickTeleportSettings>().EnableRightClickCancel;
+
                 keyboardPage.SetDisabledKeys(
-                    CurrentModuleName == "快速传送"
+                    CurrentModuleName == "快速传送" && rightClickCancel
                         ? new[] { "Win", "Alt", "Ctrl", "右键" }
                         : new[] { "Win", "Alt", "Ctrl" });
                 keyboardPage.LoadKey(savedKey);
@@ -311,9 +314,12 @@ namespace LvchaxsBS.UI.Pages
             var savedKeys = ConfigManager.Get<QuickTeleportSettings>().OpenMapKey_1;
             if (_openMapKeyPage is TriggerKeyPage tp)
             {
-                // ★ 开图键只禁"右键"（地图界面右键 = 取消本次传送）；
+                // ★ 开图键只禁"右键"（地图界面右键 = 取消本次传送）；开关关掉时右键可选。
                 //   Win/Alt/Ctrl 在这里是允许选的，只有各功能的"触发键"才禁这三个
-                tp.SetDisabledKeys("右键");
+                tp.SetDisabledKeys(
+                    ConfigManager.Get<QuickTeleportSettings>().EnableRightClickCancel
+                        ? new[] { "右键" }
+                        : Array.Empty<string>());
                 tp.LoadPauseKeys(savedKeys);
             }
 

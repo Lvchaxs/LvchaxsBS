@@ -63,14 +63,14 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,1,0,1">
-                            <CheckBox x:Name="SaveScreenshotLog"
+                            <CheckBox x:Name="EnableRightClickCancel"
                                       Content=""
                                       Style="{StaticResource PurpleCheckBoxStyle}"
                                       VerticalAlignment="Center"
-                                      Checked="SaveScreenshotLog_Changed"
-                                      Unchecked="SaveScreenshotLog_Changed"
-                                      ui:ToastNotifier.Message="保存截图日志"/>
-                            <TextBlock Text="保存截图日志：勾选后 仅保存最近一次执行的传送识别截图文件"
+                                      Checked="EnableRightClickCancel_Changed"
+                                      Unchecked="EnableRightClickCancel_Changed"
+                                      ui:ToastNotifier.Message="右键取消传送"/>
+                            <TextBlock Text="右键取消传送：勾选后 左键触发时可以通过按下右键临时禁用传送"
                                        FontSize="11"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="8,0,0,0"/>

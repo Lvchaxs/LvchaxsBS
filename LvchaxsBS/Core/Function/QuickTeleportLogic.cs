@@ -48,6 +48,19 @@ namespace LvchaxsBS.Core
             IsTeleportCancelled = false;
         }
 
+        /// <summary>
+        /// 是否启用"右键取消传送"（配置开关）。关闭后右键不再用于取消，恢复为普通右键。
+        /// </summary>
+        public static bool IsRightClickCancelEnabled
+            => ConfigManager.Get<QuickTeleportSettings>().EnableRightClickCancel;
+
+        /// <summary>
+        /// 取消标志当前是否真的生效。
+        /// 开关关闭时恒为 false —— 避免关掉开关后残留的旧标志继续挡着传送。
+        /// </summary>
+        public static bool IsCancelledEffective
+            => IsRightClickCancelEnabled && IsTeleportCancelled;
+
         #endregion
 
         // ===== 右下角缩放匹配参数 =====
@@ -60,58 +73,6 @@ namespace LvchaxsBS.Core
 
         public static event Action<double, double, double, string, int>? DetectionResultUpdated;
         public static event Action<double, double, double, string, int>? RightListDetectionResultUpdated;
-
-        #region 截图日志目录
-
-        private static string GetScreenshotLogDir()
-        {
-            string root = AppDomain.CurrentDomain.BaseDirectory;
-            string dir = Path.Combine(root, "截图日志", "快速传送-截图日志");
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-            return dir;
-        }
-
-        private static void ClearScreenshotLog()
-        {
-            if (!ConfigManager.Get<QuickTeleportSettings>().SaveScreenshotLog)
-                return;
-
-            try
-            {
-                string dir = GetScreenshotLogDir();
-                foreach (var file in Directory.GetFiles(dir, "*.png"))
-                {
-                    try { File.Delete(file); } catch { }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【快速传送】清空截图日志失败: {ex.Message}");
-            }
-        }
-
-        private static void SaveScreenshotLog(Bitmap bitmap, int prefix, int index, double elapsedMs, double matchScore)
-        {
-            if (bitmap == null) return;
-
-            if (!ConfigManager.Get<QuickTeleportSettings>().SaveScreenshotLog)
-                return;
-
-            try
-            {
-                string dir = GetScreenshotLogDir();
-                string fileName = $"{prefix}_{index}_耗时{elapsedMs:F2}ms_匹配度{matchScore * 100:F2}%.png";
-                string path = Path.Combine(dir, fileName);
-                bitmap.Save(path, ImageFormat.Png);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【快速传送】保存截图日志失败: {ex.Message}");
-            }
-        }
-
-        #endregion
 
         #region 右下角缩放匹配（只沿 X 轴，缩放后直接判定命中）
 
@@ -377,8 +338,6 @@ namespace LvchaxsBS.Core
                     if (!isFocused || !CoordinateFormats.CacheReady)
                         return;
 
-                    ClearScreenshotLog();
-
                     DetectionResultUpdated?.Invoke(-1, -1, -1, "", 0);
                     RightListDetectionResultUpdated?.Invoke(-1, -1, -1, "", 0);
 
@@ -479,7 +438,6 @@ namespace LvchaxsBS.Core
                                 double cornerMs = cornerSw.Elapsed.TotalMilliseconds;
                                 cornerTotalMs += cornerMs;
 
-                                SaveScreenshotLog(source, 0, detectCount, cornerMs, bestScore);
 
                                 DetectionResultUpdated?.Invoke(bestScore, cornerTotalMs, threshold, bestSource, detectCount);
 
@@ -550,7 +508,6 @@ namespace LvchaxsBS.Core
                             double cornerMs = cornerSw.Elapsed.TotalMilliseconds;
                             cornerTotalMsFull += cornerMs;
 
-                            SaveScreenshotLog(source, 0, detectCountFull, cornerMs, bestScore);
 
                             DetectionResultUpdated?.Invoke(bestScore, cornerTotalMsFull, threshold, bestSource, detectCountFull);
 
@@ -618,7 +575,6 @@ namespace LvchaxsBS.Core
                             rightListTotalMsFull += rightListMs;
 
                             double rightListSaveScore = rightListBestY != int.MaxValue ? rightListBestScore : globalBestScore;
-                            SaveScreenshotLog(rightListSource, 1, detectCountFull, rightListMs, rightListSaveScore);
 
                             if (rightListBestY != int.MaxValue)
                             {
