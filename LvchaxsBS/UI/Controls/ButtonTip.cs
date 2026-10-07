@@ -57,6 +57,27 @@ namespace LvchaxsBS.UI.Controls
         private static void SetCache(DependencyObject obj, Popup value)
             => obj.SetValue(CacheProperty, value);
 
+        // ===== 内部：关闭计时器（每个目标复用一个，避免堆积） =====
+        private static readonly DependencyProperty CloseTimerProperty =
+            DependencyProperty.RegisterAttached(
+                "CloseTimer",
+                typeof(System.Windows.Threading.DispatcherTimer),
+                typeof(ButtonTip),
+                new PropertyMetadata(null));
+
+        private static System.Windows.Threading.DispatcherTimer? GetCloseTimer(DependencyObject obj)
+            => (System.Windows.Threading.DispatcherTimer?)obj.GetValue(CloseTimerProperty);
+
+        private static void SetCloseTimer(DependencyObject obj, System.Windows.Threading.DispatcherTimer? value)
+            => obj.SetValue(CloseTimerProperty, value);
+
+        /// <summary>
+        /// 鼠标离开后延迟多久关闭气泡（毫秒）。
+        /// 只有气泡可点击（有 ClickAction）时才需要这点缓冲，用来把鼠标从按钮移到气泡上；
+        /// 不可点击的气泡鼠标一离开就立刻关掉。
+        /// </summary>
+        private const int CloseDelayMs = 120;
+
         // ===== 逻辑 =====
 
         private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -68,6 +89,8 @@ namespace LvchaxsBS.UI.Controls
 
             if (string.IsNullOrEmpty(e.NewValue as string))
             {
+                StopCloseTimer(fe);
+
                 var old = GetCache(fe);
                 if (old != null)
                 {
@@ -101,6 +124,9 @@ namespace LvchaxsBS.UI.Controls
             if (popup.Child is Border b2)
                 b2.Cursor = GetClickAction(fe) != null ? Cursors.Hand : null;
 
+            // 鼠标又回来了：撤销上一次离开排的关闭任务
+            StopCloseTimer(fe);
+
             // 跟随界面缩放：Popup 是独立视觉树，不会继承窗口 RootBorder 的 LayoutTransform，
             // 不处理的话 DPI 缩放下就会"字体和间距永远不变"。每次打开时更新，缩放改了也能生效。
             if (popup.Child is FrameworkElement content)
@@ -112,27 +138,61 @@ namespace LvchaxsBS.UI.Controls
         private static void OnMouseLeave(object sender, MouseEventArgs e)
         {
             if (sender is not FrameworkElement fe) return;
+            ScheduleClose(fe);
+        }
+
+        /// <summary>
+        /// 安排关闭：气泡可点击时留一点缓冲让鼠标能移到气泡上，否则立刻关闭。
+        /// 缓冲到期后如果鼠标已经回到按钮或落在气泡上，就不关（真正还在用）。
+        /// </summary>
+        private static void ScheduleClose(FrameworkElement fe)
+        {
             var popup = GetCache(fe);
             if (popup == null) return;
 
-            // 气泡可点击时，鼠标要从按钮移到气泡上才能点中，所以延迟关闭：
-            // 期间如果鼠标已经落在气泡上就保持打开，否则关闭。
-            if (GetClickAction(fe) != null)
+            // 不可点击的普通提示：鼠标一离开就消失，不做任何延迟
+            if (GetClickAction(fe) == null)
             {
-                var timer = new System.Windows.Threading.DispatcherTimer
+                StopCloseTimer(fe);
+                popup.IsOpen = false;
+                return;
+            }
+
+            var timer = GetCloseTimer(fe);
+            if (timer == null)
+            {
+                timer = new System.Windows.Threading.DispatcherTimer
                 {
-                    Interval = TimeSpan.FromMilliseconds(300)
+                    Interval = TimeSpan.FromMilliseconds(CloseDelayMs)
                 };
                 timer.Tick += (s, _) =>
                 {
                     timer.Stop();
-                    if (!popup.IsMouseOver) popup.IsOpen = false;
+
+                    var p = GetCache(fe);
+                    if (p == null) return;
+
+                    // 鼠标还在按钮上、或已经移到气泡上了 → 保持打开
+                    if (fe.IsMouseOver || p.IsMouseOver ||
+                        (p.Child is FrameworkElement child && child.IsMouseOver))
+                        return;
+
+                    p.IsOpen = false;
                 };
-                timer.Start();
-                return;
+                SetCloseTimer(fe, timer);
             }
 
-            popup.IsOpen = false;
+            timer.Stop();
+            timer.Start();
+        }
+
+        private static void StopCloseTimer(FrameworkElement fe)
+        {
+            var timer = GetCloseTimer(fe);
+            if (timer == null) return;
+
+            // 只停不销毁：计时器是每个目标复用一个，Tick 只在创建时订阅一次
+            timer.Stop();
         }
 
         private static Popup CreatePopup(FrameworkElement target)
@@ -178,6 +238,12 @@ namespace LvchaxsBS.UI.Controls
                     new CustomPopupPlacement(new Point(x, y), PopupPrimaryAxis.Horizontal)
                 };
             };
+
+            // 鼠标进入气泡：撤销按钮那边排的关闭任务，让"移到气泡上点击"来得及
+            border.MouseEnter += (s, e) => StopCloseTimer(target);
+
+            // 鼠标离开气泡：安排关闭（如果此时已经回到按钮上，就保持不关，避免闪烁）
+            border.MouseLeave += (s, e) => ScheduleClose(target);
 
             // 气泡可点击：点击时取"当前的" ClickAction（不缓存闭包，
             // 这样先 SetText 后 SetClickAction 也能生效）
