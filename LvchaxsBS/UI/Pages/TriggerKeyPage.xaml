@@ -36,9 +36,12 @@
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
                             </Trigger>
-                            <!-- 禁用：灰化 -->
+                            <!-- 禁用：不可选（字体显示为红色，如 左/右Ctrl、Win、左/右Alt、快速传送的右键） -->
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource Gray100Brush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                <Setter Property="Cursor" Value="No"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

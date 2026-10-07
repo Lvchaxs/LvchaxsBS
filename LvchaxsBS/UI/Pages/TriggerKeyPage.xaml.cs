@@ -305,8 +305,22 @@ namespace LvchaxsBS.UI.Pages
         // ============ 禁用某些键 ============
 
         /// <summary>
-        /// 禁用指定按键（不可点击、灰化）。
-        /// 传入的键名对应 _keyButtonMap 里的键名，例如 "Win"、"Alt"、"Ctrl"。
+        /// 逻辑键 → 页面上实际的键名集合。
+        /// 同一个物理键在页面上可能有"左/右"两个按钮，引擎侧键名也不同
+        /// （Ctrl / 左Ctrl / 右Ctrl、Alt / 左Alt / 右Alt），
+        /// 只传 "Ctrl" 这类总称时要展开成具体键名才能全部禁掉。
+        /// </summary>
+        private static readonly Dictionary<string, string[]> KeyNameGroups = new()
+        {
+            ["Ctrl"] = new[] { "Ctrl", "左Ctrl", "右Ctrl" },
+            ["Alt"] = new[] { "Alt", "左Alt", "右Alt" },
+            ["Shift"] = new[] { "Shift", "左Shift", "右Shift" },
+            ["Win"] = new[] { "Win" },   // 左右 Win 在页面上同名，靠遍历按钮一并禁用
+        };
+
+        /// <summary>
+        /// 禁用指定按键（不可点击，字体显示为红色）。
+        /// 传入的键名可以是总称（"Win" / "Alt" / "Ctrl"）或具体键名（"左Ctrl"、"右键"）。
         /// 每次调用会先清除之前的禁用状态，再应用新的。
         /// 如果在 Loaded 前调用，会暂存到 _pendingDisabledKeys，等 Loaded 后再应用。
         /// </summary>
@@ -321,32 +335,49 @@ namespace LvchaxsBS.UI.Pages
 
             _disabledKeys.Clear();
 
-            // 先全部启用
-            foreach (var kvp in _keyButtonMap)
+            // 先全部启用（按按钮遍历，避免同名按钮漏掉）
+            foreach (var kvp in _buttonToName)
             {
-                kvp.Value.IsEnabled = true;
+                kvp.Key.IsEnabled = true;
             }
 
             if (disabledKeys == null || disabledKeys.Length == 0) return;
 
-            foreach (var name in disabledKeys)
+            // 展开键组
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in disabledKeys)
             {
-                if (string.IsNullOrEmpty(name)) continue;
+                if (string.IsNullOrEmpty(key)) continue;
 
-                _disabledKeys.Add(name);
-
-                if (_keyButtonMap.TryGetValue(name, out var btn))
+                if (KeyNameGroups.TryGetValue(key, out var group))
                 {
-                    btn.IsEnabled = false;
-
-                    if (_selectedButton == btn)
-                    {
-                        Deselect(btn);
-                        _selectedButton = null;
-                        _currentKeyName = "";
-                    }
-                    _selectedKeys.Remove(name);
+                    foreach (var g in group) names.Add(g);
                 }
+                else
+                {
+                    names.Add(key);
+                }
+            }
+
+            // 同名按钮（左右 Win 都叫 "Win"）也要一起禁用，所以遍历"按钮 -> 键名"
+            foreach (var kvp in _buttonToName)
+            {
+                var btn = kvp.Key;
+                string keyName = kvp.Value;
+
+                if (!names.Contains(keyName)) continue;
+
+                _disabledKeys.Add(keyName);
+
+                btn.IsEnabled = false;
+
+                if (_selectedButton == btn)
+                {
+                    Deselect(btn);
+                    _selectedButton = null;
+                    _currentKeyName = "";
+                }
+                _selectedKeys.Remove(keyName);
             }
         }
     }
