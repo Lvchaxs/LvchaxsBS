@@ -93,15 +93,13 @@
               Margin="0,0,10,0"
               ui:ToastNotifier.Message="启用镜像"/>
 
+                        <!-- 图标和文字在同一个按钮里：点文字也能触发选择壁纸
+                             （FolderIconTextButtonStyle 的模板带 ContentPresenter） -->
                         <Button x:Name="SelectBackgroundButton"
-            Style="{StaticResource FolderIconButtonStyle}"
+            Content="更换壁纸"
+            Style="{StaticResource FolderIconTextButtonStyle}"
             VerticalAlignment="Center"
             Click="SelectBackgroundButton_Click"/>
-
-                        <TextBlock Text="更换壁纸"
-               FontSize="12"
-               Foreground="{DynamicResource TextPrimaryBrush}"
-               VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>

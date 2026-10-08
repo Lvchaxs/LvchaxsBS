@@ -133,4 +133,150 @@
         </Setter>
     </Style>
 
+    <!--
+        文件夹图标 + 文字一体的按钮。
+        与 FolderIconButtonStyle 的区别：模板里多了一个 ContentPresenter 显示 Content 文本，
+        这样文字本身就在按钮的命中区域内，点文字和点图标一样会触发 Click
+        （FolderIconButtonStyle 只有图标，旁边再放一个独立 TextBlock 时点文字是没反应的）。
+    -->
+    <Style x:Key="FolderIconTextButtonStyle" TargetType="Button">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4"
+                            Padding="2,4">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Viewbox Width="20" Height="20"
+                                     RenderTransformOrigin="0.5,0.5"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center">
+                                <Viewbox.RenderTransform>
+                                    <ScaleTransform x:Name="FolderIconScale"
+                                                    ScaleX="1" ScaleY="1"/>
+                                </Viewbox.RenderTransform>
+                                <Grid Width="24" Height="24">
+                                    <Path Data="M 3,6 L 9,6 L 11,8 L 21,8 L 21,19 L 3,19 Z"
+                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                          StrokeThickness="1.5"
+                                          StrokeLineJoin="Round"
+                                          Fill="Transparent"/>
+                                </Grid>
+                            </Viewbox>
+
+                            <!-- 文字：用附加属性把 Foreground 传进去，保证主题切换时跟着变 -->
+                            <ContentPresenter Margin="6,0,2,0"
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"
+                                              TextBlock.Foreground="{TemplateBinding Foreground}"
+                                              TextBlock.FontSize="{TemplateBinding FontSize}"/>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="Transparent"/>
+                        </Trigger>
+
+                        <!-- 悬停放大 -->
+                        <EventTrigger RoutedEvent="MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FolderIconScale"
+                                        Storyboard.TargetProperty="ScaleX"
+                                        To="1.1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FolderIconScale"
+                                        Storyboard.TargetProperty="ScaleY"
+                                        To="1.1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <!-- 移开缩回 -->
+                        <EventTrigger RoutedEvent="MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FolderIconScale"
+                                        Storyboard.TargetProperty="ScaleX"
+                                        To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FolderIconScale"
+                                        Storyboard.TargetProperty="ScaleY"
+                                        To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <!-- 按下缩回 -->
+                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FolderIconScale"
+                                        Storyboard.TargetProperty="ScaleX"
+                                        To="1" Duration="0:0:0.05"/>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FolderIconScale"
+                                        Storyboard.TargetProperty="ScaleY"
+                                        To="1" Duration="0:0:0.05"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <!-- 松开回弹到 1.1（鼠标还在上面） -->
+                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FolderIconScale"
+                                        Storyboard.TargetProperty="ScaleX"
+                                        To="1.1" Duration="0:0:0.1">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation
+                                        Storyboard.TargetName="FolderIconScale"
+                                        Storyboard.TargetProperty="ScaleY"
+                                        To="1.1" Duration="0:0:0.1">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>
