@@ -174,6 +174,22 @@
                                                          Margin="2,0,0,0"
                                                          ValueChanged="MedicineDetectThresholdSpinBox_ValueChanged"
                                                          ui:ToastNotifier.Message="清药匹配度"/>
+
+                            <TextBlock Text="粗匹配:"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
+
+                            <controls:SpinTextBoxControl x:Name="MedicineScaleFactorSpinBox"
+                                                         Minimum="1" Maximum="5"
+                                                         Step="1"
+                                                         Unit="" NumericFormat="F0"
+                                                         TextBoxWidth="38"
+                                                         VerticalAlignment="Center"
+                                                         Margin="2,0,0,0"
+                                                         ValueChanged="MedicineScaleFactorSpinBox_ValueChanged"
+                                                         ui:ToastNotifier.Message="清药粗匹配"
+                                                         controls:ButtonTip.Text="1 = 原图匹配误差最小；数值越大识别速度会更快但误差会增加。(先缩放粗略匹配到目标后再对原截图相同位置进行一次精确匹配)"/>
                         </StackPanel>
                     </Grid>
                 </Grid>

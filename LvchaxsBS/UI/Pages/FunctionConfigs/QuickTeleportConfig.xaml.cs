@@ -50,7 +50,11 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             QuickTeleportDelayCard.SpinValue = s.DetectThreshold;
             RightListDelayCard.Value = s.RightListDetectDelay_1;
             RightListDelayCard.SpinValue = s.RightListThreshold;
-            RightListDelayCard.Spin2Value = Math.Clamp(s.RightListScaleFactor, 1, 10);
+            // 档位上限已收紧到 5：历史配置里若存着更大的值（如 6），这里夹回并写回配置
+            int scaleFactor = Math.Clamp(s.RightListScaleFactor, 1, 5);
+            if (s.RightListScaleFactor != scaleFactor)
+                ConfigSync.Mutate<QuickTeleportSettings>(x => x.RightListScaleFactor = scaleFactor);
+            RightListDelayCard.Spin2Value = scaleFactor;
             RightListClickDelayCard.Value = s.RightListClickItemDelay_1;
             RightListFKeyDelaySlider.Value = s.RightListFKeyDelay;
             RightListAbyssFKeyDelaySlider.Value = s.RightListAbyssFKeyDelay;

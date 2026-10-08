@@ -68,7 +68,7 @@ namespace LvchaxsBS.Core
         private const double RIGHT_CORNER_SCALE_THRESHOLD_DELTA = 0;  // 缩放匹配阈值放宽容差
 
         // ===== 右侧列表缩放匹配参数 =====
-        // 右侧列表粗匹配档位不再写死：实际值来自 QuickTeleportSettings.RightListScaleFactor（1-10，默认 6）
+        // 右侧列表粗匹配档位不再写死：实际值来自 QuickTeleportSettings.RightListScaleFactor（1-5，默认 3）
         private const double RIGHT_LIST_SCALE_THRESHOLD_DELTA = 0.1;    // 缩放匹配阈值放宽容差
 
         public static event Action<double, double, double, string, int>? DetectionResultUpdated;
@@ -498,8 +498,8 @@ namespace LvchaxsBS.Core
 
                     int maxDetectTimeFull = settings.RightListDetectDelay_1;
 
-                    // 粗匹配缩放档位来自配置（1-10）：1 = 不缩放 = 关闭粗匹配
-                    int scaleFactor = Math.Clamp(settings.RightListScaleFactor, 1, 10);
+                    // 粗匹配缩放档位来自配置（1-5）：1 = 不缩放 = 关闭粗匹配
+                    int scaleFactor = Math.Clamp(settings.RightListScaleFactor, 1, 5);
 
                     Debug.WriteLine($"【快速传送】开始检测，检测时长上限: {maxDetectTimeFull}ms  粗匹配档位: {scaleFactor}");
 

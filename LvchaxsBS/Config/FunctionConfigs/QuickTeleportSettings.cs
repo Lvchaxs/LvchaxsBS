@@ -30,12 +30,12 @@ namespace LvchaxsBS.Config.FunctionConfigs
         public double RightListThreshold { get; set; } = 0.9;
 
         /// <summary>
-        /// 右列表"粗匹配"缩放档位（1-10，默认 6）。
+        /// 右列表"粗匹配"缩放档位（1-5，默认 3）。
         /// 右列表是两段式匹配：先把图缩小到 1/N 做粗匹配找到候选位置，再回原图精匹配。
         /// 1 = 不缩放（等于关闭粗匹配，原图直跑，最准最慢）；
         /// 数值越大越快，但缩放后模板越糊、位置误差越大，太大可能直接匹配不到。
         /// </summary>
-        public int RightListScaleFactor { get; set; } = 6;
+        public int RightListScaleFactor { get; set; } = 3;
 
         /// <summary>
         /// 右列表点击项延迟（毫秒）

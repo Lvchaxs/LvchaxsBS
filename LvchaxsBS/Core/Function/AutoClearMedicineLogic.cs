@@ -58,7 +58,12 @@ namespace LvchaxsBS.Core.Function
         private const string SCREENSHOT_ROOT = "截图日志";
         private const string SCREENSHOT_SUB_DIR = "自动清药-截图日志";
 
-        private const int GRID_MATCH_SCALE_FACTOR = 6;
+        /// <summary>
+        /// 粗匹配档位的取值下限/上限（和 UI 数字框保持一致）。
+        /// </summary>
+        private const int GRID_SCALE_FACTOR_MIN = 1;
+        private const int GRID_SCALE_FACTOR_MAX = 5;
+
         private const int SCROLL_DOWN_TIMES = 3;
         private const int CONFIRM_SETTLE_MS = 100;
         private const int REPEAT_MATCH_TIMES = 29;
@@ -100,6 +105,14 @@ namespace LvchaxsBS.Core.Function
 
         public static event Action<double, long, double, string>? DetectionResultUpdated;
         public static event Action? Stopped;
+
+        /// <summary>
+        /// 当前的粗匹配档位（来自配置，夹在 1-5）。
+        /// 1 = 不缩放（关闭粗匹配，原图直跑，最准最慢）；越大越快，但误差越大。
+        /// </summary>
+        private static int GridMatchScaleFactor =>
+            Math.Clamp(ConfigManager.Get<AutoCookSettings>().MedicineScaleFactor,
+                       GRID_SCALE_FACTOR_MIN, GRID_SCALE_FACTOR_MAX);
 
         public static bool IsRunning => _isRunning;
 
@@ -219,7 +232,7 @@ namespace LvchaxsBS.Core.Function
                 double threshold = ConfigManager.Get<AutoCookSettings>().MedicineDetectThreshold;
 
                 var result = ImageRecognition.MatchTemplateScaledBest(
-                    source, template, threshold, GRID_MATCH_SCALE_FACTOR, "拆除区域");
+                    source, template, threshold, GridMatchScaleFactor, "拆除区域");
 
                 return result != null && result.Matched;
             }
@@ -1087,7 +1100,7 @@ namespace LvchaxsBS.Core.Function
                 double threshold = settings.MedicineDetectThreshold;
 
                 var best = ImageRecognition.MatchTemplateScaledBest(
-                    source, template, threshold, GRID_MATCH_SCALE_FACTOR, "格子区");
+                    source, template, threshold, GridMatchScaleFactor, "格子区");
 
                 long elapsedMs = sw.ElapsedMilliseconds;
 
@@ -1118,7 +1131,7 @@ namespace LvchaxsBS.Core.Function
                         }
 
                         var confirmResult = ImageRecognition.MatchTemplateScaledBest(
-                            confirmSource, template, threshold, GRID_MATCH_SCALE_FACTOR);
+                            confirmSource, template, threshold, GridMatchScaleFactor);
 
                         double confirmScore = confirmResult?.Similarity ?? 0;
 

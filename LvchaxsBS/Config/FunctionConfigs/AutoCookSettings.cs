@@ -56,6 +56,14 @@ namespace LvchaxsBS.Config.FunctionConfigs
         public double MedicineDetectThreshold { get; set; } = 0.9;
 
         /// <summary>
+        /// 自动清药：格子区/拆除区域的"粗匹配"缩放档位（1-5，默认 3）。
+        /// 这两处是两段式匹配：先把图缩小到 1/N 做粗匹配找到候选位置，再回原图精匹配。
+        /// 1 = 不缩放（等于关闭粗匹配，原图直跑，最准最慢）；
+        /// 数值越大越快，但缩放后模板越糊、位置误差越大，太大可能直接匹配不到。
+        /// </summary>
+        public int MedicineScaleFactor { get; set; } = 3;
+
+        /// <summary>
         /// 自动清药：本次运行累计储存上限（达到后结束）
         /// </summary>
         public int MedicineTotalLimit { get; set; } = 2000;

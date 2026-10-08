@@ -88,6 +88,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             MedicineTotalLimitSpinBox.Value = s.MedicineTotalLimit;
             MedicineIntervalSpinBox.Value = s.MedicineInterval_1;
             MedicineDetectThresholdSpinBox.Value = s.MedicineDetectThreshold;
+            MedicineScaleFactorSpinBox.Value = Math.Clamp(s.MedicineScaleFactor, 1, 5);
 
             MedicineTypeSelect.ItemsSource = MedicineTypes;
 
@@ -258,6 +259,17 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             if (_isLoading) return;
             ConfigSync.Mutate<AutoCookSettings>(s => s.MedicineDetectThreshold = e.NewValue);
+        }
+
+        private void MedicineScaleFactorSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isLoading) return;
+
+            int factor = (int)Math.Round(e.NewValue);
+            if (factor < 1) factor = 1;
+            else if (factor > 5) factor = 5;
+
+            ConfigSync.Mutate<AutoCookSettings>(s => s.MedicineScaleFactor = factor);
         }
     }
 }
