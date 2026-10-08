@@ -419,6 +419,9 @@ namespace LvchaxsBS.Core
 
                             detectCount++;
 
+                            // bestScore：本轮所有模板的最高相似度（未达标也算，只用于 UI 展示）；
+                            // bestSource：只有真正达标（Matched）才有类型。
+                            // 判定仍然只看"有没有达标"——达标 ⟺ 相似度 ≥ 阈值，所以 bestScore 达标时必有类型
                             double bestScore = 0;
                             string bestSource = "";
 
@@ -434,12 +437,21 @@ namespace LvchaxsBS.Core
 
                                     // 缩放匹配，命中即算命中
                                     var scaledResult = MatchRightCornerScaled(source, template, threshold);
-                                    if (scaledResult != null && scaledResult.Matched && scaledResult.Similarity > bestScore)
+                                    if (scaledResult == null) continue;
+
+                                    // 没达标也记下相似度：UI 上就能看到"差多少"，而不是干巴巴一个 "--"。
+                                    // （MatchTemplateForRightCorner 返回的 Similarity 是滑窗最高 NCC，与是否达标无关）
+                                    bool isNewBest = scaledResult.Similarity > bestScore;
+                                    if (isNewBest)
                                     {
                                         bestScore = scaledResult.Similarity;
-                                        bestSource = templateName.Replace("快速传送_", "");
+                                        if (scaledResult.Matched)
+                                            bestSource = templateName.Replace("快速传送_", "");
+                                    }
 
-                                        // 命中后，再在原图匹配一次，只为拿到原图匹配度（不参与判定）
+                                    // 命中且刷新了最高分：再在原图匹配一次，只为拿到原图匹配度（不参与判定）
+                                    if (isNewBest && scaledResult.Matched)
+                                    {
                                         var precise = ImageRecognition.MatchTemplateForRightCorner(source, template, threshold);
                                         double preciseScore = precise?.Similarity ?? 0;
                                         Debug.WriteLine($"【快速传送-右下角】命中(缩放)={scaledResult.Similarity * 100:F2}%  原图匹配度={preciseScore * 100:F2}%  类型={bestSource}");
@@ -505,11 +517,19 @@ namespace LvchaxsBS.Core
                                 if (template == null) continue;
 
                                 var scaledResult = MatchRightCornerScaled(source, template, threshold);
-                                if (scaledResult != null && scaledResult.Matched && scaledResult.Similarity > bestScore)
+                                if (scaledResult == null) continue;
+
+                                // 同样：没达标也记下相似度，UI 才能显示"差多少"
+                                bool isNewBest = scaledResult.Similarity > bestScore;
+                                if (isNewBest)
                                 {
                                     bestScore = scaledResult.Similarity;
-                                    bestSource = templateName.Replace("快速传送_", "");
+                                    if (scaledResult.Matched)
+                                        bestSource = templateName.Replace("快速传送_", "");
+                                }
 
+                                if (isNewBest && scaledResult.Matched)
+                                {
                                     var precise = ImageRecognition.MatchTemplateForRightCorner(source, template, threshold);
                                     double preciseScore = precise?.Similarity ?? 0;
                                     Debug.WriteLine($"【快速传送-右下角】命中(缩放)={scaledResult.Similarity * 100:F2}%  原图匹配度={preciseScore * 100:F2}%  类型={bestSource}");

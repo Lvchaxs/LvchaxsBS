@@ -158,12 +158,18 @@ namespace LvchaxsBS.UI.Controls
         /// </summary>
         public void SetResult(double matchScore, long elapsedMs, double threshold, string type, int count)
         {
-            // 没有有效结果（未检测到 / 分数无效）→ 回到占位状态
-            if (matchScore < 0 || string.IsNullOrEmpty(type))
+            // 完全没有数据（真的没跑）→ 整行占位
+            if (matchScore < 0)
             {
                 SetEmpty();
-                // 没匹配上也把跑过的次数显示出来：能一眼看出"是没跑还是跑了几次都没中"
-                if (count > 0) SetCountRaw($"{CountLabel}: {count}", TagState.Good);
+                return;
+            }
+
+            // 跑了但没识别出类型：走"未命中"分支，
+            // 匹配度（不是 0 就显示具体数值）/ 耗时 / 次数照常显示，只有"类型"段留 "--"
+            if (string.IsNullOrEmpty(type))
+            {
+                SetNoMatch(matchScore, elapsedMs, threshold, count);
                 return;
             }
 

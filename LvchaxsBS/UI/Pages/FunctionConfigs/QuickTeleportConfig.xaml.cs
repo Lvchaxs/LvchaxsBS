@@ -5,7 +5,6 @@ using LvchaxsBS.Config;
 using LvchaxsBS.Config.FunctionConfigs;
 using LvchaxsBS.Core;
 using LvchaxsBS.Services;
-using LvchaxsBS.UI.Controls;
 using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Pages.FunctionConfigs
@@ -29,34 +28,18 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
 
         // ============ 运行状态标签 ============
 
+        // SetResult 内部已按情况分流：
+        //   分数 < 0（真没跑）→ 整行 "--"；没识别出类型 → 显示匹配度/耗时/次数，只把类型留 "--"
         private void OnDetectionResultUpdated(double matchScore, double elapsedMs, double threshold, string source, int count)
         {
-            Application.Current?.Dispatcher.Invoke(() => ApplyResult(RightCornerPanel, matchScore, elapsedMs, threshold, source, count));
+            Application.Current?.Dispatcher.Invoke(() =>
+                RightCornerPanel.SetResult(matchScore, (long)elapsedMs, threshold, source, count));
         }
 
         private void OnRightListDetectionResultUpdated(double matchScore, double elapsedMs, double threshold, string source, int count)
         {
-            Application.Current?.Dispatcher.Invoke(() => ApplyResult(RightListPanel, matchScore, elapsedMs, threshold, source, count));
-        }
-
-        /// <summary>
-        /// 写入一行状态标签。
-        /// 关键点：没匹配到（类型为空）时走 <see cref="StatusTagPanel.SetNoMatch"/>，
-        /// 只把"类型"置空，匹配度 / 耗时 / 次数照常显示 —— 否则跑了几次识别却整行都是 "--"。
-        /// </summary>
-        private static void ApplyResult(StatusTagPanel panel, double matchScore, double elapsedMs,
-                                        double threshold, string source, int count)
-        {
-            if (matchScore < 0)
-            {
-                panel.SetEmpty();
-                return;
-            }
-
-            if (string.IsNullOrEmpty(source))
-                panel.SetNoMatch(matchScore, (long)elapsedMs, threshold, count);
-            else
-                panel.SetResult(matchScore, (long)elapsedMs, threshold, source, count);
+            Application.Current?.Dispatcher.Invoke(() =>
+                RightListPanel.SetResult(matchScore, (long)elapsedMs, threshold, source, count));
         }
 
         private void QuickTeleportConfig_Loaded(object sender, RoutedEventArgs e)
