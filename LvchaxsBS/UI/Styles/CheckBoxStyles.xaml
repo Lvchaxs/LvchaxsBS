@@ -77,14 +77,14 @@
                                 <Storyboard>
                                     <DoubleAnimation Storyboard.TargetName="BoxScale"
                                                      Storyboard.TargetProperty="ScaleX"
-                                                     To="1.18" Duration="0:0:0.15">
+                                                     To="1.08" Duration="0:0:0.15">
                                         <DoubleAnimation.EasingFunction>
                                             <QuadraticEase EasingMode="EaseOut"/>
                                         </DoubleAnimation.EasingFunction>
                                     </DoubleAnimation>
                                     <DoubleAnimation Storyboard.TargetName="BoxScale"
                                                      Storyboard.TargetProperty="ScaleY"
-                                                     To="1.18" Duration="0:0:0.15">
+                                                     To="1.08" Duration="0:0:0.15">
                                         <DoubleAnimation.EasingFunction>
                                             <QuadraticEase EasingMode="EaseOut"/>
                                         </DoubleAnimation.EasingFunction>
@@ -121,10 +121,10 @@
                                 <Storyboard>
                                     <DoubleAnimation Storyboard.TargetName="BoxScale"
                                                      Storyboard.TargetProperty="ScaleX"
-                                                     To="0.88" Duration="0:0:0.05"/>
+                                                     To="0.95" Duration="0:0:0.05"/>
                                     <DoubleAnimation Storyboard.TargetName="BoxScale"
                                                      Storyboard.TargetProperty="ScaleY"
-                                                     To="0.88" Duration="0:0:0.05"/>
+                                                     To="0.95" Duration="0:0:0.05"/>
                                 </Storyboard>
                             </BeginStoryboard>
                         </EventTrigger>
@@ -135,14 +135,14 @@
                                 <Storyboard>
                                     <DoubleAnimation Storyboard.TargetName="BoxScale"
                                                      Storyboard.TargetProperty="ScaleX"
-                                                     To="1.18" Duration="0:0:0.1">
+                                                     To="1.08" Duration="0:0:0.1">
                                         <DoubleAnimation.EasingFunction>
                                             <QuadraticEase EasingMode="EaseOut"/>
                                         </DoubleAnimation.EasingFunction>
                                     </DoubleAnimation>
                                     <DoubleAnimation Storyboard.TargetName="BoxScale"
                                                      Storyboard.TargetProperty="ScaleY"
-                                                     To="1.18" Duration="0:0:0.1">
+                                                     To="1.08" Duration="0:0:0.1">
                                         <DoubleAnimation.EasingFunction>
                                             <QuadraticEase EasingMode="EaseOut"/>
                                         </DoubleAnimation.EasingFunction>
