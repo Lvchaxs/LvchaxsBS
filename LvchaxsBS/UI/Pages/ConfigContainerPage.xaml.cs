@@ -237,6 +237,72 @@ namespace LvchaxsBS.UI.Pages
 
         public void SetConfigPage(Page page) => _configPage = page;
 
+        // ============ 全局禁选键 ============
+
+        /// <summary>
+        /// 所有功能的触发键都禁用的键：Win / Alt / Ctrl（含左右）+ 右键。
+        /// 右键是全局禁选，不再跟"右键取消传送"开关挂钩。
+        /// </summary>
+        private static readonly string[] DisabledTriggerKeys = { "Win", "Alt", "Ctrl", "右键" };
+
+        /// <summary>判断是否属于禁选键（含左右分组的具体键名）。</summary>
+        private static bool IsDisabledTriggerKey(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return false;
+            return key.Equals("右键", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("Win", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("Alt", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("左Alt", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("右Alt", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("Ctrl", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("左Ctrl", StringComparison.OrdinalIgnoreCase)
+                || key.Equals("右Ctrl", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 多键列表（暂停键 / 开图键）里剔除全局禁选键。
+        /// 右键现在不可选，历史配置里如果还留着它，打开页面时会一起清掉，
+        /// 否则会出现"列表里没有、配置里还在，功能却还在响应"的错位。
+        /// </summary>
+        private static string StripDisabledKeys(string keys, out bool changed)
+        {
+            changed = false;
+            if (string.IsNullOrEmpty(keys)) return keys;
+
+            var kept = new List<string>();
+            foreach (var raw in keys.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var k = raw.Trim();
+                if (string.IsNullOrEmpty(k)) continue;
+                if (IsDisabledTriggerKey(k)) { changed = true; continue; }
+                kept.Add(k);
+            }
+            return string.Join(",", kept);
+        }
+
+        /// <summary>
+        /// 打开触发键页时，如果当前保存的触发键正好是禁选键（例如以前设成过右键），
+        /// 自动改回该功能配置类里的默认触发键并提示，避免"设了却用不了 / 页面显示未设置"。
+        /// </summary>
+        private string ResetTriggerKeyIfDisabled(string currentKey)
+        {
+            if (string.IsNullOrEmpty(currentKey) || currentKey == "未设置") return currentKey;
+            if (!IsDisabledTriggerKey(currentKey)) return currentKey;
+
+            var module = ModuleRegistry.ByName(CurrentModuleName);
+            if (module == null) return currentKey;
+
+            string fallback = module.GetKey(new HomePageSettings());   // 新建配置 = 各字段的默认值
+            if (string.IsNullOrEmpty(fallback) || IsDisabledTriggerKey(fallback)) return currentKey;
+
+            var s = ConfigManager.Get<HomePageSettings>();
+            module.SetKey(s, fallback);
+            ConfigManager.Save(s);
+
+            ToastService.Show(module.Name, $"触发键不能设为「{currentKey}」，已改回默认「{fallback}」");
+            return fallback;
+        }
+
         // ============ 切换 ============
 
         public void ShowTriggerKeyPage()
@@ -247,15 +313,16 @@ namespace LvchaxsBS.UI.Pages
 
             if (_triggerKeyPage is TriggerKeyPage keyboardPage)
             {
-                // ★ 禁用（所有功能的触发键都禁）：Win / Alt / Ctrl（含左右，页面里显示为红色不可选）；
-                //   快速传送再加"右键"——但只在"右键取消传送"开关打开时禁，
-                //   开关关掉后右键就是普通按键，可以拿来当触发键
-                bool rightClickCancel = ConfigManager.Get<QuickTeleportSettings>().EnableRightClickCancel;
+                // ★ 所有功能的触发键统一禁用：Win / Alt / Ctrl（含左右，页面里红色不可选）+ 右键。
+                //   右键是全局禁选键——它是"取消/交互"键，任何功能都不允许拿它当触发键，
+                //   与"右键取消传送"开关是否勾选无关（否则同一个键会时禁时可选，
+                //   被别的功能占用时还会出现"禁用按钮却显示成可跳转的占用样式"的矛盾）。
+                keyboardPage.SetDisabledKeys(DisabledTriggerKeys);
 
-                keyboardPage.SetDisabledKeys(
-                    CurrentModuleName == "快速传送" && rightClickCancel
-                        ? new[] { "Win", "Alt", "Ctrl", "右键" }
-                        : new[] { "Win", "Alt", "Ctrl" });
+                // 历史配置里万一残留了禁用键（比如以前把触发键设成了右键），自动改回默认值，
+                // 免得出现"配置是右键、页面却显示未设置"的错觉
+                savedKey = ResetTriggerKeyIfDisabled(savedKey);
+
                 keyboardPage.LoadKey(savedKey);
                 // ★ 其他功能已经用掉的触发键不可再选，按钮背景显示对应功能图标
                 //   （必须在 LoadKey 之后：当前功能自己已选的键要保持选中样式）
@@ -292,7 +359,15 @@ namespace LvchaxsBS.UI.Pages
             var savedKeys = ConfigManager.Get<QuickPickupSettings>().PauseKeys;
             if (_pauseKeyPage is TriggerKeyPage tp)
             {
-                tp.SetDisabledKeys();   // ★ 清空禁用（暂停键不禁用）
+                // ★ 暂停键不禁 Win/Alt/Ctrl，但右键全局禁选（它已经被用于取消/交互）
+                tp.SetDisabledKeys("右键");
+
+                savedKeys = StripDisabledKeys(savedKeys, out bool pauseChanged);
+                if (pauseChanged)
+                {
+                    ConfigSync.Mutate<QuickPickupSettings>(s => s.PauseKeys = savedKeys);
+                    ToastService.Show("暂停键", "右键不能作为暂停键，已从配置中移除");
+                }
                 tp.LoadPauseKeys(savedKeys);
             }
 
@@ -314,12 +389,16 @@ namespace LvchaxsBS.UI.Pages
             var savedKeys = ConfigManager.Get<QuickTeleportSettings>().OpenMapKey_1;
             if (_openMapKeyPage is TriggerKeyPage tp)
             {
-                // ★ 开图键只禁"右键"（地图界面右键 = 取消本次传送）；开关关掉时右键可选。
+                // ★ 开图键只禁"右键"（地图界面右键 = 取消本次传送），无条件禁；
                 //   Win/Alt/Ctrl 在这里是允许选的，只有各功能的"触发键"才禁这三个
-                tp.SetDisabledKeys(
-                    ConfigManager.Get<QuickTeleportSettings>().EnableRightClickCancel
-                        ? new[] { "右键" }
-                        : Array.Empty<string>());
+                tp.SetDisabledKeys("右键");
+
+                savedKeys = StripDisabledKeys(savedKeys, out bool mapChanged);
+                if (mapChanged)
+                {
+                    ConfigSync.Mutate<QuickTeleportSettings>(s => s.OpenMapKey_1 = savedKeys);
+                    ToastService.Show("开图键", "右键不能作为开图键，已从配置中移除");
+                }
                 tp.LoadPauseKeys(savedKeys);
             }
 

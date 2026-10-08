@@ -477,6 +477,10 @@ namespace LvchaxsBS.UI.Pages
 
                 if (!occupied.TryGetValue(keyName, out var module)) continue;
 
+                // 全局禁选键（Win/Alt/Ctrl/右键）优先保持"禁用"样式：
+                // 它已经不可点了，再标成"被 X 占用、可点击跳转"会互相矛盾（点了没反应）
+                if (_disabledKeys.Contains(keyName)) continue;
+
                 // 当前功能自己已选的键不标占用（保持选中样式）
                 if (btn == _selectedButton) continue;
 
