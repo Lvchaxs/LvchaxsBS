@@ -38,11 +38,11 @@
                                                  ShowCount="True"/>
                     </StackPanel>
 
-                    <!-- 中间：三行参数（靠右，紧挨复选框左侧；一行一个：
-                         右下角匹配度 / 右列表匹配度 / 右侧列表粗匹配）。
-                         CompactHeight="16" 是为了三行排下来不把卡片撑高（卡片高度保持不变）。 -->
+                    <!-- 中间：三行参数（一行一个：右下角匹配度 / 右列表匹配度 / 右侧列表粗匹配）。
+                         CompactHeight="20"：行高压到 20（原本 22）、行间距 3，
+                         三行共 66，正好装进卡片固定高度 70 里（卡片样式 Height=70，不会撑高）。 -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center"
-                                HorizontalAlignment="Right" Margin="12,0,10,0">
+                                HorizontalAlignment="Left" Margin="202,0,0,0">
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <TextBlock Text="右下角匹配度:"
@@ -54,14 +54,14 @@
                                                          Step="0.01"
                                                          NumericFormat="F2"
                                                          TextBoxWidth="45"
-                                                         CompactHeight="16"
+                                                         CompactHeight="20"
                                                          VerticalAlignment="Center"
                                                          Margin="4,0,0,0"
                                                          ValueChanged="DetectThresholdSpinBox_ValueChanged"
                                                          ui:ToastNotifier.Message="右下角匹配度"/>
                         </StackPanel>
 
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,3,0,3">
                             <TextBlock Text="右列表匹配度:"
                                        FontSize="11"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
@@ -71,7 +71,7 @@
                                                          Step="0.01"
                                                          NumericFormat="F2"
                                                          TextBoxWidth="45"
-                                                         CompactHeight="16"
+                                                         CompactHeight="20"
                                                          VerticalAlignment="Center"
                                                          Margin="4,0,0,0"
                                                          ValueChanged="RightListThresholdSpinBox_ValueChanged"
@@ -88,7 +88,7 @@
                                                          Step="1"
                                                          NumericFormat="F0"
                                                          TextBoxWidth="40"
-                                                         CompactHeight="16"
+                                                         CompactHeight="20"
                                                          VerticalAlignment="Center"
                                                          Margin="4,0,0,0"
                                                          ValueChanged="RightListScaleFactorSpinBox_ValueChanged"
@@ -102,6 +102,7 @@
                          这样点文字就能勾选；常驻只显示前六个字，完整说明走悬停标签 -->
                     <!-- 靠右并且不横向拉伸：宽度只包住"勾选框 + 文字"，
                          否则整片右侧空白都属于复选框，鼠标扫过空白也会弹悬停标签 -->
+                    <!-- 行高/行间距与左侧三行参数保持一致（20 / 3），两列逐行对齐，看起来不挤 -->
                     <StackPanel Grid.Column="2" VerticalAlignment="Center"
                                 HorizontalAlignment="Right" Margin="0,0,12,0">
                         <CheckBox x:Name="EnableListRecognition"
@@ -111,7 +112,8 @@
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   VerticalAlignment="Center"
                                   HorizontalAlignment="Left"
-                                  Margin="0,1,0,1"
+                                  Height="20"
+                                  Margin="0,0,0,0"
                                   Checked="EnableListRecognition_Changed"
                                   Unchecked="EnableListRecognition_Changed"
                                   ui:ToastNotifier.Message="右侧列表识别"
@@ -124,7 +126,8 @@
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   VerticalAlignment="Center"
                                   HorizontalAlignment="Left"
-                                  Margin="0,1,0,1"
+                                  Height="20"
+                                  Margin="0,3,0,3"
                                   Checked="DisableAbyssFilter_Changed"
                                   Unchecked="DisableAbyssFilter_Changed"
                                   ui:ToastNotifier.Message="深渊剧诗过滤"
@@ -137,7 +140,8 @@
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   VerticalAlignment="Center"
                                   HorizontalAlignment="Left"
-                                  Margin="0,1,0,1"
+                                  Height="20"
+                                  Margin="0,0,0,0"
                                   Checked="EnableRightClickCancel_Changed"
                                   Unchecked="EnableRightClickCancel_Changed"
                                   ui:ToastNotifier.Message="右键取消传送"

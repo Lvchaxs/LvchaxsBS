@@ -145,7 +145,7 @@
                                                          ValueChanged="MedicineTotalLimitSpinBox_ValueChanged"
                                                          ui:ToastNotifier.Message="清理数量"/>
 
-                            <TextBlock Text="间隔:"
+                            <TextBlock Text="识别间隔:"
                                        FontSize="12"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="6,0,0,0"/>
@@ -159,21 +159,6 @@
                                                          Margin="2,0,0,0"
                                                          ValueChanged="MedicineIntervalSpinBox_ValueChanged"
                                                          ui:ToastNotifier.Message="清药间隔"/>
-
-                            <TextBlock Text="匹配度:"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
-
-                            <controls:SpinTextBoxControl x:Name="MedicineDetectThresholdSpinBox"
-                                                         Minimum="0" Maximum="1"
-                                                         Step="0.01"
-                                                         Unit="" NumericFormat="F2"
-                                                         TextBoxWidth="45"
-                                                         VerticalAlignment="Center"
-                                                         Margin="2,0,0,0"
-                                                         ValueChanged="MedicineDetectThresholdSpinBox_ValueChanged"
-                                                         ui:ToastNotifier.Message="清药匹配度"/>
 
                             <TextBlock Text="粗匹配:"
                                        FontSize="12"
@@ -190,6 +175,21 @@
                                                          ValueChanged="MedicineScaleFactorSpinBox_ValueChanged"
                                                          ui:ToastNotifier.Message="清药粗匹配"
                                                          controls:ButtonTip.Text="1 = 原图匹配误差最小；数值越大识别速度会更快但误差会增加。(先缩放粗略匹配到目标后再对原截图相同位置进行一次精确匹配)"/>
+                            
+                            <TextBlock Text="匹配度:"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
+
+                            <controls:SpinTextBoxControl x:Name="MedicineDetectThresholdSpinBox"
+                                                         Minimum="0" Maximum="1"
+                                                         Step="0.01"
+                                                         Unit="" NumericFormat="F2"
+                                                         TextBoxWidth="45"
+                                                         VerticalAlignment="Center"
+                                                         Margin="2,0,0,0"
+                                                         ValueChanged="MedicineDetectThresholdSpinBox_ValueChanged"
+                                                         ui:ToastNotifier.Message="清药匹配度"/>
                         </StackPanel>
                     </Grid>
                 </Grid>
