@@ -148,15 +148,15 @@ namespace LvchaxsBS.UI.Controls
                 double gap = 8 * s;
                 double y = -popupSize.Height - gap;
 
-                // 最左/最右一列的按钮（如 Esc 那一列）居中弹出时，气泡会有一部分伸到窗口外面，
-                // 这里把它拉回窗口内（左右都夹），只动水平方向。
-                x += ClampIntoWindow(target, popupSize.Width, x, s);
-
                 return new[]
                 {
                     new CustomPopupPlacement(new Point(x, y), PopupPrimaryAxis.Horizontal)
                 };
             };
+
+            // 打开后按"实测屏幕坐标"再校一次：气泡居中到按钮正上方，
+            // 并且只有真的伸到窗口外面才拉回来（可以贴着窗口边缘，不额外留边距）。
+            popup.Opened += (_, _) => CenterAndClamp(popup, border, target);
 
             // 气泡只是提示：不接鼠标事件（IsHitTestVisible=False），
             // 这样它不会挡住下方按钮的命中，鼠标掠过时也不会触发多余事件。
@@ -166,45 +166,56 @@ namespace LvchaxsBS.UI.Controls
         }
 
         /// <summary>
-        /// 计算把气泡拉回窗口内容区所需的水平修正量（0 = 本来就放得下，不需要动）。
+        /// 气泡打开后的水平校正：先对准按钮中心，再保证不超出窗口内容区。
         /// <para>
-        /// 坐标统一换算到"屏幕 / 96"单位：Popup 的偏移是按屏幕像素加的，
-        /// 这里除掉 DPI 后与偏移用的是同一把尺子，界面缩放（UiScale）已经包含在屏幕坐标里。
+        /// 全部用 PointToScreen 实测（换算到"屏幕 / 96"单位，即除掉 DPI），
+        /// 不依赖缩放系数/DPI 的推算，所以不会把"贴着边缘但没超出"的气泡误推回窗口内。
+        /// 只在真的越界时才动，允许紧贴左右边缘。
         /// </para>
         /// </summary>
-        private static double ClampIntoWindow(FrameworkElement target, double popupWidth, double x, double scale)
+        private static void CenterAndClamp(Popup popup, FrameworkElement tip, FrameworkElement target)
         {
             try
             {
                 var win = Window.GetWindow(target);
-                if (win?.Content is not FrameworkElement content || content.ActualWidth <= 0) return 0;
+                if (win?.Content is not FrameworkElement content || content.ActualWidth <= 0) return;
 
                 var src = PresentationSource.FromVisual(content);
                 double dpi = src?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
                 if (dpi <= 0) dpi = 1.0;
 
-                // 窗口内容区的左右边界（PointToScreen 会带上 LayoutTransform，缩放后依然准确）
                 double winLeft = content.PointToScreen(new Point(0, 0)).X / dpi;
                 double winRight = content.PointToScreen(new Point(content.ActualWidth, content.ActualHeight)).X / dpi;
 
-                double margin = 6 * scale;
-                double tipLeft = target.PointToScreen(new Point(0, 0)).X / dpi + x;
-                double tipRight = tipLeft + popupWidth;
+                double tipLeft = tip.PointToScreen(new Point(0, 0)).X / dpi;
+                double tipWidth = tip.PointToScreen(new Point(tip.ActualWidth, 0)).X / dpi - tipLeft;
+                if (tipWidth <= 0) return;
 
-                double minLeft = winLeft + margin;
-                double maxRight = winRight - margin;
+                double btnLeft = target.PointToScreen(new Point(0, 0)).X / dpi;
+                double btnWidth = target.PointToScreen(new Point(target.ActualWidth, 0)).X / dpi - btnLeft;
 
-                // 气泡本身就比窗口还宽（极端缩放）时，干脆贴左放，别来回抖
-                if (popupWidth >= maxRight - minLeft) return minLeft - tipLeft;
+                // 1) 居中到按钮正上方
+                double desired = btnLeft + (btnWidth - tipWidth) / 2.0;
 
-                if (tipLeft < minLeft) return minLeft - tipLeft;
-                if (tipRight > maxRight) return maxRight - tipRight;
-                return 0;
+                // 2) 越界才拉回；贴边是允许的（不留额外边距）
+                if (desired < winLeft) desired = winLeft;
+                // 留 1px 是给 Popup 定位取整用的兜底，肉眼仍等于贴边
+                else if (desired + tipWidth > winRight) desired = winRight - tipWidth - 1;
+                if (desired < winLeft) desired = winLeft;      // 窗口比气泡还窄时至少贴左
+
+                // 上面量的是"屏幕 /96"，而 Popup 的偏移是在窗口内容（带界面缩放）的坐标系里，
+                // 两者差一个缩放系数：直接用"按钮屏幕宽 ÷ 按钮逻辑宽"反推，比读缩放配置更可靠。
+                double scale = target.ActualWidth > 0 ? btnWidth / target.ActualWidth : 1.0;
+                if (scale <= 0) scale = 1.0;
+
+                double delta = (desired - tipLeft) / scale;
+                if (Math.Abs(delta) < 0.5) return;
+
+                popup.HorizontalOffset += delta;
             }
             catch
             {
-                // 拿不到窗口/屏幕信息（例如还没挂到视觉树上）时就按原样居中，不影响显示
-                return 0;
+                // 拿不到窗口/屏幕信息就保持原样，不影响显示
             }
         }
     }
