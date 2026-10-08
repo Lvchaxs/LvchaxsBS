@@ -8,7 +8,8 @@
              Focusable="False">
 
     <!--
-        运行状态标签组：匹配度 / 耗时 / 类型（结构与旧项目一致）。
+        运行状态标签组：匹配度 / 耗时 / 类型 / 识别次数（结构与旧项目一致）。
+        识别次数默认不显示（ShowCount=False），只有需要的功能页（如快速传送）显式打开。
         配色走主题资源（TagGreen* / TagRed* / Gray100），深浅主题都正确、切主题自动跟随；
         文字色由代码按状态切换（见 StatusTagPanel.xaml.cs 的 ApplyState）。
     -->
@@ -33,6 +34,15 @@
         <Border x:Name="SourceBorder" Style="{StaticResource TagLabelGreenStyle}">
             <TextBlock x:Name="SourceText"
                        Text="类型: --"
+                       FontSize="11"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TagGreenFgBrush}"/>
+        </Border>
+
+        <!-- 识别次数：本次执行中实际跑了几次模板匹配（ShowCount 打开才显示） -->
+        <Border x:Name="CountBorder" Style="{StaticResource TagLabelGreenStyle}">
+            <TextBlock x:Name="CountText"
+                       Text="次数: --"
                        FontSize="11"
                        FontWeight="SemiBold"
                        Foreground="{DynamicResource TagGreenFgBrush}"/>

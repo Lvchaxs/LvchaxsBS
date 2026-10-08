@@ -25,11 +25,15 @@
                         <controls:StatusTagPanel x:Name="RightCornerPanel"
                                                  ScoreLabel="右下角匹配度"
                                                  TimeLabel="识别耗时"
-                                                 SourceLabel="识别类型"/>
+                                                 SourceLabel="识别类型"
+                                                 CountLabel="识别次数"
+                                                 ShowCount="True"/>
                         <controls:StatusTagPanel x:Name="RightListPanel" Margin="0,6,0,0"
                                                  ScoreLabel="右列表匹配度"
                                                  TimeLabel="识别耗时"
-                                                 SourceLabel="识别类型"/>
+                                                 SourceLabel="识别类型"
+                                                 CountLabel="识别次数"
+                                                 ShowCount="True"/>
                     </StackPanel>
 
                     <!-- 右侧：三行复选框 -->

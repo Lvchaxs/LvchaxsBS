@@ -33,7 +33,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 if (matchScore >= 0)
-                    RightCornerPanel.SetResult(matchScore, (long)elapsedMs, threshold, source);
+                    RightCornerPanel.SetResult(matchScore, (long)elapsedMs, threshold, source, count);
                 else
                     RightCornerPanel.SetEmpty();
             });
@@ -44,7 +44,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 if (matchScore >= 0)
-                    RightListPanel.SetResult(matchScore, (long)elapsedMs, threshold, source);
+                    RightListPanel.SetResult(matchScore, (long)elapsedMs, threshold, source, count);
                 else
                     RightListPanel.SetEmpty();
             });

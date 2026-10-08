@@ -39,6 +39,10 @@ namespace LvchaxsBS.UI.Controls
             DependencyProperty.Register(nameof(SourceLabel), typeof(string), typeof(StatusTagPanel),
                 new PropertyMetadata("类型", OnLabelChanged));
 
+        public static readonly DependencyProperty CountLabelProperty =
+            DependencyProperty.Register(nameof(CountLabel), typeof(string), typeof(StatusTagPanel),
+                new PropertyMetadata("次数", OnLabelChanged));
+
         public string ScoreLabel
         {
             get => (string)GetValue(ScoreLabelProperty);
@@ -57,6 +61,12 @@ namespace LvchaxsBS.UI.Controls
             set => SetValue(SourceLabelProperty, value);
         }
 
+        public string CountLabel
+        {
+            get => (string)GetValue(CountLabelProperty);
+            set => SetValue(CountLabelProperty, value);
+        }
+
         // ===== 显隐 =====
 
         public static readonly DependencyProperty ShowTimeProperty =
@@ -66,6 +76,11 @@ namespace LvchaxsBS.UI.Controls
         public static readonly DependencyProperty ShowSourceProperty =
             DependencyProperty.Register(nameof(ShowSource), typeof(bool), typeof(StatusTagPanel),
                 new PropertyMetadata(true, OnVisibilityChanged));
+
+        /// <summary>是否显示"识别次数"标签。默认关闭，只有传了次数的功能页才打开。</summary>
+        public static readonly DependencyProperty ShowCountProperty =
+            DependencyProperty.Register(nameof(ShowCount), typeof(bool), typeof(StatusTagPanel),
+                new PropertyMetadata(false, OnVisibilityChanged));
 
         public bool ShowTime
         {
@@ -77,6 +92,12 @@ namespace LvchaxsBS.UI.Controls
         {
             get => (bool)GetValue(ShowSourceProperty);
             set => SetValue(ShowSourceProperty, value);
+        }
+
+        public bool ShowCount
+        {
+            get => (bool)GetValue(ShowCountProperty);
+            set => SetValue(ShowCountProperty, value);
         }
 
         public StatusTagPanel()
@@ -103,12 +124,14 @@ namespace LvchaxsBS.UI.Controls
             if (ScoreText.Text.EndsWith(": --")) ScoreText.Text = $"{ScoreLabel}: --";
             if (TimeText.Text.EndsWith(": --")) TimeText.Text = $"{TimeLabel}: --";
             if (SourceText.Text.EndsWith(": --")) SourceText.Text = $"{SourceLabel}: --";
+            if (CountText.Text.EndsWith(": --")) CountText.Text = $"{CountLabel}: --";
         }
 
         private void ApplyVisibility()
         {
             TimeBorder.Visibility = ShowTime ? Visibility.Visible : Visibility.Collapsed;
             SourceBorder.Visibility = ShowSource ? Visibility.Visible : Visibility.Collapsed;
+            CountBorder.Visibility = ShowCount ? Visibility.Visible : Visibility.Collapsed;
         }
 
         // ===== 对外更新接口 =====
@@ -119,6 +142,7 @@ namespace LvchaxsBS.UI.Controls
             SetScoreRaw($"{ScoreLabel}: --", TagState.Neutral);
             SetTimeRaw($"{TimeLabel}: --", TagState.Neutral);
             SetSourceRaw($"{SourceLabel}: --", TagState.Neutral);
+            SetCountRaw($"{CountLabel}: --", TagState.Neutral);
         }
 
         /// <summary>
@@ -126,11 +150,20 @@ namespace LvchaxsBS.UI.Controls
         /// 匹配度按百分比显示，达到阈值绿、未达到红。
         /// </summary>
         public void SetResult(double matchScore, long elapsedMs, double threshold, string type)
+            => SetResult(matchScore, elapsedMs, threshold, type, -1);
+
+        /// <summary>
+        /// 一次性设置"匹配度 / 耗时 / 类型 / 识别次数"。
+        /// count 小于 0 表示没有次数数据，该段显示 "--"。
+        /// </summary>
+        public void SetResult(double matchScore, long elapsedMs, double threshold, string type, int count)
         {
             // 没有有效结果（未检测到 / 分数无效）→ 回到占位状态
             if (matchScore < 0 || string.IsNullOrEmpty(type))
             {
                 SetEmpty();
+                // 没匹配上也把跑过的次数显示出来：能一眼看出"是没跑还是跑了几次都没中"
+                if (count > 0) SetCountRaw($"{CountLabel}: {count}", TagState.Good);
                 return;
             }
 
@@ -138,6 +171,8 @@ namespace LvchaxsBS.UI.Controls
                         matchScore >= threshold ? TagState.Good : TagState.Bad);
             SetTimeRaw($"{TimeLabel}: {(elapsedMs >= 0 ? elapsedMs + "ms" : "--")}", TagState.Good);
             SetSourceRaw($"{SourceLabel}: {type}", TagState.Good);
+            SetCountRaw($"{CountLabel}: {(count >= 0 ? count.ToString() : "--")}",
+                        count > 0 ? TagState.Good : TagState.Neutral);
         }
 
         /// <summary>直接改匹配度段。</summary>
@@ -161,6 +196,14 @@ namespace LvchaxsBS.UI.Controls
             if (!ShowSource) return;
             SourceText.Text = text;
             ApplyState(SourceBorder, SourceText, state);
+        }
+
+        /// <summary>直接改识别次段。</summary>
+        public void SetCountRaw(string text, TagState state)
+        {
+            if (!ShowCount) return;
+            CountText.Text = text;
+            ApplyState(CountBorder, CountText, state);
         }
 
         /// <summary>按状态套主题色（SetResourceReference：切主题时自动跟随）。</summary>
@@ -195,5 +238,7 @@ namespace LvchaxsBS.UI.Controls
         public Border TimeBorderElement => TimeBorder;
         public TextBlock SourceTextBlock => SourceText;
         public Border SourceBorderElement => SourceBorder;
+        public TextBlock CountTextBlock => CountText;
+        public Border CountBorderElement => CountBorder;
     }
 }
