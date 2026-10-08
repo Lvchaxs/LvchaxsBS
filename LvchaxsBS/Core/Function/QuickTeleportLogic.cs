@@ -132,10 +132,15 @@ namespace LvchaxsBS.Core
 
         /// <summary>
         /// 右侧列表缩放匹配：先缩放粗匹配，收集候选 Y；每个候选 Y 在原图上做只沿 Y 的局部精匹配，去重后返回全部达标点。
+        /// <para>
+        /// <paramref name="bestEffortScore"/> 是"粗匹配阶段的最高相似度"——它可能低于阈值，
+        /// 不参与任何判定，只用来在 UI 上显示"没中，但最高到过多少"，避免未命中时匹配度只能显示 "--"。
+        /// </para>
         /// </summary>
         private static List<ImageRecognition.MatchResult> MatchRightListScaled(
-            Bitmap source, Bitmap template, double threshold)
+            Bitmap source, Bitmap template, double threshold, out double bestEffortScore)
         {
+            bestEffortScore = 0;
             var results = new List<ImageRecognition.MatchResult>();
 
             if (source == null || template == null) return results;
@@ -167,6 +172,13 @@ namespace LvchaxsBS.Core
 
             var scaledResults = ImageRecognition.MatchTemplateAllForRightListInternal(scaledSource, scaledTemplate, scaledThreshold);
             if (scaledResults.Count == 0) return results;
+
+            // 记下粗匹配的最高相似度：精匹配若全部不达标，这个值还能给 UI 一个参考（不参与判定）
+            foreach (var scaledResult in scaledResults)
+            {
+                if (scaledResult.Similarity > bestEffortScore)
+                    bestEffortScore = scaledResult.Similarity;
+            }
 
             int searchMarginY = Math.Max(templateHeight / 6, 6);
 
@@ -549,7 +561,13 @@ namespace LvchaxsBS.Core
                                 var template = TemplateManager.GetCachedTemplate(templateName);
                                 if (template == null) continue;
 
-                                var results = MatchRightListScaled(rightListSource, template, rightListThreshold);
+                                var results = MatchRightListScaled(rightListSource, template, rightListThreshold,
+                                                                   out double bestEffortScore);
+
+                                // 一个达标点都没有：把粗匹配的最高相似度当作参考值报给 UI
+                                // （类型仍为空，UI 上就是"匹配度有数、识别类型为 --"，表示"跑了但没中"）
+                                if (results.Count == 0 && bestEffortScore > globalBestScore)
+                                    globalBestScore = bestEffortScore;
 
                                 foreach (var result in results)
                                 {

@@ -175,6 +175,35 @@ namespace LvchaxsBS.UI.Controls
                         count > 0 ? TagState.Good : TagState.Neutral);
         }
 
+        /// <summary>
+        /// 跑了识别但没匹配到（没有识别类型）时调用：
+        /// 仍然显示匹配度 / 耗时 / 次数，只有"类型"段留 "--"。
+        /// <para>
+        /// 与 <see cref="SetResult"/> 的区别：SetResult 遇到空类型会把整行清空成 "--"，
+        /// 用来区分"压根没跑"；而这里表示"跑了但没中"，所以耗时和次数要照常显示。
+        /// 匹配度严格为 0 时仍显示 "--"（没有可参考的数值），只要 > 0 就显示具体百分比。
+        /// </para>
+        /// </summary>
+        public void SetNoMatch(double matchScore, long elapsedMs, double threshold, int count)
+        {
+            if (matchScore < 0)
+            {
+                SetEmpty();
+                return;
+            }
+
+            if (matchScore > 0)
+                SetScoreRaw($"{ScoreLabel}: {matchScore * 100:F2}%",
+                            matchScore >= threshold ? TagState.Good : TagState.Bad);
+            else
+                SetScoreRaw($"{ScoreLabel}: --", TagState.Neutral);
+
+            SetTimeRaw($"{TimeLabel}: {(elapsedMs >= 0 ? elapsedMs + "ms" : "--")}", TagState.Good);
+            SetSourceRaw($"{SourceLabel}: --", TagState.Neutral);
+            SetCountRaw($"{CountLabel}: {(count >= 0 ? count.ToString() : "--")}",
+                        count > 0 ? TagState.Good : TagState.Neutral);
+        }
+
         /// <summary>直接改匹配度段。</summary>
         public void SetScoreRaw(string text, TagState state)
         {
