@@ -33,48 +33,44 @@
                     </StackPanel>
 
                     <!-- 右侧：三行复选框 -->
+                    <!-- 文案直接写在 CheckBox 的 Content 上（和"新版本自动更新"一样），
+                         这样点文字就能勾选；常驻只显示前六个字，完整说明走悬停标签 -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,12,0">
-                        <StackPanel Orientation="Horizontal" Margin="0,1,0,1">
-                            <CheckBox x:Name="EnableListRecognition"
-                                      Content=""
-                                      Style="{StaticResource PurpleCheckBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      Checked="EnableListRecognition_Changed"
-                                      Unchecked="EnableListRecognition_Changed"
-                                      ui:ToastNotifier.Message="右侧列表识别"/>
-                            <TextBlock Text="右侧列表识别：执行时也对右侧列表也进行识别包含/神像/秘境/宅邸/列车/临时锚点..."
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        </StackPanel>
+                        <CheckBox x:Name="EnableListRecognition"
+                                  Content="右侧列表识别"
+                                  Style="{StaticResource PurpleCheckBoxStyle}"
+                                  FontSize="11"
+                                  Foreground="{DynamicResource TextSecondaryBrush}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,1,0,1"
+                                  Checked="EnableListRecognition_Changed"
+                                  Unchecked="EnableListRecognition_Changed"
+                                  ui:ToastNotifier.Message="右侧列表识别"
+                                  controls:ButtonTip.Text="执行时也对右侧列表也进行识别包含/神像/秘境/宅邸/列车/临时锚点..."/>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,1,0,1">
-                            <CheckBox x:Name="DisableAbyssFilter"
-                                      Content=""
-                                      Style="{StaticResource PurpleCheckBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      Checked="DisableAbyssFilter_Changed"
-                                      Unchecked="DisableAbyssFilter_Changed"
-                                      ui:ToastNotifier.Message="深渊剧诗过滤"/>
-                            <TextBlock Text="深渊剧诗过滤：左键触发键时点击地图右上角深渊和剧诗区域时不执行传送"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        </StackPanel>
+                        <CheckBox x:Name="DisableAbyssFilter"
+                                  Content="深渊剧诗过滤"
+                                  Style="{StaticResource PurpleCheckBoxStyle}"
+                                  FontSize="11"
+                                  Foreground="{DynamicResource TextSecondaryBrush}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,1,0,1"
+                                  Checked="DisableAbyssFilter_Changed"
+                                  Unchecked="DisableAbyssFilter_Changed"
+                                  ui:ToastNotifier.Message="深渊剧诗过滤"
+                                  controls:ButtonTip.Text="左键触发键时点击地图右上角深渊和剧诗区域时不执行传送"/>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,1,0,1">
-                            <CheckBox x:Name="EnableRightClickCancel"
-                                      Content=""
-                                      Style="{StaticResource PurpleCheckBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      Checked="EnableRightClickCancel_Changed"
-                                      Unchecked="EnableRightClickCancel_Changed"
-                                      ui:ToastNotifier.Message="右键取消传送"/>
-                            <TextBlock Text="右键取消传送：左键触发键时可以通过按下右键临时禁用传送"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center" Margin="8,0,0,0"/>
-                        </StackPanel>
+                        <CheckBox x:Name="EnableRightClickCancel"
+                                  Content="右键取消传送"
+                                  Style="{StaticResource PurpleCheckBoxStyle}"
+                                  FontSize="11"
+                                  Foreground="{DynamicResource TextSecondaryBrush}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,1,0,1"
+                                  Checked="EnableRightClickCancel_Changed"
+                                  Unchecked="EnableRightClickCancel_Changed"
+                                  ui:ToastNotifier.Message="右键取消传送"
+                                  controls:ButtonTip.Text="左键触发键时可以通过按下右键临时禁用传送"/>
                     </StackPanel>
                 </Grid>
             </Border>
