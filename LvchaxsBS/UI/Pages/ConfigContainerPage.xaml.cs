@@ -359,15 +359,8 @@ namespace LvchaxsBS.UI.Pages
             var savedKeys = ConfigManager.Get<QuickPickupSettings>().PauseKeys;
             if (_pauseKeyPage is TriggerKeyPage tp)
             {
-                // ★ 暂停键不禁 Win/Alt/Ctrl，但右键全局禁选（它已经被用于取消/交互）
-                tp.SetDisabledKeys("右键");
-
-                savedKeys = StripDisabledKeys(savedKeys, out bool pauseChanged);
-                if (pauseChanged)
-                {
-                    ConfigSync.Mutate<QuickPickupSettings>(s => s.PauseKeys = savedKeys);
-                    ToastService.Show("暂停键", "右键不能作为暂停键，已从配置中移除");
-                }
+                // ★ 暂停键不做任何限制：它的用途就是随时暂停，任何按键（含 Win/Alt/Ctrl/右键）都能设
+                tp.SetDisabledKeys();   // 清空禁用
                 tp.LoadPauseKeys(savedKeys);
             }
 
