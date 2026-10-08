@@ -138,11 +138,19 @@ namespace LvchaxsBS.UI.Controls
 
             popup.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
             {
-                double x = (targetSize.Width - popupSize.Width) / 2.0;
+                double s = UiScale.Current;
+
+                // 按钮在屏幕上的实际宽度 = 逻辑宽 × 界面缩放，居中要按这个算，
+                // 否则气泡比按钮宽多少都用同一个基准，缩放后就会偏。
+                double x = (targetSize.Width * s - popupSize.Width) / 2.0;
 
                 // 与按钮的间隙同样跟着缩放，否则界面放大后气泡会贴到按钮上
-                double gap = 8 * UiScale.Current;
+                double gap = 8 * s;
                 double y = -popupSize.Height - gap;
+
+                // 最左/最右一列的按钮（如 Esc 那一列）居中弹出时，气泡会有一部分伸到窗口外面，
+                // 这里把它拉回窗口内（左右都夹），只动水平方向。
+                x += ClampIntoWindow(target, popupSize.Width, x, s);
 
                 return new[]
                 {
@@ -155,6 +163,49 @@ namespace LvchaxsBS.UI.Controls
             border.IsHitTestVisible = false;
 
             return popup;
+        }
+
+        /// <summary>
+        /// 计算把气泡拉回窗口内容区所需的水平修正量（0 = 本来就放得下，不需要动）。
+        /// <para>
+        /// 坐标统一换算到"屏幕 / 96"单位：Popup 的偏移是按屏幕像素加的，
+        /// 这里除掉 DPI 后与偏移用的是同一把尺子，界面缩放（UiScale）已经包含在屏幕坐标里。
+        /// </para>
+        /// </summary>
+        private static double ClampIntoWindow(FrameworkElement target, double popupWidth, double x, double scale)
+        {
+            try
+            {
+                var win = Window.GetWindow(target);
+                if (win?.Content is not FrameworkElement content || content.ActualWidth <= 0) return 0;
+
+                var src = PresentationSource.FromVisual(content);
+                double dpi = src?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
+                if (dpi <= 0) dpi = 1.0;
+
+                // 窗口内容区的左右边界（PointToScreen 会带上 LayoutTransform，缩放后依然准确）
+                double winLeft = content.PointToScreen(new Point(0, 0)).X / dpi;
+                double winRight = content.PointToScreen(new Point(content.ActualWidth, content.ActualHeight)).X / dpi;
+
+                double margin = 6 * scale;
+                double tipLeft = target.PointToScreen(new Point(0, 0)).X / dpi + x;
+                double tipRight = tipLeft + popupWidth;
+
+                double minLeft = winLeft + margin;
+                double maxRight = winRight - margin;
+
+                // 气泡本身就比窗口还宽（极端缩放）时，干脆贴左放，别来回抖
+                if (popupWidth >= maxRight - minLeft) return minLeft - tipLeft;
+
+                if (tipLeft < minLeft) return minLeft - tipLeft;
+                if (tipRight > maxRight) return maxRight - tipRight;
+                return 0;
+            }
+            catch
+            {
+                // 拿不到窗口/屏幕信息（例如还没挂到视觉树上）时就按原样居中，不影响显示
+                return 0;
+            }
         }
     }
 }
