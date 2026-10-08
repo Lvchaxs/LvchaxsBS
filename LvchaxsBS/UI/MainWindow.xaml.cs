@@ -136,6 +136,23 @@ namespace LvchaxsBS.UI
         /// <summary>当前已解码壁纸的缓存标识（路径 + 最后写入时间），避免拖滑块时反复读盘</summary>
         private string _wallpaperKey = "";
 
+        /// <summary>同一路径下，壁纸文件时间戳最多每这么多毫秒重查一次</summary>
+        private const int WallpaperStampThrottleMs = 300;
+
+        /// <summary>上次取到的壁纸文件最后写入时间（ticks）</summary>
+        private long _wallpaperStampTicks;
+
+        /// <summary>上次校验文件时间戳的时刻（Environment.TickCount64）。初始 0 保证首次一定校验。</summary>
+        private long _wallpaperStampCheckedAt;
+
+        /// <summary>
+        /// 5 个壁纸变换各自"上次下发的目标值 + 是否走的是带动画那条路径"。
+        /// 拖透明度 / 模糊滑块时缩放、旋转、平移的数值根本没变，
+        /// 没必要每帧把这 5 条动画全部拆掉重建（那是纯粹的 UI 线程浪费）。
+        /// </summary>
+        private readonly double[] _transformTarget = { double.NaN, double.NaN, double.NaN, double.NaN, double.NaN };
+        private readonly bool[] _transformAnimated = new bool[5];
+
         /// <summary>淡入淡出的代次号：让过期的动画 Completed 回调失效（快速开关时不误隐藏）</summary>
         private int _wallpaperAnimToken;
 
@@ -177,7 +194,7 @@ namespace LvchaxsBS.UI
             }
 
             // 只有路径或文件内容变了才重新解码
-            string key = $"{File.GetLastWriteTimeUtc(p.WallpaperPath).Ticks}|{p.WallpaperPath}";
+            string key = BuildWallpaperKey(p.WallpaperPath);
             if (key != _wallpaperKey)
             {
                 var bmp = LoadWallpaperBitmap(p.WallpaperPath);
@@ -210,16 +227,16 @@ namespace LvchaxsBS.UI
             double factor = Math.Pow(10, (p.WallpaperScale - 50) / 50.0);
             double sx = p.EnableMirror ? -factor : factor;
 
-            // 可移动范围随缩放变化（与旧版一致）
+            // 可移动范围随缩放变化
             double range = p.WallpaperScale <= 60 ? 300 : factor * 500;
             double tx = p.XPosition / 50.0 * range;
             double ty = p.YPosition / 50.0 * range;
 
-            AnimateOrSet(WallpaperScale, ScaleTransform.ScaleXProperty, sx, smooth);
-            AnimateOrSet(WallpaperScale, ScaleTransform.ScaleYProperty, factor, smooth);
-            AnimateOrSet(WallpaperRotate, RotateTransform.AngleProperty, p.WallpaperRotation, smooth);
-            AnimateOrSet(WallpaperTranslate, TranslateTransform.XProperty, tx, smooth);
-            AnimateOrSet(WallpaperTranslate, TranslateTransform.YProperty, ty, smooth);
+            ApplyTransform(0, WallpaperScale, ScaleTransform.ScaleXProperty, sx, smooth);
+            ApplyTransform(1, WallpaperScale, ScaleTransform.ScaleYProperty, factor, smooth);
+            ApplyTransform(2, WallpaperRotate, RotateTransform.AngleProperty, p.WallpaperRotation, smooth);
+            ApplyTransform(3, WallpaperTranslate, TranslateTransform.XProperty, tx, smooth);
+            ApplyTransform(4, WallpaperTranslate, TranslateTransform.YProperty, ty, smooth);
 
             bool fade = transition is WallpaperTransition.FadeIn or WallpaperTransition.Startup;
 
@@ -238,6 +255,42 @@ namespace LvchaxsBS.UI
                 WallpaperImage.Opacity = opacity;
                 WallpaperImage.BeginAnimation(OpacityProperty, null);
             }
+        }
+
+        /// <summary>
+        /// 生成壁纸缓存键（文件最后写入时间 + 路径）。
+        /// <para>
+        /// 同一路径下对时间戳做节流：<see cref="ApplyWallpaper"/> 是"拖滑块每帧都会走到"的路径，
+        /// 而 File.GetLastWriteTimeUtc 是一次文件系统调用，不能每帧都问一次。
+        /// 路径变了（换了壁纸）缓存键本身就不同，会立刻重新解码，所以观感不变。
+        /// </para>
+        /// </summary>
+        private string BuildWallpaperKey(string path)
+        {
+            long now = Environment.TickCount64;
+            if (now - _wallpaperStampCheckedAt >= WallpaperStampThrottleMs)
+            {
+                _wallpaperStampCheckedAt = now;
+                try { _wallpaperStampTicks = File.GetLastWriteTimeUtc(path).Ticks; }
+                catch { _wallpaperStampTicks = 0; }
+            }
+
+            return $"{_wallpaperStampTicks}|{path}";
+        }
+
+        /// <summary>
+        /// 下发一个壁纸变换。目标值和"是否为带动画那条路径"都没变时直接跳过：
+        /// 拖透明度 / 模糊滑块会带着调用这里，但那几个变换本来就没动，
+        /// 每帧拆掉重建动画纯属浪费 UI 线程。
+        /// </summary>
+        private void ApplyTransform(int slot, Animatable target, DependencyProperty prop, double to, bool animate)
+        {
+            if (to.Equals(_transformTarget[slot]) && _transformAnimated[slot] == animate)
+                return;
+
+            _transformTarget[slot] = to;
+            _transformAnimated[slot] = animate;
+            AnimateOrSet(target, prop, to, animate);
         }
 
         /// <summary>变换参数过渡时长（拖缩放 / 旋转 / 位移滑块时用）</summary>
