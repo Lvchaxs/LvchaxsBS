@@ -38,11 +38,12 @@
                                                  ShowCount="True"/>
                     </StackPanel>
 
-                    <!-- 中间：三行参数（一行一个：右下角匹配度 / 右列表匹配度 / 右侧列表粗匹配）。
+                    <!-- 中间：三行参数（一行一个：右下角匹配度 / 右列表匹配度 / 右侧列表粗匹配），
+                         和复选框一样靠右，右边留 12 的间距（与复选框列同一套边距）。
                          CompactHeight="20"：行高压到 20（原本 22）、行间距 3，
                          三行共 66，正好装进卡片固定高度 70 里（卡片样式 Height=70，不会撑高）。 -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center"
-                                HorizontalAlignment="Left" Margin="202,0,0,0">
+                                HorizontalAlignment="Right" Margin="12,0,12,0">
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <TextBlock Text="右下角匹配度:"
