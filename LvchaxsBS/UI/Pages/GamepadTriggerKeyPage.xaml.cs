@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using System.Windows.Media;   // VisualTreeHelper（遍历视觉树建按键映射）
 using LvchaxsBS.Core;
 using LvchaxsBS.Services;
 
@@ -15,12 +15,6 @@ namespace LvchaxsBS.UI.Pages
         private readonly Dictionary<string, Button> _keyButtonMap = new();
         private readonly Dictionary<Button, string> _buttonToName = new();
 
-        /// <summary>
-        /// ABXY 按键内部字母的原始颜色（Xbox 配色：A 绿 / B 红 / X 蓝 / Y 黄）。
-        /// 选中时底色变浅红，彩色字母会看不清，所以临时改白；取消选中再还原。
-        /// </summary>
-        private readonly Dictionary<Button, (TextBlock Text, Brush Color)> _letterColors = new();
-
         private Button? _selectedButton;
         private string _currentKeyName = "";
 
@@ -30,9 +24,12 @@ namespace LvchaxsBS.UI.Pages
         /// <summary>XInput 是否由本页开启（离开时按需回收，避免影响"手柄拾取"）。</summary>
         private bool _xinputStartedByPage;
 
-        private static readonly Brush SelectedBg = new SolidColorBrush(Color.FromRgb(0xFF, 0x99, 0x99));
-        private static readonly Brush SelectedFg = Brushes.White;
-        private static readonly Brush SelectedBorder = new SolidColorBrush(Color.FromRgb(0xE0, 0x66, 0x66));
+        /// <summary>
+        /// 选中态不再用"浅红 + 白字"（原来 ABXY 是彩色字母，只能改白）。
+        /// 现在与各功能的键盘触发键完全一致：给按钮打 Tag=Selected，
+        /// 由样式里的 Trigger 套主题蓝（PrimaryLight 底 + Primary 边 + PrimaryDark 字）。
+        /// </summary>
+        private const string SelectedTag = "Selected";
 
         public GamepadTriggerKeyPage()
         {
@@ -112,10 +109,6 @@ namespace LvchaxsBS.UI.Pages
 
                 _keyButtonMap[keyName] = btn;
                 _buttonToName[btn] = keyName;
-
-                // ABXY 的字母是 TextBlock（带 Xbox 配色），记下原色以便选中/还原
-                if (btn.Content is TextBlock tb && tb.Foreground is not null)
-                    _letterColors[btn] = (tb, tb.Foreground);
             }
         }
 
@@ -177,30 +170,13 @@ namespace LvchaxsBS.UI.Pages
             return true;
         }
 
-        private void Select(Button btn)
-        {
-            btn.ClearValue(Button.BackgroundProperty);
-            btn.ClearValue(Button.ForegroundProperty);
-            btn.ClearValue(Button.BorderBrushProperty);
-            btn.Background = SelectedBg;
-            btn.Foreground = SelectedFg;
-            btn.BorderBrush = SelectedBorder;
+        /// <summary>
+        /// 选中：只打 Tag，配色全部交给样式里的 Trigger（与键盘触发键同色）。
+        /// 这样主题切换、深浅色也自动跟随，不用手写画刷。
+        /// </summary>
+        private void Select(Button btn) => btn.Tag = SelectedTag;
 
-            // ABXY：字母改白，避免浅红底上看不清彩色字母
-            if (_letterColors.TryGetValue(btn, out var letter))
-                letter.Text.Foreground = SelectedFg;
-        }
-
-        private void Deselect(Button btn)
-        {
-            btn.ClearValue(Button.BackgroundProperty);
-            btn.ClearValue(Button.ForegroundProperty);
-            btn.ClearValue(Button.BorderBrushProperty);
-
-            // 还原字母的 Xbox 配色
-            if (_letterColors.TryGetValue(btn, out var letter))
-                letter.Text.Foreground = letter.Color;
-        }
+        private void Deselect(Button btn) => btn.ClearValue(FrameworkElement.TagProperty);
 
         private void UpdateCurrentKeyText()
         {

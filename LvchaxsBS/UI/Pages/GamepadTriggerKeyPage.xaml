@@ -32,9 +32,24 @@
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <!-- 悬停 / 按下 / 选中：与各功能的键盘触发键（KeyButtonStyle）保持一致 ——
+                                 悬停只加深边框（背景不动，不做成"透明感"），按下才换背景色，
+                                 选中用主题蓝（PrimaryLight 底 + Primary 边 + PrimaryDark 字） -->
                             <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush"
+                                        Value="{DynamicResource Gray400Brush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Bd" Property="Background"
                                         Value="{DynamicResource HoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource PrimaryLightBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush"
+                                        Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource PrimaryDarkBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -61,9 +76,22 @@
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <!-- 与键盘触发键同一套：悬停只变边框、按下换背景、选中用主题蓝 -->
                             <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush"
+                                        Value="{DynamicResource Gray400Brush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Bd" Property="Background"
                                         Value="{DynamicResource HoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource PrimaryLightBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush"
+                                        Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource PrimaryDarkBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -95,9 +123,23 @@
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <!-- 方向键热区本身没有边框（BorderThickness=0），所以悬停给一层很淡的底色，
+                                 而不是像其它按键那样只改边框；选中同样用主题蓝 -->
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource Gray100Brush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background"
                                         Value="{DynamicResource HoverBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="Selected">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource PrimaryLightBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush"
+                                        Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource PrimaryDarkBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -201,21 +243,23 @@
                                 Canvas.Left="181" Canvas.Top="211"/>
 
                         <!-- ===== 右翼：功能键 ABXY（上，字母用 Xbox 配色）+ 右摇杆 R3（下）===== -->
+                        <!-- 字母不再用 Xbox 配色：不设 Foreground，直接继承按钮的前景色
+                             （默认 TextPrimaryBrush，选中时随样式变成 PrimaryDarkBrush） -->
                         <Button x:Name="GamepadY" Style="{StaticResource GpRound}"
                                 Canvas.Left="587" Canvas.Top="71" Width="46" Height="46">
-                            <TextBlock Text="Y" FontWeight="Bold" Foreground="#E5A50A"/>
+                            <TextBlock Text="Y" FontWeight="Bold"/>
                         </Button>
                         <Button x:Name="GamepadX" Style="{StaticResource GpRound}"
                                 Canvas.Left="541" Canvas.Top="117" Width="46" Height="46">
-                            <TextBlock Text="X" FontWeight="Bold" Foreground="#3080E0"/>
+                            <TextBlock Text="X" FontWeight="Bold"/>
                         </Button>
                         <Button x:Name="GamepadB" Style="{StaticResource GpRound}"
                                 Canvas.Left="633" Canvas.Top="117" Width="46" Height="46">
-                            <TextBlock Text="B" FontWeight="Bold" Foreground="#E5484D"/>
+                            <TextBlock Text="B" FontWeight="Bold"/>
                         </Button>
                         <Button x:Name="GamepadA" Style="{StaticResource GpRound}"
                                 Canvas.Left="587" Canvas.Top="163" Width="46" Height="46">
-                            <TextBlock Text="A" FontWeight="Bold" Foreground="#23A55A"/>
+                            <TextBlock Text="A" FontWeight="Bold"/>
                         </Button>
 
                         <Ellipse Canvas.Left="572" Canvas.Top="206" Width="76" Height="76"
