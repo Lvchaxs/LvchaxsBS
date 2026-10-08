@@ -213,7 +213,16 @@ namespace LvchaxsBS.Services
         #region 右侧列表专用匹配（只沿Y轴滑动，内部原语）
 
         public static List<MatchResult> MatchTemplateAllForRightListInternal(Bitmap source, Bitmap template, double threshold)
+            => MatchTemplateAllForRightListInternal(source, template, threshold, out _);
+
+        /// <summary>
+        /// 同上一个重载，额外输出 <paramref name="bestEffortScore"/>：
+        /// 滑动过程中出现过的**最高相似度**（可能低于阈值），只用于 UI 展示"差多少"，不参与判定。
+        /// </summary>
+        public static List<MatchResult> MatchTemplateAllForRightListInternal(
+            Bitmap source, Bitmap template, double threshold, out double bestEffortScore)
         {
+            bestEffortScore = 0;
             var results = new List<MatchResult>();
 
             if (template.Width > source.Width || template.Height > source.Height)
@@ -244,6 +253,10 @@ namespace LvchaxsBS.Services
                     templateWidth, templateHeight);
 
                 double finalSimilarity = Math.Max(0, Math.Min(1, ncc));
+
+                // 无论达不达标都记下最高分，供 UI 显示"没中但最高到过多少"
+                if (finalSimilarity > bestEffortScore)
+                    bestEffortScore = finalSimilarity;
 
                 if (finalSimilarity >= threshold)
                 {

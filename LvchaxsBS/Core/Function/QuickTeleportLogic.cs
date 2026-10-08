@@ -133,8 +133,10 @@ namespace LvchaxsBS.Core
         /// <summary>
         /// 右侧列表缩放匹配：先缩放粗匹配，收集候选 Y；每个候选 Y 在原图上做只沿 Y 的局部精匹配，去重后返回全部达标点。
         /// <para>
-        /// <paramref name="bestEffortScore"/> 是"粗匹配阶段的最高相似度"——它可能低于阈值，
+        /// <paramref name="bestEffortScore"/> 是"没达标时的最高相似度"——它可能低于阈值，
         /// 不参与任何判定，只用来在 UI 上显示"没中，但最高到过多少"，避免未命中时匹配度只能显示 "--"。
+        /// 优先取**原图精匹配**的最高分（和阈值同尺度，可以直接比较），
+        /// 只有在连粗匹配候选都没有时才退回粗匹配（1/6 缩放图）的最高分。
         /// </para>
         /// </summary>
         private static List<ImageRecognition.MatchResult> MatchRightListScaled(
@@ -150,7 +152,7 @@ namespace LvchaxsBS.Core
             if (scaleFactor < 1) scaleFactor = 1;
 
             if (scaleFactor == 1)
-                return ImageRecognition.MatchTemplateAllForRightListInternal(source, template, threshold);
+                return ImageRecognition.MatchTemplateAllForRightListInternal(source, template, threshold, out bestEffortScore);
 
             int sourceWidth = source.Width;
             int sourceHeight = source.Height;
@@ -170,15 +172,17 @@ namespace LvchaxsBS.Core
 
             double scaledThreshold = Math.Max(0, threshold - RIGHT_LIST_SCALE_THRESHOLD_DELTA);
 
-            var scaledResults = ImageRecognition.MatchTemplateAllForRightListInternal(scaledSource, scaledTemplate, scaledThreshold);
-            if (scaledResults.Count == 0) return results;
-
-            // 记下粗匹配的最高相似度：精匹配若全部不达标，这个值还能给 UI 一个参考（不参与判定）
-            foreach (var scaledResult in scaledResults)
+            var scaledResults = ImageRecognition.MatchTemplateAllForRightListInternal(
+                scaledSource, scaledTemplate, scaledThreshold, out double coarseBestScore);
+            if (scaledResults.Count == 0)
             {
-                if (scaledResult.Similarity > bestEffortScore)
-                    bestEffortScore = scaledResult.Similarity;
+                // 连粗匹配候选都没有：只能给一个缩放图上的参考分（比阈值宽松 0.1 都没中，说明差得远）
+                bestEffortScore = coarseBestScore;
+                return results;
             }
+
+            // 精匹配阶段的最高分（原图尺度，和阈值可以直接比较）
+            double preciseBestScore = 0;
 
             int searchMarginY = Math.Max(templateHeight / 6, 6);
 
@@ -191,7 +195,11 @@ namespace LvchaxsBS.Core
 
                 using var searchRegion = ImageRecognition.CropBitmap(source, 0, searchY, sourceWidth, searchHeight);
 
-                var preciseResults = ImageRecognition.MatchTemplateAllForRightListInternal(searchRegion, template, threshold);
+                var preciseResults = ImageRecognition.MatchTemplateAllForRightListInternal(
+                    searchRegion, template, threshold, out double regionBestScore);
+
+                if (regionBestScore > preciseBestScore)
+                    preciseBestScore = regionBestScore;
 
                 foreach (var preciseResult in preciseResults)
                 {
@@ -216,6 +224,9 @@ namespace LvchaxsBS.Core
                     }
                 }
             }
+
+            // 没达标：把原图精匹配的最高分给 UI（与阈值同尺度，不会出现"看着超阈值却没执行"的错觉）
+            bestEffortScore = preciseBestScore > 0 ? preciseBestScore : coarseBestScore;
 
             return results;
         }
@@ -584,10 +595,14 @@ namespace LvchaxsBS.Core
                                 var results = MatchRightListScaled(rightListSource, template, rightListThreshold,
                                                                    out double bestEffortScore);
 
-                                // 一个达标点都没有：把粗匹配的最高相似度当作参考值报给 UI
-                                // （类型仍为空，UI 上就是"匹配度有数、识别类型为 --"，表示"跑了但没中"）
+                                // 一个达标点都没有：把这个模板的最高相似度当作参考值报给 UI，
+                                // 同时把模板名也报出去 —— 这样能看出"最接近的是哪个类型、差多少"
+                                // （判定仍然只看 results，不受影响）
                                 if (results.Count == 0 && bestEffortScore > globalBestScore)
+                                {
                                     globalBestScore = bestEffortScore;
+                                    globalBestSource = templateName.Replace("快速传送_", "");
+                                }
 
                                 foreach (var result in results)
                                 {
