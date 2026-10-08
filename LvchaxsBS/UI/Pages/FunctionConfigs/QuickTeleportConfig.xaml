@@ -35,13 +35,17 @@
                     <!-- 右侧：三行复选框 -->
                     <!-- 文案直接写在 CheckBox 的 Content 上（和"新版本自动更新"一样），
                          这样点文字就能勾选；常驻只显示前六个字，完整说明走悬停标签 -->
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,12,0">
+                    <!-- 靠右并且不横向拉伸：宽度只包住"勾选框 + 文字"，
+                         否则整片右侧空白都属于复选框，鼠标扫过空白也会弹悬停标签 -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                HorizontalAlignment="Right" Margin="12,0,12,0">
                         <CheckBox x:Name="EnableListRecognition"
                                   Content="右侧列表识别"
                                   Style="{StaticResource PurpleCheckBoxStyle}"
                                   FontSize="11"
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   VerticalAlignment="Center"
+                                  HorizontalAlignment="Left"
                                   Margin="0,1,0,1"
                                   Checked="EnableListRecognition_Changed"
                                   Unchecked="EnableListRecognition_Changed"
@@ -54,6 +58,7 @@
                                   FontSize="11"
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   VerticalAlignment="Center"
+                                  HorizontalAlignment="Left"
                                   Margin="0,1,0,1"
                                   Checked="DisableAbyssFilter_Changed"
                                   Unchecked="DisableAbyssFilter_Changed"
@@ -66,6 +71,7 @@
                                   FontSize="11"
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   VerticalAlignment="Center"
+                                  HorizontalAlignment="Left"
                                   Margin="0,1,0,1"
                                   Checked="EnableRightClickCancel_Changed"
                                   Unchecked="EnableRightClickCancel_Changed"
