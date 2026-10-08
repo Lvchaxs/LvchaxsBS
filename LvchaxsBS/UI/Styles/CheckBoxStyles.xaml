@@ -26,7 +26,11 @@
                                 BorderBrush="{DynamicResource BorderStrongBrush}"
                                 BorderThickness="2"
                                 Margin="0,0,4,0"
-                                VerticalAlignment="Center">
+                                VerticalAlignment="Center"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="BoxScale" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
                             <Path x:Name="CheckMark"
                                   Data="M 0,0 L 3,5 L 12,-3"
                                   Stroke="#8B5CF6"
@@ -64,6 +68,88 @@
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5"/>
                         </Trigger>
+
+                        <!-- ===== 方块本身的交互动画（只缩放方块，不影响布局，也不影响文字） ===== -->
+
+                        <!-- 悬停：方块放大 -->
+                        <EventTrigger RoutedEvent="MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="BoxScale"
+                                                     Storyboard.TargetProperty="ScaleX"
+                                                     To="1.18" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="BoxScale"
+                                                     Storyboard.TargetProperty="ScaleY"
+                                                     To="1.18" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <!-- 移开：缩回原大小 -->
+                        <EventTrigger RoutedEvent="MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="BoxScale"
+                                                     Storyboard.TargetProperty="ScaleX"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="BoxScale"
+                                                     Storyboard.TargetProperty="ScaleY"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <!-- 按下：先缩一下，做出"按下去"的手感 -->
+                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="BoxScale"
+                                                     Storyboard.TargetProperty="ScaleX"
+                                                     To="0.88" Duration="0:0:0.05"/>
+                                    <DoubleAnimation Storyboard.TargetName="BoxScale"
+                                                     Storyboard.TargetProperty="ScaleY"
+                                                     To="0.88" Duration="0:0:0.05"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <!-- 松开：回弹到放大状态（此时鼠标通常还在上面） -->
+                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="BoxScale"
+                                                     Storyboard.TargetProperty="ScaleX"
+                                                     To="1.18" Duration="0:0:0.1">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="BoxScale"
+                                                     Storyboard.TargetProperty="ScaleY"
+                                                     To="1.18" Duration="0:0:0.1">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
