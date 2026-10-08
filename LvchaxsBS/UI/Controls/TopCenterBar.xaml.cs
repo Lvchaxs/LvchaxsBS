@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Shapes;
 using LvchaxsBS.Services;
 
 namespace LvchaxsBS.UI.Controls
@@ -72,78 +73,43 @@ namespace LvchaxsBS.UI.Controls
 
         // ============ 当前页高亮 ============
 
-        public void SetHomeActive(bool active)
-        {
-            if (active) _activePage = "Home";
-
-            var iconBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                   : ThemeBrushProvider.TextSecondaryBrush();
-            if (IconHome != null) IconHome.Stroke = iconBrush;
-
-            if (ButtonHome != null)
-            {
-                ButtonHome.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                                : ThemeBrushProvider.BorderStrongBrush();
-                ButtonHome.BorderThickness = new Thickness(1);
-            }
-        }
+        public void SetHomeActive(bool active) => SetNavActive(active, "Home", ButtonHome, IconHome);
 
         public void SetSettingsActive(bool active)
-        {
-            if (active) _activePage = "Settings";
-
-            var iconBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                   : ThemeBrushProvider.TextSecondaryBrush();
-            if (IconSettingsOuter != null) IconSettingsOuter.Stroke = iconBrush;
-            if (IconSettingsInner != null) IconSettingsInner.Stroke = iconBrush;
-
-            if (ButtonSettings != null)
-            {
-                ButtonSettings.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                                    : ThemeBrushProvider.BorderStrongBrush();
-                ButtonSettings.BorderThickness = new Thickness(1);
-            }
-        }
+            => SetNavActive(active, "Settings", ButtonSettings, IconSettingsOuter, IconSettingsInner);
 
         public void SetPersonalizationActive(bool active)
-        {
-            if (active) _activePage = "Personalization";
-
-            var iconBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                   : ThemeBrushProvider.TextSecondaryBrush();
-
-            if (IconSliderLine1 != null) IconSliderLine1.Stroke = iconBrush;
-            if (IconSliderLine2 != null) IconSliderLine2.Stroke = iconBrush;
-            if (IconSliderLine3 != null) IconSliderLine3.Stroke = iconBrush;
-
-            if (IconSliderKnob1 != null) IconSliderKnob1.Stroke = iconBrush;
-            if (IconSliderKnob2 != null) IconSliderKnob2.Stroke = iconBrush;
-            if (IconSliderKnob3 != null) IconSliderKnob3.Stroke = iconBrush;
-
-            if (ButtonPersonalization != null)
-            {
-                ButtonPersonalization.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                                           : ThemeBrushProvider.BorderStrongBrush();
-                ButtonPersonalization.BorderThickness = new Thickness(1);
-            }
-        }
+            => SetNavActive(active, "Personalization", ButtonPersonalization,
+                IconSliderLine1, IconSliderLine2, IconSliderLine3,
+                IconSliderKnob1, IconSliderKnob2, IconSliderKnob3);
 
         public void SetVoiceActive(bool active)
+            => SetNavActive(active, "Voice", ButtonVoice,
+                IconVoiceBubble, IconVoiceLine1, IconVoiceLine2);
+
+        /// <summary>
+        /// 导航项高亮的唯一实现：图标描边 + 按钮边框一起切到"当前页"配色。
+        /// 四个入口以前各自抄了一遍同样的十来行，颜色/线宽一旦只改一处就会不一致。
+        /// </summary>
+        /// <param name="active">是否为当前页</param>
+        /// <param name="page">页面标识（只在 active 时写回，供切主题后重刷用）</param>
+        /// <param name="button">导航按钮</param>
+        /// <param name="icons">该按钮里所有需要跟着变色的图标元素</param>
+        private void SetNavActive(bool active, string page, Button button, params Shape[] icons)
         {
-            if (active) _activePage = "Voice";
+            if (active) _activePage = page;
 
             var iconBrush = active ? ThemeBrushProvider.PrimaryBrush()
                                    : ThemeBrushProvider.TextSecondaryBrush();
 
-            if (IconVoiceBubble != null) IconVoiceBubble.Stroke = iconBrush;
-            if (IconVoiceLine1 != null) IconVoiceLine1.Stroke = iconBrush;
-            if (IconVoiceLine2 != null) IconVoiceLine2.Stroke = iconBrush;
+            foreach (var icon in icons)
+                if (icon != null) icon.Stroke = iconBrush;
 
-            if (ButtonVoice != null)
+            if (button != null)
             {
-                ButtonVoice.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                                 : ThemeBrushProvider.BorderStrongBrush();
-                ButtonVoice.BorderThickness = new Thickness(1);
+                button.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
+                                            : ThemeBrushProvider.BorderStrongBrush();
+                button.BorderThickness = new Thickness(1);
             }
         }
     }

@@ -1,6 +1,16 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:helpers="clr-namespace:LvchaxsBS.UI.Helpers">
 
+    <!--
+        ============ 文件夹图标按钮（只有图标） ============
+        悬停/按下缩放交给 helpers:InteractionScale（全项目唯一一份交互动画实现）。
+        声明写在模板根元素上，Target 用 ElementName 指到模板里的 Viewbox：
+        事件挂在铺满按钮的 Border 上（命中区域 = 整个 28×28），但只有图标跟着缩放。
+
+        原写法是同一个 85 行 EventTrigger+Storyboard 在下面两个样式里各抄一份，
+        而且那份写法在"按下后把鼠标拖出去再松开"时会卡在放大态 —— 见 InteractionScale 注释。
+    -->
     <Style x:Key="FolderIconButtonStyle" TargetType="Button">
         <Setter Property="Width" Value="28"/>
         <Setter Property="Height" Value="28"/>
@@ -17,15 +27,15 @@
                             Background="{TemplateBinding Background}"
                             CornerRadius="4"
                             Width="28"
-                            Height="28">
-                        <Viewbox Width="20" Height="20"
+                            Height="28"
+                            helpers:InteractionScale.HoverScale="1.1"
+                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.Target="{Binding ElementName=FolderIcon}">
+                        <Viewbox x:Name="FolderIcon"
+                                 Width="20" Height="20"
                                  RenderTransformOrigin="0.5,0.5"
                                  HorizontalAlignment="Center"
                                  VerticalAlignment="Center">
-                            <Viewbox.RenderTransform>
-                                <ScaleTransform x:Name="FolderIconScale"
-                                                ScaleX="1" ScaleY="1"/>
-                            </Viewbox.RenderTransform>
                             <Grid Width="24" Height="24">
                                 <Path Data="M 3,6 L 9,6 L 11,8 L 21,8 L 21,19 L 3,19 Z"
                                       Stroke="{DynamicResource TextSecondaryBrush}"
@@ -35,99 +45,6 @@
                             </Grid>
                         </Viewbox>
                     </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="Transparent"/>
-                        </Trigger>
-
-                        <!-- 悬停放大 -->
-                        <EventTrigger RoutedEvent="MouseEnter">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleX"
-                                        To="1.1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleY"
-                                        To="1.1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-
-                        <!-- 移开缩回 -->
-                        <EventTrigger RoutedEvent="MouseLeave">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleX"
-                                        To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleY"
-                                        To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-
-                        <!-- 按下缩回 -->
-                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleX"
-                                        To="1" Duration="0:0:0.05"/>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleY"
-                                        To="1" Duration="0:0:0.05"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-
-                        <!-- 松开回弹到 1.1（鼠标还在上面） -->
-                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleX"
-                                        To="1.1" Duration="0:0:0.1">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleY"
-                                        To="1.1" Duration="0:0:0.1">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -138,6 +55,7 @@
         与 FolderIconButtonStyle 的区别：模板里多了一个 ContentPresenter 显示 Content 文本，
         这样文字本身就在按钮的命中区域内，点文字和点图标一样会触发 Click
         （FolderIconButtonStyle 只有图标，旁边再放一个独立 TextBlock 时点文字是没反应的）。
+        缩放同样只作用于 Viewbox —— 文字不跟着放大。
     -->
     <Style x:Key="FolderIconTextButtonStyle" TargetType="Button">
         <Setter Property="Padding" Value="0"/>
@@ -154,16 +72,16 @@
                     <Border x:Name="border"
                             Background="{TemplateBinding Background}"
                             CornerRadius="4"
-                            Padding="2,4">
+                            Padding="2,4"
+                            helpers:InteractionScale.HoverScale="1.1"
+                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.Target="{Binding ElementName=FolderIcon}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Viewbox Width="20" Height="20"
+                            <Viewbox x:Name="FolderIcon"
+                                     Width="20" Height="20"
                                      RenderTransformOrigin="0.5,0.5"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center">
-                                <Viewbox.RenderTransform>
-                                    <ScaleTransform x:Name="FolderIconScale"
-                                                    ScaleX="1" ScaleY="1"/>
-                                </Viewbox.RenderTransform>
                                 <Grid Width="24" Height="24">
                                     <Path Data="M 3,6 L 9,6 L 11,8 L 21,8 L 21,19 L 3,19 Z"
                                           Stroke="{DynamicResource TextSecondaryBrush}"
@@ -181,99 +99,6 @@
                                               TextBlock.FontSize="{TemplateBinding FontSize}"/>
                         </StackPanel>
                     </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="Transparent"/>
-                        </Trigger>
-
-                        <!-- 悬停放大 -->
-                        <EventTrigger RoutedEvent="MouseEnter">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleX"
-                                        To="1.1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleY"
-                                        To="1.1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-
-                        <!-- 移开缩回 -->
-                        <EventTrigger RoutedEvent="MouseLeave">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleX"
-                                        To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleY"
-                                        To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-
-                        <!-- 按下缩回 -->
-                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleX"
-                                        To="1" Duration="0:0:0.05"/>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleY"
-                                        To="1" Duration="0:0:0.05"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-
-                        <!-- 松开回弹到 1.1（鼠标还在上面） -->
-                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleX"
-                                        To="1.1" Duration="0:0:0.1">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation
-                                        Storyboard.TargetName="FolderIconScale"
-                                        Storyboard.TargetProperty="ScaleY"
-                                        To="1.1" Duration="0:0:0.1">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
