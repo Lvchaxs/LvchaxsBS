@@ -35,6 +35,15 @@ namespace LvchaxsBS.UI.Controls
             DependencyProperty.Register(nameof(TextBoxWidth), typeof(double), typeof(SpinTextBoxControl),
                 new FrameworkPropertyMetadata(60.0, OnWidthChanged));
 
+        /// <summary>
+        /// 紧凑高度：0（默认）= 用控件原本的高度（输入框 22 / 加减按钮 10）。
+        /// 设成大于 0 的值时，输入框和加减按钮会按这个总高度等比压扁，
+        /// 用在需要把多个数字框排成多行、又不能把卡片撑高的地方（例如快速传送卡片1里的三行参数）。
+        /// </summary>
+        public static readonly DependencyProperty CompactHeightProperty =
+            DependencyProperty.Register(nameof(CompactHeight), typeof(double), typeof(SpinTextBoxControl),
+                new FrameworkPropertyMetadata(0.0, OnCompactHeightChanged));
+
         // 显示名称（用于 Toast）
         public static readonly DependencyProperty DisplayNameProperty =
             DependencyProperty.Register(nameof(DisplayName), typeof(string), typeof(SpinTextBoxControl),
@@ -70,6 +79,12 @@ namespace LvchaxsBS.UI.Controls
             set => SetValue(UnitProperty, value);
         }
 
+        public double CompactHeight
+        {
+            get => (double)GetValue(CompactHeightProperty);
+            set => SetValue(CompactHeightProperty, value);
+        }
+
         public string NumericFormat
         {
             get => (string)GetValue(NumericFormatProperty);
@@ -97,6 +112,7 @@ namespace LvchaxsBS.UI.Controls
         public SpinTextBoxControl()
         {
             InitializeComponent();
+            ApplyCompactHeight();
             UpdateDisplay();
         }
 
@@ -136,6 +152,38 @@ namespace LvchaxsBS.UI.Controls
         {
             if (d is SpinTextBoxControl c && c.PART_ValueTextBox != null)
                 c.PART_ValueTextBox.Width = c.TextBoxWidth;
+        }
+
+        private static void OnCompactHeightChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+            => ((SpinTextBoxControl)d).ApplyCompactHeight();
+
+        /// <summary>
+        /// 按 CompactHeight 压扁输入框与加减按钮；为 0 时恢复默认高度。
+        /// </summary>
+        private void ApplyCompactHeight()
+        {
+            if (PART_ValueTextBox == null) return;
+
+            double h = CompactHeight;
+
+            if (h <= 0)
+            {
+                PART_ValueTextBox.Height = 22;
+                PART_ValueTextBox.FontSize = 12;
+                PART_ValueTextBox.Padding = new Thickness(2, 0, 2, 0);
+                PART_UpButton.Height = 10;
+                PART_DownButton.Height = 10;
+                return;
+            }
+
+            PART_ValueTextBox.Height = h;
+            PART_ValueTextBox.FontSize = h >= 18 ? 12 : 11;
+            PART_ValueTextBox.Padding = new Thickness(2, 0, 2, 0);
+
+            // 两个按钮 + 中间 1px 间距 = 总高度
+            double btn = Math.Max(5, (h - 1) / 2.0);
+            PART_UpButton.Height = btn;
+            PART_DownButton.Height = btn;
         }
 
         private void UpdateDisplay()

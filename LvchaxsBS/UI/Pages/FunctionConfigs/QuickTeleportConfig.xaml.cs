@@ -47,14 +47,16 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             var s = ConfigManager.Get<QuickTeleportSettings>();
 
             QuickTeleportDelayCard.Value = s.RightCornerDetectDelay_1;
-            QuickTeleportDelayCard.SpinValue = s.DetectThreshold;
             RightListDelayCard.Value = s.RightListDetectDelay_1;
-            RightListDelayCard.SpinValue = s.RightListThreshold;
+
+            // 三个参数（右下角匹配度 / 右列表匹配度 / 右侧列表粗匹配）都在卡片1里
+            RightCornerThresholdSpinBox.Value = s.DetectThreshold;
+            RightListThresholdSpinBox.Value = s.RightListThreshold;
             // 档位上限已收紧到 5：历史配置里若存着更大的值（如 6），这里夹回并写回配置
             int scaleFactor = Math.Clamp(s.RightListScaleFactor, 1, 5);
             if (s.RightListScaleFactor != scaleFactor)
                 ConfigSync.Mutate<QuickTeleportSettings>(x => x.RightListScaleFactor = scaleFactor);
-            RightListDelayCard.Spin2Value = scaleFactor;
+            RightListScaleFactorSpinBox.Value = scaleFactor;
             RightListClickDelayCard.Value = s.RightListClickItemDelay_1;
             RightListFKeyDelaySlider.Value = s.RightListFKeyDelay;
             RightListAbyssFKeyDelaySlider.Value = s.RightListAbyssFKeyDelay;
@@ -103,10 +105,10 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             if (_isLoading) return;
 
-            // 只允许 1-10 的整数：1 = 关闭粗匹配
+            // 只允许 1-5 的整数：1 = 关闭粗匹配
             int factor = (int)Math.Round(e.NewValue);
             if (factor < 1) factor = 1;
-            if (factor > 10) factor = 10;
+            if (factor > 5) factor = 5;
 
             ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListScaleFactor = factor);
         }

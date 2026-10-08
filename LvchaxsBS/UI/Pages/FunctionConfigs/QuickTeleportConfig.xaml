@@ -12,12 +12,14 @@
     <ScrollViewer Style="{StaticResource CustomScrollViewer}">
         <StackPanel Margin="5,4,0,0">
 
-            <!-- 卡片0：运行状态 + 复选框（左侧两行标签，右侧三行复选框）-->
+            <!-- 卡片0：运行状态 + 三个参数 + 复选框
+                 （左：两行状态标签；中：三行参数，靠右；右：三行复选框）-->
             <Border Style="{StaticResource ModuleFunctionCardStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- 左侧：两行标签（第一行右下角，第二行右侧列表）-->
@@ -36,13 +38,72 @@
                                                  ShowCount="True"/>
                     </StackPanel>
 
+                    <!-- 中间：三行参数（靠右，紧挨复选框左侧；一行一个：
+                         右下角匹配度 / 右列表匹配度 / 右侧列表粗匹配）。
+                         CompactHeight="16" 是为了三行排下来不把卡片撑高（卡片高度保持不变）。 -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                HorizontalAlignment="Right" Margin="12,0,10,0">
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="右下角匹配度:"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"/>
+                            <controls:SpinTextBoxControl x:Name="RightCornerThresholdSpinBox"
+                                                         Minimum="0" Maximum="1"
+                                                         Step="0.01"
+                                                         NumericFormat="F2"
+                                                         TextBoxWidth="45"
+                                                         CompactHeight="16"
+                                                         VerticalAlignment="Center"
+                                                         Margin="4,0,0,0"
+                                                         ValueChanged="DetectThresholdSpinBox_ValueChanged"
+                                                         ui:ToastNotifier.Message="右下角匹配度"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
+                            <TextBlock Text="右列表匹配度:"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"/>
+                            <controls:SpinTextBoxControl x:Name="RightListThresholdSpinBox"
+                                                         Minimum="0" Maximum="1"
+                                                         Step="0.01"
+                                                         NumericFormat="F2"
+                                                         TextBoxWidth="45"
+                                                         CompactHeight="16"
+                                                         VerticalAlignment="Center"
+                                                         Margin="4,0,0,0"
+                                                         ValueChanged="RightListThresholdSpinBox_ValueChanged"
+                                                         ui:ToastNotifier.Message="右列表匹配度"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
+                            <TextBlock Text="右侧列表粗匹配:"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       VerticalAlignment="Center"/>
+                            <controls:SpinTextBoxControl x:Name="RightListScaleFactorSpinBox"
+                                                         Minimum="1" Maximum="5"
+                                                         Step="1"
+                                                         NumericFormat="F0"
+                                                         TextBoxWidth="40"
+                                                         CompactHeight="16"
+                                                         VerticalAlignment="Center"
+                                                         Margin="4,0,0,0"
+                                                         ValueChanged="RightListScaleFactorSpinBox_ValueChanged"
+                                                         ui:ToastNotifier.Message="右侧列表粗匹配"
+                                                         controls:ButtonTip.Text="1 = 原图匹配误差最小；数值越大识别速度会更快但误差会增加。(先缩放粗略匹配到目标后再对原截图相同位置进行一次精确匹配)"/>
+                        </StackPanel>
+                    </StackPanel>
+
                     <!-- 右侧：三行复选框 -->
                     <!-- 文案直接写在 CheckBox 的 Content 上（和"新版本自动更新"一样），
                          这样点文字就能勾选；常驻只显示前六个字，完整说明走悬停标签 -->
                     <!-- 靠右并且不横向拉伸：宽度只包住"勾选框 + 文字"，
                          否则整片右侧空白都属于复选框，鼠标扫过空白也会弹悬停标签 -->
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center"
-                                HorizontalAlignment="Right" Margin="12,0,12,0">
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center"
+                                HorizontalAlignment="Right" Margin="0,0,12,0">
                         <CheckBox x:Name="EnableListRecognition"
                                   Content="右侧列表识别"
                                   Style="{StaticResource PurpleCheckBoxStyle}"
@@ -93,12 +154,7 @@
                                         Minimum="0" Maximum="200" Step="1"
                                         Unit="ms" NumericFormat="F0"
                                         SliderToast="传送延迟检测"
-                                        ValueChanged="QuickTeleportDelaySlider_ValueChanged"
-                                        SpinLabel="右下角匹配度:"
-                                        SpinMinimum="0" SpinMaximum="1" SpinStep="0.01"
-                                        SpinNumericFormat="F2"
-                                        SpinToast="右下角匹配度"
-                                        SpinValueChanged="DetectThresholdSpinBox_ValueChanged"/>
+                                        ValueChanged="QuickTeleportDelaySlider_ValueChanged"/>
 
             <!-- 卡片2：传送检测时长 -->
             <controls:SliderCardControl x:Name="RightListDelayCard"
@@ -108,18 +164,7 @@
                                         Minimum="0" Maximum="500" Step="1"
                                         Unit="ms" NumericFormat="F0"
                                         SliderToast="传送检测时长"
-                                        ValueChanged="RightListDelaySlider_ValueChanged"
-                                        Spin2Label="右侧列表粗匹配:"
-                                        Spin2Minimum="1" Spin2Maximum="5" Spin2Step="1"
-                                        Spin2NumericFormat="F0"
-                                        Spin2Toast="右侧列表粗匹配"
-                                        Spin2Tip="1 = 原图匹配误差最小；数值越大识别速度会更快但误差会增加。(先缩放粗略匹配到目标后再对原截图相同位置进行一次精确匹配)"
-                                        Spin2ValueChanged="RightListScaleFactorSpinBox_ValueChanged"
-                                        SpinLabel="右列表匹配度:"
-                                        SpinMinimum="0" SpinMaximum="1" SpinStep="0.01"
-                                        SpinNumericFormat="F2"
-                                        SpinToast="右列表匹配度"
-                                        SpinValueChanged="RightListThresholdSpinBox_ValueChanged"/>
+                                        ValueChanged="RightListDelaySlider_ValueChanged"/>
 
             <!-- 卡片3：右侧列表点击延迟 -->
             <controls:SliderCardControl x:Name="RightListClickDelayCard"
