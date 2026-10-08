@@ -50,6 +50,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             QuickTeleportDelayCard.SpinValue = s.DetectThreshold;
             RightListDelayCard.Value = s.RightListDetectDelay_1;
             RightListDelayCard.SpinValue = s.RightListThreshold;
+            RightListDelayCard.Spin2Value = Math.Clamp(s.RightListScaleFactor, 1, 10);
             RightListClickDelayCard.Value = s.RightListClickItemDelay_1;
             RightListFKeyDelaySlider.Value = s.RightListFKeyDelay;
             RightListAbyssFKeyDelaySlider.Value = s.RightListAbyssFKeyDelay;
@@ -92,6 +93,18 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             if (_isLoading) return;
             ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListThreshold = e.NewValue);
+        }
+
+        private void RightListScaleFactorSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isLoading) return;
+
+            // 只允许 1-10 的整数：1 = 关闭粗匹配
+            int factor = (int)Math.Round(e.NewValue);
+            if (factor < 1) factor = 1;
+            if (factor > 10) factor = 10;
+
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListScaleFactor = factor);
         }
 
         private void RightListClickDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

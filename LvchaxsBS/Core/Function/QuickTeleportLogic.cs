@@ -68,7 +68,7 @@ namespace LvchaxsBS.Core
         private const double RIGHT_CORNER_SCALE_THRESHOLD_DELTA = 0;  // 缩放匹配阈值放宽容差
 
         // ===== 右侧列表缩放匹配参数 =====
-        private const int RIGHT_LIST_SCALE_FACTOR = 6;          // 右侧列表模板匹配缩放因子
+        // 右侧列表粗匹配档位不再写死：实际值来自 QuickTeleportSettings.RightListScaleFactor（1-10，默认 6）
         private const double RIGHT_LIST_SCALE_THRESHOLD_DELTA = 0.1;    // 缩放匹配阈值放宽容差
 
         public static event Action<double, double, double, string, int>? DetectionResultUpdated;
@@ -140,7 +140,7 @@ namespace LvchaxsBS.Core
         /// </para>
         /// </summary>
         private static List<ImageRecognition.MatchResult> MatchRightListScaled(
-            Bitmap source, Bitmap template, double threshold, out double bestEffortScore)
+            Bitmap source, Bitmap template, double threshold, int scaleFactor, out double bestEffortScore)
         {
             bestEffortScore = 0;
             var results = new List<ImageRecognition.MatchResult>();
@@ -148,7 +148,6 @@ namespace LvchaxsBS.Core
             if (source == null || template == null) return results;
             if (template.Width > source.Width || template.Height > source.Height) return results;
 
-            int scaleFactor = RIGHT_LIST_SCALE_FACTOR;
             if (scaleFactor < 1) scaleFactor = 1;
 
             if (scaleFactor == 1)
@@ -184,7 +183,9 @@ namespace LvchaxsBS.Core
             // 精匹配阶段的最高分（原图尺度，和阈值可以直接比较）
             double preciseBestScore = 0;
 
-            int searchMarginY = Math.Max(templateHeight / 6, 6);
+            // 粗匹配给的位置误差约 ±scaleFactor 像素，搜索窗口必须比它大，
+            // 否则档位调高后正确位置会落到窗口外（表现为"粗匹配中了、精匹配找不到"）。
+            int searchMarginY = Math.Max(Math.Max(templateHeight / 6, 6), scaleFactor);
 
             foreach (var scaledResult in scaledResults)
             {
@@ -497,7 +498,10 @@ namespace LvchaxsBS.Core
 
                     int maxDetectTimeFull = settings.RightListDetectDelay_1;
 
-                    Debug.WriteLine($"【快速传送】开始检测，检测时长上限: {maxDetectTimeFull}ms");
+                    // 粗匹配缩放档位来自配置（1-10）：1 = 不缩放 = 关闭粗匹配
+                    int scaleFactor = Math.Clamp(settings.RightListScaleFactor, 1, 10);
+
+                    Debug.WriteLine($"【快速传送】开始检测，检测时长上限: {maxDetectTimeFull}ms  粗匹配档位: {scaleFactor}");
 
                     int detectCountFull = 0;
 
@@ -593,7 +597,7 @@ namespace LvchaxsBS.Core
                                 if (template == null) continue;
 
                                 var results = MatchRightListScaled(rightListSource, template, rightListThreshold,
-                                                                   out double bestEffortScore);
+                                                                   scaleFactor, out double bestEffortScore);
 
                                 // 一个达标点都没有：把这个模板的最高相似度当作参考值报给 UI，
                                 // 同时把模板名也报出去 —— 这样能看出"最接近的是哪个类型、差多少"

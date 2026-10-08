@@ -103,10 +103,55 @@ namespace LvchaxsBS.UI.Controls
             DependencyProperty.Register(nameof(SpinToast), typeof(string), typeof(SliderCardControl),
                 new PropertyMetadata(""));
 
+        // ===== 第二个数字框（显示在 Spin 左侧，Spin2Label 为空则隐藏） =====
+
+        public static readonly DependencyProperty Spin2LabelProperty =
+            DependencyProperty.Register(nameof(Spin2Label), typeof(string), typeof(SliderCardControl),
+                new PropertyMetadata("", OnSpinLabelChanged));
+
+        public static readonly DependencyProperty Spin2ValueProperty =
+            DependencyProperty.Register(nameof(Spin2Value), typeof(double), typeof(SliderCardControl),
+                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
+                    null, CoerceSpin2Value));
+
+        public static readonly DependencyProperty Spin2MinimumProperty =
+            DependencyProperty.Register(nameof(Spin2Minimum), typeof(double), typeof(SliderCardControl),
+                new PropertyMetadata(0.0, OnSpin2RangeChanged));
+
+        public static readonly DependencyProperty Spin2MaximumProperty =
+            DependencyProperty.Register(nameof(Spin2Maximum), typeof(double), typeof(SliderCardControl),
+                new PropertyMetadata(100.0, OnSpin2RangeChanged));
+
+        public static readonly DependencyProperty Spin2StepProperty =
+            DependencyProperty.Register(nameof(Spin2Step), typeof(double), typeof(SliderCardControl),
+                new PropertyMetadata(1.0));
+
+        public static readonly DependencyProperty Spin2UnitProperty =
+            DependencyProperty.Register(nameof(Spin2Unit), typeof(string), typeof(SliderCardControl),
+                new PropertyMetadata(""));
+
+        public static readonly DependencyProperty Spin2NumericFormatProperty =
+            DependencyProperty.Register(nameof(Spin2NumericFormat), typeof(string), typeof(SliderCardControl),
+                new PropertyMetadata("F0"));
+
+        public static readonly DependencyProperty Spin2TextBoxWidthProperty =
+            DependencyProperty.Register(nameof(Spin2TextBoxWidth), typeof(double), typeof(SliderCardControl),
+                new PropertyMetadata(45.0));
+
+        public static readonly DependencyProperty Spin2ToastProperty =
+            DependencyProperty.Register(nameof(Spin2Toast), typeof(string), typeof(SliderCardControl),
+                new PropertyMetadata(""));
+
+        /// <summary>第二个数字框的悬停说明（走 ButtonTip，留空则不弹）</summary>
+        public static readonly DependencyProperty Spin2TipProperty =
+            DependencyProperty.Register(nameof(Spin2Tip), typeof(string), typeof(SliderCardControl),
+                new PropertyMetadata(""));
+
         // ===== 事件（转发内部控件） =====
 
         public event EventHandler<RoutedPropertyChangedEventArgs<double>>? ValueChanged;
         public event EventHandler<RoutedPropertyChangedEventArgs<double>>? SpinValueChanged;
+        public event EventHandler<RoutedPropertyChangedEventArgs<double>>? Spin2ValueChanged;
 
         public SliderCardControl()
         {
@@ -114,6 +159,7 @@ namespace LvchaxsBS.UI.Controls
 
             PART_Slider.ValueChanged += (s, e) => ValueChanged?.Invoke(this, e);
             PART_SpinBox.ValueChanged += (s, e) => SpinValueChanged?.Invoke(this, e);
+            PART_SpinBox2.ValueChanged += (s, e) => Spin2ValueChanged?.Invoke(this, e);
 
             UpdateSpinVisibility();
         }
@@ -121,11 +167,30 @@ namespace LvchaxsBS.UI.Controls
         private static void OnSpinLabelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
             => ((SliderCardControl)d).UpdateSpinVisibility();
 
+        /// <summary>把 Spin2Value 强制夹在 [Spin2Minimum, Spin2Maximum] 内。</summary>
+        private static object CoerceSpin2Value(DependencyObject d, object baseValue)
+        {
+            var card = (SliderCardControl)d;
+            double v = (double)baseValue;
+
+            if (v < card.Spin2Minimum) return card.Spin2Minimum;
+            if (v > card.Spin2Maximum) return card.Spin2Maximum;
+            return v;
+        }
+
+        /// <summary>范围变了要重新夹一次当前值。</summary>
+        private static void OnSpin2RangeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+            => d.CoerceValue(Spin2ValueProperty);
+
         private void UpdateSpinVisibility()
         {
             var visibility = string.IsNullOrEmpty(SpinLabel) ? Visibility.Collapsed : Visibility.Visible;
             SpinLabelText.Visibility = visibility;
             PART_SpinBox.Visibility = visibility;
+
+            var visibility2 = string.IsNullOrEmpty(Spin2Label) ? Visibility.Collapsed : Visibility.Visible;
+            Spin2LabelText.Visibility = visibility2;
+            PART_SpinBox2.Visibility = visibility2;
         }
 
         // ===== CLR 包装 =====
@@ -177,5 +242,16 @@ namespace LvchaxsBS.UI.Controls
         public string SpinNumericFormat { get => (string)GetValue(SpinNumericFormatProperty); set => SetValue(SpinNumericFormatProperty, value); }
         public double SpinTextBoxWidth { get => (double)GetValue(SpinTextBoxWidthProperty); set => SetValue(SpinTextBoxWidthProperty, value); }
         public string SpinToast { get => (string)GetValue(SpinToastProperty); set => SetValue(SpinToastProperty, value); }
+
+        public string Spin2Label { get => (string)GetValue(Spin2LabelProperty); set => SetValue(Spin2LabelProperty, value); }
+        public double Spin2Value { get => (double)GetValue(Spin2ValueProperty); set => SetValue(Spin2ValueProperty, value); }
+        public double Spin2Minimum { get => (double)GetValue(Spin2MinimumProperty); set => SetValue(Spin2MinimumProperty, value); }
+        public double Spin2Maximum { get => (double)GetValue(Spin2MaximumProperty); set => SetValue(Spin2MaximumProperty, value); }
+        public double Spin2Step { get => (double)GetValue(Spin2StepProperty); set => SetValue(Spin2StepProperty, value); }
+        public string Spin2Unit { get => (string)GetValue(Spin2UnitProperty); set => SetValue(Spin2UnitProperty, value); }
+        public string Spin2NumericFormat { get => (string)GetValue(Spin2NumericFormatProperty); set => SetValue(Spin2NumericFormatProperty, value); }
+        public double Spin2TextBoxWidth { get => (double)GetValue(Spin2TextBoxWidthProperty); set => SetValue(Spin2TextBoxWidthProperty, value); }
+        public string Spin2Toast { get => (string)GetValue(Spin2ToastProperty); set => SetValue(Spin2ToastProperty, value); }
+        public string Spin2Tip { get => (string)GetValue(Spin2TipProperty); set => SetValue(Spin2TipProperty, value); }
     }
 }

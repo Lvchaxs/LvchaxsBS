@@ -34,6 +34,9 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
+                        <!-- 第二个数字框（Spin2Label 为空则折叠）：显示在 Spin 左侧 -->
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
@@ -49,14 +52,34 @@
                                           VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <TextBlock x:Name="SpinLabelText" Grid.Column="2"
+                    <TextBlock x:Name="Spin2LabelText" Grid.Column="2"
+                               Text="{Binding Spin2Label, ElementName=Root}"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" Margin="2,0,0,0"/>
+
+                    <controls:SpinTextBoxControl x:Name="PART_SpinBox2"
+                                                 Grid.Column="3"
+                                                 Minimum="{Binding Spin2Minimum, ElementName=Root}"
+                                                 Maximum="{Binding Spin2Maximum, ElementName=Root}"
+                                                 Step="{Binding Spin2Step, ElementName=Root}"
+                                                 Unit="{Binding Spin2Unit, ElementName=Root}"
+                                                 NumericFormat="{Binding Spin2NumericFormat, ElementName=Root}"
+                                                 TextBoxWidth="{Binding Spin2TextBoxWidth, ElementName=Root}"
+                                                 Value="{Binding Spin2Value, ElementName=Root, Mode=TwoWay}"
+                                                 VerticalAlignment="Center"
+                                                 Margin="2,0,6,0"
+                                                 controls:ButtonTip.Text="{Binding Spin2Tip, ElementName=Root}"
+                                                 ui:ToastNotifier.Message="{Binding Spin2Toast, ElementName=Root}"/>
+
+                    <TextBlock x:Name="SpinLabelText" Grid.Column="4"
                                Text="{Binding SpinLabel, ElementName=Root}"
                                FontSize="13"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center" Margin="2,0,0,0"/>
 
                     <controls:SpinTextBoxControl x:Name="PART_SpinBox"
-                                                 Grid.Column="3"
+                                                 Grid.Column="5"
                                                  Minimum="{Binding SpinMinimum, ElementName=Root}"
                                                  Maximum="{Binding SpinMaximum, ElementName=Root}"
                                                  Step="{Binding SpinStep, ElementName=Root}"
