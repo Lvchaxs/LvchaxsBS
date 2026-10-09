@@ -164,7 +164,66 @@ namespace LvchaxsBS.Services.Hooks
         /// <summary>复用的类名缓冲：避免枚举窗口时给每个窗口都 new 一个 StringBuilder。</summary>
         private static readonly StringBuilder _classNameBuffer = new(256);
 
+        /// <summary>复用的窗口标题缓冲（EvaluateBounds / CheckWindowExistence 每次都会读标题）。</summary>
+        private static readonly StringBuilder _windowTextBuffer = new(256);
+
+        /// <summary>
+        /// PID → 进程名缓存。
+        ///
+        /// <para>
+        /// 本机实测 <c>Process.GetProcessById(pid).ProcessName</c> 单次约 <b>438µs</b>
+        /// （注释里原先估计的 18µs 与实测差了一个数量级），而且 <see cref="Process"/> 实现了
+        /// <see cref="IDisposable"/> 却从来没人 Dispose —— 每次调用都会<b>向游戏进程 OpenProcess 一次</b>，
+        /// 句柄要等 GC 终结才释放。目标窗口已知后，LOCATIONCHANGE 防抖 150ms、再加前台事件与 1 秒轮询，
+        /// 每秒仍会问十几次，全部落在 UI 线程上（WinEvent 回调在装钩子的线程投递）。
+        /// </para>
+        ///
+        /// <para>
+        /// 进程名在进程存活期间不会变，因此按 PID 缓存；PID 复用不需要特别处理 ——
+        /// 目标窗口消失时（<see cref="CheckWindowExistence"/> 判定不存在、<see cref="Stop"/>）
+        /// 会把整张表清掉。
+        /// </para>
+        /// </summary>
+        private static readonly Dictionary<uint, string> _processNameCache = new();
+
+        /// <summary>
+        /// 缓存上限。日常只有游戏那 1~2 个 PID；GetTaskbarWindows 枚举任务栏时会一次问几十个，
+        /// 所以留到 128（uint + 字符串引用 ≈ 50B/条，128 条也就几 KB），
+        /// 超过说明有异常输入，整表清一次即可。
+        /// </summary>
+        private const int ProcessNameCacheLimit = 128;
+
         #endregion
+
+        /// <summary>
+        /// 取 PID 对应的进程名（带缓存）。取不到返回空串。
+        /// 用 using 确保 Process 句柄立刻释放，不留到 GC。
+        /// </summary>
+        private static string GetProcessName(uint pid)
+        {
+            if (pid == 0) return string.Empty;
+
+            if (_processNameCache.TryGetValue(pid, out string? cached))
+                return cached;
+
+            string name;
+            try
+            {
+                using var p = Process.GetProcessById((int)pid);
+                name = p.ProcessName;
+            }
+            catch
+            {
+                // 进程可能刚退出 / 权限不足：不缓存失败结果，下次再试
+                return string.Empty;
+            }
+
+            if (_processNameCache.Count >= ProcessNameCacheLimit)
+                _processNameCache.Clear();
+
+            _processNameCache[pid] = name;
+            return name;
+        }
 
         #region 对外接口
 
@@ -296,8 +355,10 @@ namespace LvchaxsBS.Services.Hooks
                 info.ProcessId = pid;
                 if (pid != 0)
                 {
-                    try { info.ProcessName = Process.GetProcessById((int)pid).ProcessName; }
-                    catch { info.ProcessName = "(已退出)"; }
+                    // 走带缓存的查询：这里会给每个可见窗口的进程都问一次，
+                    // 无缓存时单次 438µs、几十个窗口就是十几毫秒（见 GetProcessName 注释）
+                    string procName = GetProcessName(pid);
+                    info.ProcessName = string.IsNullOrEmpty(procName) ? "(已退出)" : procName;
                 }
 
                 info.IsIconic = IsIconic(hwnd);
@@ -412,6 +473,7 @@ namespace LvchaxsBS.Services.Hooks
             _pollTimer?.Stop();
             _pendingHwnd = IntPtr.Zero;
             _pollTickCount = 0;
+            _processNameCache.Clear();
 
             _isRunning = false;
             _lastFocused = false;
@@ -571,17 +633,12 @@ namespace LvchaxsBS.Services.Hooks
                     _lastHwnd = found;
                 }
 
-                var titleBuilder = new StringBuilder(256);
-                GetWindowText(found, titleBuilder, titleBuilder.Capacity);
-                _lastTitle = titleBuilder.ToString();
+                _windowTextBuffer.Clear();
+                GetWindowText(found, _windowTextBuffer, _windowTextBuffer.Capacity);
+                _lastTitle = _windowTextBuffer.ToString();
 
-                try
-                {
-                    GetWindowThreadProcessId(found, out uint pid);
-                    if (pid != 0)
-                        _lastProcessName = Process.GetProcessById((int)pid).ProcessName;
-                }
-                catch { }
+                GetWindowThreadProcessId(found, out uint pid);
+                _lastProcessName = GetProcessName(pid);
 
                 // 非最小化时读坐标/分辨率；最小化跳过
                 if (!IsIconic(found))
@@ -603,6 +660,9 @@ namespace LvchaxsBS.Services.Hooks
                 _lastHwnd = IntPtr.Zero;
                 _lastTitle = string.Empty;
                 _lastProcessName = string.Empty;
+
+                // 目标窗口没了 → 它那个 PID 的进程名缓存也一并作废（PID 之后可能被复用）
+                _processNameCache.Clear();
                 _lastLeft = _lastTop = _lastWidth = _lastHeight = int.MinValue;
 
                 if (!LastBounds.IsEmpty)
@@ -667,18 +727,12 @@ namespace LvchaxsBS.Services.Hooks
             int left = pt.X;
             int top = pt.Y;
 
-            var titleBuilder = new StringBuilder(256);
-            GetWindowText(hwnd, titleBuilder, titleBuilder.Capacity);
-            string title = titleBuilder.ToString();
+            _windowTextBuffer.Clear();
+            GetWindowText(hwnd, _windowTextBuffer, _windowTextBuffer.Capacity);
+            string title = _windowTextBuffer.ToString();
 
-            string procName = string.Empty;
-            try
-            {
-                GetWindowThreadProcessId(hwnd, out uint pid);
-                if (pid != 0)
-                    procName = Process.GetProcessById((int)pid).ProcessName;
-            }
-            catch { }
+            GetWindowThreadProcessId(hwnd, out uint pid);
+            string procName = GetProcessName(pid);
 
             if (!force &&
                 hwnd == _lastHwnd &&
@@ -706,19 +760,11 @@ namespace LvchaxsBS.Services.Hooks
         {
             if (hwnd == IntPtr.Zero) return false;
 
-            try
-            {
-                GetWindowThreadProcessId(hwnd, out uint pid);
-                if (pid == 0) return false;
+            GetWindowThreadProcessId(hwnd, out uint pid);
+            string name = GetProcessName(pid);   // 带缓存，见 GetProcessName 注释
 
-                string name = Process.GetProcessById((int)pid).ProcessName;
-                return name.Equals(TargetProcessName1, StringComparison.OrdinalIgnoreCase)
-                    || name.Equals(TargetProcessName2, StringComparison.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                return false;
-            }
+            return name.Equals(TargetProcessName1, StringComparison.OrdinalIgnoreCase)
+                || name.Equals(TargetProcessName2, StringComparison.OrdinalIgnoreCase);
         }
 
         #endregion
