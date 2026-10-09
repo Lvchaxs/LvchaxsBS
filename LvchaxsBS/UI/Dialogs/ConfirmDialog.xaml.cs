@@ -5,7 +5,7 @@ using System.Windows.Input;
 namespace LvchaxsBS.UI.Dialogs
 {
     /// <summary>
-    /// 通用确认弹窗（自旧项目 <c>公开资源.弹窗.ConfirmDialog</c> 移植，改用新项目主题资源）。
+    /// 通用确认弹窗（自旧项目移植，改用新项目主题资源）。
     /// 用法：
     ///   var dlg = new ConfirmDialog("标题", "内容");
     ///   dlg.Owner = Window.GetWindow(this);
@@ -56,6 +56,30 @@ namespace LvchaxsBS.UI.Dialogs
             OptionCheckBox.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
             OptionCheckBox.Content = content;
             OptionCheckBox.IsChecked = isChecked;
+        }
+
+        /// <summary>
+        /// 在正文下方显示一块可滚动的附加内容（用于「新版本改动」等）。
+        /// <paramref name="content"/> 为空则隐藏该区域。
+        /// </summary>
+        public void SetExtraContent(string? title, string? content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                ExtraContentBorder.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            ExtraTitleText.Text = title ?? string.Empty;
+            ExtraTitleText.Visibility = string.IsNullOrWhiteSpace(title)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+
+            ExtraContentText.Text = content;
+            ExtraContentBorder.Visibility = Visibility.Visible;
+
+            // 带改动内容时略加宽，长条目不至于频繁折行
+            Width = 420;
         }
 
         private void OkBtn_Click(object sender, RoutedEventArgs e)

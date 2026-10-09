@@ -238,10 +238,12 @@ namespace LvchaxsBS.UI.Pages
         // ============ 版本与更新 ============
 
         private async void LatestVersionBtn_Click(object sender, RoutedEventArgs e)
-            => await DownloadAndInstallAsync("正式版本", UpdateService.RELEASE_BASE_URL, showOptionCheckBox: true);
+            => await DownloadAndInstallAsync("正式版本", UpdateService.RELEASE_BASE_URL,
+                                             showOptionCheckBox: true, showChangelog: true);
 
         private async void TestVersionBtn_Click(object sender, RoutedEventArgs e)
-            => await DownloadAndInstallAsync("测试版本", UpdateService.BETA_BASE_URL, showOptionCheckBox: false);
+            => await DownloadAndInstallAsync("测试版本", UpdateService.BETA_BASE_URL,
+                                             showOptionCheckBox: false, showChangelog: false);
 
         /// <summary>
         /// 重置配置：把 Config 目录整体删除并重启，程序会按默认值重新生成配置文件。
@@ -277,15 +279,59 @@ namespace LvchaxsBS.UI.Pages
         }
 
         /// <summary>通用下载安装流程。</summary>
-        private async Task DownloadAndInstallAsync(string channelName, string baseUrl, bool showOptionCheckBox)
+        /// <param name="channelName">渠道名（正式版本 / 测试版本）</param>
+        /// <param name="baseUrl">下载目录前缀</param>
+        /// <param name="showOptionCheckBox">是否显示「新版本自动更新」复选框</param>
+        /// <param name="showChangelog">
+        /// 是否拉取远端版本信息：有新版本就在确认框里列出**新版本的改动内容**；
+        /// 已是最新则提示"当前已是最新版本"。（只有正式版本渠道有对应的版本信息）
+        /// </param>
+        private async Task DownloadAndInstallAsync(string channelName, string baseUrl,
+                                                   bool showOptionCheckBox, bool showChangelog)
         {
-            var dialog = new ConfirmDialog(
-                "确认更新",
-                $"确定要下载并安装【{channelName}】吗？\n\n程序将自动关闭，稍等几秒会自动重启，请勿手动结束进程。",
-                "确定", "取消")
+            string localVersion = UpdateCheckService.GetLocalVersion();
+            string? remoteVersion = null;
+            string? remoteJson = null;
+            string? changelog = null;
+
+            // 先取远端版本信息（失败不阻断更新流程，只是没有改动摘要可看）
+            if (showChangelog)
+            {
+                try
+                {
+                    remoteJson = await UpdateCheckService.FetchModulesJsonAsync();
+                    if (!string.IsNullOrWhiteSpace(remoteJson))
+                    {
+                        remoteVersion = UpdateCheckService.ParseVersionFromJson(remoteJson);
+                        changelog = ChangelogService.ParseChangelog(remoteJson);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"【更新】获取远端版本信息失败：{ex.Message}");
+                }
+            }
+
+            bool hasNew = showChangelog
+                          && UpdateCheckService.IsRemoteNewer(remoteVersion, localVersion);
+
+            string message = hasNew
+                ? $"确定要下载并安装【{channelName} V{remoteVersion}】吗？\n\n" +
+                  "程序将自动关闭，稍等几秒会自动重启，请勿手动结束进程。"
+                : showChangelog
+                    ? "当前已是最新版本，确认后重新安装最新版本。\n\n" +
+                      "程序将自动关闭，稍等几秒会自动重启，请勿手动结束进程。"
+                    : $"确定要下载并安装【{channelName}】吗？\n\n" +
+                      "程序将自动关闭，稍等几秒会自动重启，请勿手动结束进程。";
+
+            var dialog = new ConfirmDialog("确认更新", message, "确定", "取消")
             {
                 Owner = Window.GetWindow(this)
             };
+
+            // 有新版本时，把这一版的改动内容列出来
+            if (hasNew && !string.IsNullOrWhiteSpace(changelog))
+                dialog.SetExtraContent($"新版本改动  v{remoteVersion}", changelog);
 
             if (showOptionCheckBox)
             {
@@ -304,6 +350,11 @@ namespace LvchaxsBS.UI.Pages
 
             if (dialog.ShowDialog() != true)
                 return;
+
+            // 预存新版本的改动内容：更新完成、程序重启后，「版本改动」按新版本号读到的就是这一版。
+            // 在此之前旧的缓存不会被覆盖 —— 程序还是旧版本时，「版本改动」显示的仍是旧版本的内容。
+            if (hasNew && !string.IsNullOrWhiteSpace(remoteVersion))
+                ChangelogService.SaveCacheFor(remoteVersion, remoteJson);
 
             try
             {

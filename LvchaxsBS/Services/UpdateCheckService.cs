@@ -46,6 +46,12 @@ namespace LvchaxsBS.Services
         public static string? LastRemoteVersion { get; private set; }
 
         /// <summary>
+        /// 最近一次抓到的 modules.json 原始文本。
+        /// 自动更新时用它把新版本的改动内容预存到本地（见 <see cref="ChangelogService"/>）。
+        /// </summary>
+        public static string? LastRemoteJson { get; private set; }
+
+        /// <summary>
         /// 最近一次检查到的本地版本
         /// </summary>
         public static string? LastLocalVersion { get; private set; }
@@ -124,6 +130,7 @@ namespace LvchaxsBS.Services
 
             // 每次检查先清空上次结果，避免误判
             LastRemoteVersion = null;
+            LastRemoteJson = null;
 
             try
             {
@@ -154,6 +161,7 @@ namespace LvchaxsBS.Services
                 }
 
                 LastRemoteVersion = remoteVersion;
+                LastRemoteJson = json;
                 Debug.WriteLine($"远程版本: {remoteVersion}");
 
                 // 比较版本号
@@ -204,6 +212,10 @@ namespace LvchaxsBS.Services
                 {
                     // 勾选了"新版本自动更新" → 直接执行更新，不弹确认
                     Debug.WriteLine($"勾选自动更新，直接执行更新 V{remoteVer}");
+
+                    // 与「设置 → 最新版本 → 确认更新」保持一致：先把这一版的改动内容预存到本地，
+                    // 更新重启后「版本改动」按新版本号读到的就是它。
+                    ChangelogService.SaveCacheFor(LastRemoteVersion, LastRemoteJson);
 
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
@@ -309,14 +321,14 @@ namespace LvchaxsBS.Services
         }
 
         /// <summary>
-        /// 从 JSON 中解析版本号
+        /// 从 JSON 中解析版本号（更新检查与「版本改动」弹窗共用）
         /// 支持格式：
         /// 1. { "version": "1.0.0.1" }
         /// 2. { "Version": "1.0.0.1" }
         /// 3. { "modules": { "version": "1.0.0.1" } }
         /// 4. 纯字符串 "1.0.0.1"
         /// </summary>
-        private static string? ParseVersionFromJson(string json)
+        public static string? ParseVersionFromJson(string json)
         {
             if (string.IsNullOrWhiteSpace(json))
                 return null;
@@ -430,6 +442,22 @@ namespace LvchaxsBS.Services
                 return false;
             }
         }
+
+        /// <summary>
+        /// 两个版本号是否相同（忽略末尾补零，如 "1.0.3" 与 "1.0.3.0" 视为相同）。
+        /// 任一侧为空视为不相同。
+        /// </summary>
+        public static bool IsSameVersion(string? a, string? b)
+        {
+            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+                return false;
+
+            return string.Equals(NormalizeVersion(a), NormalizeVersion(b), StringComparison.Ordinal);
+        }
+
+        /// <summary>远端版本是否比本地版本新（供设置页判断"有新版本 / 已是最新"复用）。</summary>
+        public static bool IsRemoteNewer(string? remote, string? local)
+            => CompareVersions(remote ?? string.Empty, local ?? string.Empty);
 
         /// <summary>
         /// 标准化版本号，补齐到 4 位

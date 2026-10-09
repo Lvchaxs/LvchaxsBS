@@ -45,6 +45,35 @@
                        LineHeight="20"
                        Margin="0,0,0,20"/>
 
+            <!-- 附加内容区（如「新版本改动」）：默认隐藏，由调用处 SetExtraContent 填充。
+                 用边框而不是填充背景 —— 避免被「卡片透明度」影响、与浮层底色保持一致。 -->
+            <Border x:Name="ExtraContentBorder"
+                    Visibility="Collapsed"
+                    BorderBrush="{DynamicResource BorderStrongBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Margin="0,0,0,18">
+                <ScrollViewer MaxHeight="190"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="10,8,6,8">
+                    <StackPanel>
+                        <TextBlock x:Name="ExtraTitleText"
+                                   Text=""
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock x:Name="ExtraContentText"
+                                   Text=""
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextWrapping="Wrap"
+                                   LineHeight="19"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

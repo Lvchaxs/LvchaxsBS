@@ -1,8 +1,6 @@
 using LvchaxsBS.Services;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -12,15 +10,22 @@ namespace LvchaxsBS.UI.Dialogs
     /// <summary>
     /// 「当前版本改动」弹窗。入口在「设置 → 程序版本」卡片里的「版本改动」按钮。
     ///
-    /// 内容优先从 Gitee 仓库的 modules.json 里读取（字段 <c>changelog</c>），
-    /// 所以改文案只要改远端文件、不用重新发版；拉不到时用本文件里的
-    /// <see cref="FallbackChangelog"/> 兜底。
+    /// <para>显示的是**当前运行版本**带来的改动，来源按优先级：</para>
+    /// <list type="number">
+    /// <item>本地缓存 <c>Cache/changelog_&lt;当前版本&gt;.json</c> —— 有就**直接显示，不联网**；</item>
+    /// <item>没有缓存时才联网拉一次 modules.json：**只有远端版本与当前版本一致**才采纳并缓存
+    ///       （远端已经出了更新版本时，那份改动属于新版本，留给更新之后再看）；</item>
+    /// <item>联网失败 / 版本对不上 → 显示本文件里的 <see cref="FallbackChangelog"/> 兜底。</item>
+    /// </list>
+    ///
+    /// <para>缓存的读写与解析见 <see cref="ChangelogService"/>。</para>
     /// </summary>
     public partial class ChangelogDialog : Window
     {
         /// <summary>
-        /// ⬇⬇⬇ 兜底文案（离线 / 远端还没配 changelog 时显示）⬇⬇⬇
-        /// 正常情况下来自 modules.json，这里只保证"断网也有东西看"。
+        /// ⬇⬇⬇ 最后兜底文案（当前版本第一次运行 + 断网时才会看到）⬇⬇⬇
+        /// 正常情况下内容来自 Gitee 的 modules.json，并按版本缓存到 Cache/changelog_&lt;版本&gt;.json。
+        /// 这里请填写**当前编译版本**的改动内容，发版时跟着一起改。
         /// </summary>
         private const string FallbackChangelog =
             """
@@ -44,16 +49,29 @@ namespace LvchaxsBS.UI.Dialogs
             · 气泡提示只在实际超出窗口时才拉回，不再误推贴边的气泡
             """;
 
-        /// <summary>远端 changelog 字段的候选名（不区分大小写，取第一个命中的）</summary>
-        private static readonly string[] ChangelogFieldNames =
-            { "changelog", "changelogs", "changes", "updates", "更新内容" };
+        /// <summary>没有本地缓存时，才需要联网拉一次</summary>
+        private readonly bool _needFetch;
 
         public ChangelogDialog()
         {
             InitializeComponent();
 
-            // 先显示兜底内容，远端拿到后再替换（避免白屏）
-            ChangelogText.Text = FallbackChangelog;
+            string localVersion = UpdateCheckService.GetLocalVersion();
+
+            // 优先本地缓存：有就完全不走网络
+            string? cached = ChangelogService.LoadTextFor(localVersion);
+            if (!string.IsNullOrWhiteSpace(cached))
+            {
+                ChangelogText.Text = cached;
+                _needFetch = false;
+                Debug.WriteLine($"【版本改动】直接使用本地缓存（v{localVersion}），不联网");
+            }
+            else
+            {
+                ChangelogText.Text = FallbackChangelog;
+                _needFetch = true;
+                Debug.WriteLine($"【版本改动】本地没有 v{localVersion} 的缓存，将联网尝试获取一次");
+            }
 
             // Esc 关闭
             PreviewKeyDown += (s, e) =>
@@ -78,14 +96,23 @@ namespace LvchaxsBS.UI.Dialogs
         private async void ChangelogDialog_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= ChangelogDialog_Loaded;
-            await LoadRemoteChangelogAsync();
+
+            // 已有当前版本的缓存 → 不再联网
+            if (!_needFetch) return;
+
+            await FetchOnceAsync();
         }
 
         /// <summary>
-        /// 拉取 modules.json 并取出改动文案。失败就继续用兜底内容。
+        /// 仅在没有本地缓存时调用一次：
+        /// 拉到远端内容后，**必须远端版本 == 本地版本**才采纳并缓存；
+        /// 远端已经更新（版本不一致）时保持兜底文案不动 —— 那份改动属于新版本，
+        /// 等用户真正更新到新版本后才会成为"当前版本改动"。
         /// </summary>
-        private async Task LoadRemoteChangelogAsync()
+        private async Task FetchOnceAsync()
         {
+            string localVersion = UpdateCheckService.GetLocalVersion();
+
             string json;
             try
             {
@@ -99,106 +126,30 @@ namespace LvchaxsBS.UI.Dialogs
 
             if (string.IsNullOrWhiteSpace(json))
             {
-                Debug.WriteLine("【版本改动】拉不到 modules.json，显示内置内容");
+                Debug.WriteLine("【版本改动】拉不到 modules.json，沿用内置兜底");
                 ChangelogText.Text = FallbackChangelog + "\n\n（未能连接远程仓库，以上为程序内置内容）";
                 return;
             }
 
-            string? text = ParseChangelog(json);
+            string? remoteVersion = UpdateCheckService.ParseVersionFromJson(json);
+            if (!UpdateCheckService.IsSameVersion(remoteVersion, localVersion))
+            {
+                Debug.WriteLine($"【版本改动】远端 v{remoteVersion} 与本地 v{localVersion} 不一致，" +
+                                "远端内容属于新版本，本次不采纳");
+                ChangelogText.Text =
+                    FallbackChangelog + "\n\n（远程仓库已有更新版本，以上为当前版本的内置说明）";
+                return;
+            }
 
+            string? text = ChangelogService.ParseChangelog(json);
             if (string.IsNullOrWhiteSpace(text))
             {
-                Debug.WriteLine("【版本改动】modules.json 里没有可用的 changelog 字段，显示内置内容");
-                ChangelogText.Text = FallbackChangelog;
+                Debug.WriteLine("【版本改动】远端没有可用的 changelog 字段，沿用内置兜底");
                 return;
             }
 
             ChangelogText.Text = text;
-        }
-
-        /// <summary>
-        /// 从 modules.json 里解析改动文案。容错处理，支持三种写法：
-        /// 1. "changelog": ["第一行", "第二行", ...]      ← 推荐，一行一个元素
-        /// 2. "changelog": "第一行\n第二行"
-        /// 3. "changelog": { "新增": ["条目", ...], "调整": [...] }  ← 自动拼成「小标题 + · 条目」
-        /// </summary>
-        private static string? ParseChangelog(string json)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                if (root.ValueKind != JsonValueKind.Object)
-                    return null;
-
-                foreach (var prop in root.EnumerateObject())
-                {
-                    if (!IsChangelogField(prop.Name))
-                        continue;
-
-                    switch (prop.Value.ValueKind)
-                    {
-                        case JsonValueKind.String:
-                        {
-                            string? s = prop.Value.GetString();
-                            return string.IsNullOrWhiteSpace(s) ? null : s;
-                        }
-
-                        case JsonValueKind.Array:
-                        {
-                            var lines = new List<string>();
-                            foreach (var item in prop.Value.EnumerateArray())
-                                lines.Add(item.ValueKind == JsonValueKind.String
-                                    ? item.GetString() ?? string.Empty
-                                    : item.GetRawText());
-
-                            return lines.Count == 0 ? null : string.Join("\n", lines);
-                        }
-
-                        case JsonValueKind.Object:
-                        {
-                            var lines = new List<string>();
-                            foreach (var section in prop.Value.EnumerateObject())
-                            {
-                                if (lines.Count > 0) lines.Add(string.Empty);
-                                lines.Add(section.Name);
-
-                                if (section.Value.ValueKind == JsonValueKind.Array)
-                                {
-                                    foreach (var item in section.Value.EnumerateArray())
-                                        lines.Add("· " + (item.ValueKind == JsonValueKind.String
-                                            ? item.GetString()
-                                            : item.GetRawText()));
-                                }
-                                else if (section.Value.ValueKind == JsonValueKind.String)
-                                {
-                                    lines.Add("· " + section.Value.GetString());
-                                }
-                            }
-
-                            return lines.Count == 0 ? null : string.Join("\n", lines);
-                        }
-                    }
-                }
-
-                return null;
-            }
-            catch (JsonException ex)
-            {
-                Debug.WriteLine($"【版本改动】modules.json 解析失败：{ex.Message}");
-                return null;
-            }
-        }
-
-        private static bool IsChangelogField(string name)
-        {
-            foreach (var candidate in ChangelogFieldNames)
-            {
-                if (string.Equals(name, candidate, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
+            ChangelogService.SaveCacheFor(localVersion, json);
         }
 
         private void CloseBtn_Click(object sender, RoutedEventArgs e) => Close();
