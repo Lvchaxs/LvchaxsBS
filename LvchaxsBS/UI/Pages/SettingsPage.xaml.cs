@@ -318,6 +318,21 @@ namespace LvchaxsBS.UI.Pages
             }
         }
 
+        // ============ 版本改动 ============
+
+        /// <summary>
+        /// 「程序版本」卡片里的「版本改动」入口：弹出当前版本的改动说明。
+        /// 文案硬编码在 <see cref="ChangelogDialog"/> 里，不走网络、不受更新影响。
+        /// </summary>
+        private void ChangelogBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new ChangelogDialog
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialog.ShowDialog();
+        }
+
         // ============ 开源许可 ============
 
         /// <summary>

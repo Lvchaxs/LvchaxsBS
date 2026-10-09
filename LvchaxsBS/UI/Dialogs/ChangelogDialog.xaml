@@ -1,0 +1,60 @@
+<Window x:Class="LvchaxsBS.UI.Dialogs.ChangelogDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LvchaxsBS.UI.Dialogs"
+        mc:Ignorable="d"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="Height"
+        Width="440"
+        ShowInTaskbar="False"
+        Focusable="False"
+        KeyboardNavigation.IsTabStop="False"
+        Title="当前版本改动">
+    <!-- 背景用 PopupBackgroundBrush（浮层专用、始终不透明），与 ConfirmDialog / LicenseDialog 保持一致 -->
+    <Border Background="{DynamicResource PopupBackgroundBrush}"
+            CornerRadius="8"
+            BorderBrush="{DynamicResource BorderStrongBrush}"
+            BorderThickness="1"
+            Margin="12">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="15" ShadowDepth="0" Opacity="0.15" Color="Black"/>
+        </Border.Effect>
+
+        <StackPanel Margin="20,18,20,16">
+
+            <TextBlock Text="当前版本改动"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       Margin="0,0,0,10"/>
+
+            <ScrollViewer MaxHeight="300"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="0,0,6,0"
+                          Margin="0,0,0,16">
+                <TextBlock x:Name="ChangelogText"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           LineHeight="19"/>
+            </ScrollViewer>
+
+            <Button x:Name="CloseBtn"
+                    MinWidth="80" Height="30"
+                    HorizontalAlignment="Right"
+                    Padding="10,0"
+                    Style="{StaticResource SettingsButtonStyleRound6}"
+                    Click="CloseBtn_Click">
+                <TextBlock Text="关闭" VerticalAlignment="Center"/>
+            </Button>
+
+        </StackPanel>
+    </Border>
+</Window>

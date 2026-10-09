@@ -291,6 +291,9 @@
                         <Button x:Name="ResetConfigBtn" Content="重置配置" Width="70" Height="28" Margin="0,0,10,0"
                                 Style="{StaticResource FlatButtonStyleRound6}"
                                 Click="ResetConfigBtn_Click"/>
+                        <Button x:Name="ChangelogBtn" Content="版本改动" Width="70" Height="28" Margin="0,0,10,0"
+                                Style="{StaticResource FlatButtonStyleRound6}"
+                                Click="ChangelogBtn_Click"/>
                         <Button x:Name="TestVersionBtn" Content="测试版本" Width="70" Height="28" Margin="0,0,10,0"
                                 Style="{StaticResource FlatButtonStyleRound6}"
                                 Click="TestVersionBtn_Click"/>
@@ -347,7 +350,7 @@
                            Foreground="#3B82F6"
                            TextDecorations="None"
                            Focusable="False">
-                    <Run Text="gitee"/>
+                    <Run Text="更新地址:gitee"/>
                 </Hyperlink>
                 <Run Text="/" Foreground="{DynamicResource TextDisabledBrush}"/>
                 <Hyperlink NavigateUri="https://github.com/Lvchaxs/LvchaxsBS"
@@ -355,7 +358,7 @@
                            Foreground="#3B82F6"
                            TextDecorations="None"
                            Focusable="False">
-                    <Run Text="github"/>
+                    <Run Text="开源地址:github"/>
                 </Hyperlink>
                         </TextBlock>
 
