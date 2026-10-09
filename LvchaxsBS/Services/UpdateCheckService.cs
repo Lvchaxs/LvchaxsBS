@@ -22,7 +22,7 @@ namespace LvchaxsBS.Services
         /// modules.json 的原始文件地址
         /// 注意：请根据你的默认分支修改 master/main
         /// </summary>
-        private const string MODULES_JSON_URL =
+        public const string MODULES_JSON_URL =
             "https://gitee.com/accompanying-it/associated-with-lvchaxs/raw/master/modules.json";
         /// <summary>
         /// 请求超时时间（秒）
@@ -269,9 +269,10 @@ namespace LvchaxsBS.Services
         #region 私有方法
 
         /// <summary>
-        /// 获取 modules.json 内容
+        /// 获取 modules.json 的原始文本（带时间戳防缓存）。失败返回空字符串。
+        /// 更新检查与「版本改动」弹窗共用这一个抓取入口。
         /// </summary>
-        private static async Task<string> FetchModulesJsonAsync()
+        public static async Task<string> FetchModulesJsonAsync()
         {
             try
             {

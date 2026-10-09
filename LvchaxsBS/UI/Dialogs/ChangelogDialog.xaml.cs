@@ -1,4 +1,9 @@
+using LvchaxsBS.Services;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -7,18 +12,17 @@ namespace LvchaxsBS.UI.Dialogs
     /// <summary>
     /// 「当前版本改动」弹窗。入口在「设置 → 程序版本」卡片里的「版本改动」按钮。
     ///
-    /// 文案是**硬编码**的，就在本文件下面的 <see cref="Changelog"/> 常量里改。
-    /// 这里只写**当前版本**的改动；发布新版本时把内容整体换成新版本的即可
-    /// （旧版本改动可另行保留在 git 历史里）。
+    /// 内容优先从 Gitee 仓库的 modules.json 里读取（字段 <c>changelog</c>），
+    /// 所以改文案只要改远端文件、不用重新发版；拉不到时用本文件里的
+    /// <see cref="FallbackChangelog"/> 兜底。
     /// </summary>
     public partial class ChangelogDialog : Window
     {
         /// <summary>
-        /// ⬇⬇⬇ 当前版本改动正文：直接在这里改 ⬇⬇⬇
-        /// 建议格式：第一行「版本号  日期」，然后用小标题（新增 / 调整 / 修复）+ 「· 」开头的条目。
-        /// 记得改版本号时与 LvchaxsBS.csproj 里的 &lt;Version&gt; 保持一致。
+        /// ⬇⬇⬇ 兜底文案（离线 / 远端还没配 changelog 时显示）⬇⬇⬇
+        /// 正常情况下来自 modules.json，这里只保证"断网也有东西看"。
         /// </summary>
-        private const string Changelog =
+        private const string FallbackChangelog =
             """
             v1.0.3.4  2026-10-09
 
@@ -40,11 +44,16 @@ namespace LvchaxsBS.UI.Dialogs
             · 气泡提示只在实际超出窗口时才拉回，不再误推贴边的气泡
             """;
 
+        /// <summary>远端 changelog 字段的候选名（不区分大小写，取第一个命中的）</summary>
+        private static readonly string[] ChangelogFieldNames =
+            { "changelog", "changelogs", "changes", "updates", "更新内容" };
+
         public ChangelogDialog()
         {
             InitializeComponent();
 
-            ChangelogText.Text = Changelog;
+            // 先显示兜底内容，远端拿到后再替换（避免白屏）
+            ChangelogText.Text = FallbackChangelog;
 
             // Esc 关闭
             PreviewKeyDown += (s, e) =>
@@ -62,6 +71,134 @@ namespace LvchaxsBS.UI.Dialogs
                 if (e.ButtonState == MouseButtonState.Pressed)
                     DragMove();
             };
+
+            Loaded += ChangelogDialog_Loaded;
+        }
+
+        private async void ChangelogDialog_Loaded(object sender, RoutedEventArgs e)
+        {
+            Loaded -= ChangelogDialog_Loaded;
+            await LoadRemoteChangelogAsync();
+        }
+
+        /// <summary>
+        /// 拉取 modules.json 并取出改动文案。失败就继续用兜底内容。
+        /// </summary>
+        private async Task LoadRemoteChangelogAsync()
+        {
+            string json;
+            try
+            {
+                json = await UpdateCheckService.FetchModulesJsonAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"【版本改动】拉取 modules.json 异常：{ex.Message}");
+                json = string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                Debug.WriteLine("【版本改动】拉不到 modules.json，显示内置内容");
+                ChangelogText.Text = FallbackChangelog + "\n\n（未能连接远程仓库，以上为程序内置内容）";
+                return;
+            }
+
+            string? text = ParseChangelog(json);
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Debug.WriteLine("【版本改动】modules.json 里没有可用的 changelog 字段，显示内置内容");
+                ChangelogText.Text = FallbackChangelog;
+                return;
+            }
+
+            ChangelogText.Text = text;
+        }
+
+        /// <summary>
+        /// 从 modules.json 里解析改动文案。容错处理，支持三种写法：
+        /// 1. "changelog": ["第一行", "第二行", ...]      ← 推荐，一行一个元素
+        /// 2. "changelog": "第一行\n第二行"
+        /// 3. "changelog": { "新增": ["条目", ...], "调整": [...] }  ← 自动拼成「小标题 + · 条目」
+        /// </summary>
+        private static string? ParseChangelog(string json)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.ValueKind != JsonValueKind.Object)
+                    return null;
+
+                foreach (var prop in root.EnumerateObject())
+                {
+                    if (!IsChangelogField(prop.Name))
+                        continue;
+
+                    switch (prop.Value.ValueKind)
+                    {
+                        case JsonValueKind.String:
+                        {
+                            string? s = prop.Value.GetString();
+                            return string.IsNullOrWhiteSpace(s) ? null : s;
+                        }
+
+                        case JsonValueKind.Array:
+                        {
+                            var lines = new List<string>();
+                            foreach (var item in prop.Value.EnumerateArray())
+                                lines.Add(item.ValueKind == JsonValueKind.String
+                                    ? item.GetString() ?? string.Empty
+                                    : item.GetRawText());
+
+                            return lines.Count == 0 ? null : string.Join("\n", lines);
+                        }
+
+                        case JsonValueKind.Object:
+                        {
+                            var lines = new List<string>();
+                            foreach (var section in prop.Value.EnumerateObject())
+                            {
+                                if (lines.Count > 0) lines.Add(string.Empty);
+                                lines.Add(section.Name);
+
+                                if (section.Value.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (var item in section.Value.EnumerateArray())
+                                        lines.Add("· " + (item.ValueKind == JsonValueKind.String
+                                            ? item.GetString()
+                                            : item.GetRawText()));
+                                }
+                                else if (section.Value.ValueKind == JsonValueKind.String)
+                                {
+                                    lines.Add("· " + section.Value.GetString());
+                                }
+                            }
+
+                            return lines.Count == 0 ? null : string.Join("\n", lines);
+                        }
+                    }
+                }
+
+                return null;
+            }
+            catch (JsonException ex)
+            {
+                Debug.WriteLine($"【版本改动】modules.json 解析失败：{ex.Message}");
+                return null;
+            }
+        }
+
+        private static bool IsChangelogField(string name)
+        {
+            foreach (var candidate in ChangelogFieldNames)
+            {
+                if (string.Equals(name, candidate, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
         private void CloseBtn_Click(object sender, RoutedEventArgs e) => Close();
