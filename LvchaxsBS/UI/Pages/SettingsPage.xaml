@@ -326,14 +326,14 @@
                        Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                         <TextBlock Grid.Row="1"
-                       Text="项目使用 C#/AI/PS 等工具制作，内容包含模拟输入/图像识别/窗口交互等"
+                       Text="项目完全免费，使用C#/AI/PS等工具制作，内容包含模拟输入/图像识别/窗口交互等"
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
 
                         <TextBlock Grid.Row="2"
                        FontSize="12"
                        Foreground="{DynamicResource TextDisabledBrush}">
-                <Run Text="作者:LvchaxsBS/伴生/2163239604@qq.com/" Foreground="{DynamicResource TextDisabledBrush}"/>
+                <Run Text="作者:LvchaxsBS/伴生/" Foreground="{DynamicResource TextDisabledBrush}"/>
                 <Hyperlink NavigateUri="https://space.bilibili.com/501163575"
                            RequestNavigate="Hyperlink_RequestNavigate"
                            Foreground="#3B82F6"
