@@ -7,7 +7,18 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+		<Version>1.0.3.4</Version>
+		<AssemblyVersion>1.0.3.4</AssemblyVersion>
+		<FileVersion>1.0.3.4</FileVersion>
+
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
 		<ApplicationIcon>UI\Assets\Images\派蒙.ico</ApplicationIcon>
+
+		<!-- 许可证元数据：写进生成的 exe / dll 属性，与仓库根目录的 LICENSE 保持一致 -->
+		<Copyright>Copyright (C) 2026 Lvchaxs</Copyright>
+		<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -20,7 +31,6 @@
 		<Resource Include="UI\Assets\Images\**\*.jpg" />
 		<Resource Include="UI\Assets\Images\**\*.jpeg" />
 
-		<!-- 旧项目功能引擎所需的图像模板与图标（已裁剪，仅保留实际使用项） -->
 		<Resource Include="Resources\Images\**\*.png" />
 		<Resource Include="Resources\Images\**\*.ico" />
 		<Resource Include="Resources\Template\**\*.png" />

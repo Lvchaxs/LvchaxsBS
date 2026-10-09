@@ -302,7 +302,7 @@
             </Border>
 
             <!-- ============ 卡片6：关于工具 ============ -->
-            <Border Style="{StaticResource ModuleFunctionCardStyle}" Height="70">
+            <Border Style="{StaticResource ModuleFunctionCardStyle}" Height="88">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -318,7 +318,8 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="20"/>
                             <RowDefinition Height="20"/>
-                            <RowDefinition Height="15"/>
+                            <RowDefinition Height="16"/>
+                            <RowDefinition Height="20"/>
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Text="关于项目" FontSize="14" FontWeight="SemiBold"
@@ -355,6 +356,18 @@
                            TextDecorations="None"
                            Focusable="False">
                     <Run Text="github"/>
+                </Hyperlink>
+                        </TextBlock>
+
+                        <!-- GPL-3.0 要求的界面版权 / 无担保 / 许可证入口 -->
+                        <TextBlock Grid.Row="3" FontSize="12" VerticalAlignment="Center">
+                <Run Text="© 2026 Lvchaxs · 以 GPL-3.0 开源 · 不提供任何担保 · "
+                     Foreground="{DynamicResource TextDisabledBrush}"/>
+                <Hyperlink Click="LicenseLink_Click"
+                           Foreground="#3B82F6"
+                           TextDecorations="None"
+                           Focusable="False">
+                    <Run Text="开源许可"/>
                 </Hyperlink>
                         </TextBlock>
                     </Grid>

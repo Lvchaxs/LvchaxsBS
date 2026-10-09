@@ -318,6 +318,21 @@ namespace LvchaxsBS.UI.Pages
             }
         }
 
+        // ============ 开源许可 ============
+
+        /// <summary>
+        /// 「关于项目」卡片里的「开源许可」入口：弹出 GPL-3.0 的版权 / 无担保 / 许可证说明。
+        /// 对应 GPL-3.0 第 0 条要求的界面「Appropriate Legal Notices」。
+        /// </summary>
+        private void LicenseLink_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new LicenseDialog
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialog.ShowDialog();
+        }
+
         // ============ 超链接跳转到浏览器 ============
         private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
         {
