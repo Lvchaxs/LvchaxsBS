@@ -242,7 +242,7 @@ namespace LvchaxsBS.Core
                         }
                     }
 
-                    DetectionResultUpdated?.Invoke(rodResult.similarity, rodResult.elapsedMs, settings.DetectThreshold, rodResult.status);
+                    DetectionResultUpdated?.Invoke(rodResult.similarity, rodResult.elapsedMs, settings.DetectThreshold_1, rodResult.status);
 
                     token.ThrowIfCancellationRequested();
 
@@ -303,7 +303,7 @@ namespace LvchaxsBS.Core
                     ("钓鱼辅助_上钩了", "上钩了")
                 };
 
-                double threshold = ConfigManager.Get<FishingAssistSettings>().DetectThreshold;
+                double threshold = ConfigManager.Get<FishingAssistSettings>().DetectThreshold_1;
                 double bestSimilarity = 0;
                 string bestStatus = "";
 
@@ -350,7 +350,7 @@ namespace LvchaxsBS.Core
                     ("钓鱼辅助_上钩了", "上钩了")
                 };
 
-                double threshold = ConfigManager.Get<FishingAssistSettings>().DetectThreshold;
+                double threshold = ConfigManager.Get<FishingAssistSettings>().DetectThreshold_1;
 
                 foreach (var templateInfo in templateNames)
                 {

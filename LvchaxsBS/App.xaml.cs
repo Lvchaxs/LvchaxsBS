@@ -42,7 +42,6 @@ namespace LvchaxsBS
         }
 
         /// <summary>
-        /// 初始化功能引擎（从旧项目 App.OnStartup 移植并按顺序整理）。
         /// 每一步都用 try/catch 包裹，避免某个钩子注册失败拖垮整个程序启动。
         /// </summary>
         private void InitializeEngine()

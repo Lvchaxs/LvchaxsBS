@@ -26,7 +26,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         {
             var s = ConfigManager.Get<FishingAssistSettings>();
             FishingAssistCard.Value = s.FishingAssistInterval;
-            FishingAssistCard.SpinValue = s.DetectThreshold;
+            FishingAssistCard.SpinValue = s.DetectThreshold_1;
             TensionCard.Value = s.TensionInterval;
             TensionCard.SpinValue = s.TensionTolerance;
             JudgmentLineCard.Value = s.JudgmentLinePosition;
@@ -87,7 +87,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void DetectThresholdSpinBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            ConfigSync.Mutate<FishingAssistSettings>(s => s.DetectThreshold = e.NewValue);
+            ConfigSync.Mutate<FishingAssistSettings>(s => s.DetectThreshold_1 = e.NewValue);
         }
 
         private void TensionIntervalSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

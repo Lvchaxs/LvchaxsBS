@@ -17,7 +17,7 @@ namespace LvchaxsBS.Config.FunctionConfigs
         /// <summary>
         /// 鱼竿状态检测匹配度阈值（0-1）
         /// </summary>
-        public double DetectThreshold { get; set; } = 0.9;
+        public double DetectThreshold_1 { get; set; } = 0.85;
 
         /// <summary>
         /// 张力区检测间隔（毫秒）
