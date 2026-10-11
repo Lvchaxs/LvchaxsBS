@@ -7,6 +7,8 @@
     <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="HoverBackgroundBrush" Color="#F9FAFB"/>
     <SolidColorBrush x:Key="PressedBackgroundBrush" Color="#F3F4F6"/>
+    <!-- 列表行悬停 / 选中底色（不要蓝色，用中性底） -->
+    <SolidColorBrush x:Key="RowHighlightBrush" Color="#F2F2F2"/>
 
     <!-- ============ 浮层（下拉弹窗等）：不参与"控件透明度"，始终不透明 ============ -->
     <SolidColorBrush x:Key="PopupBackgroundBrush" Color="#FFFFFF"/>
@@ -38,12 +40,16 @@
     <SolidColorBrush x:Key="TagGreenFgBrush" Color="#065F46"/>
     <SolidColorBrush x:Key="TagRedBgBrush" Color="#FEE2E2"/>
     <SolidColorBrush x:Key="TagRedFgBrush" Color="#991B1B"/>
+    <SolidColorBrush x:Key="TagAmberBgBrush" Color="#FEF3C7"/>
+    <SolidColorBrush x:Key="TagAmberFgBrush" Color="#92400E"/>
     <SolidColorBrush x:Key="TagPurpleBgBrush" Color="#EDE9FE"/>
     <SolidColorBrush x:Key="TagPurpleFgBrush" Color="#5B21B6"/>
 
     <!-- ============ 中性灰 ============ -->
     <SolidColorBrush x:Key="Gray100Brush" Color="#F3F4F6"/>
     <SolidColorBrush x:Key="Gray200Brush" Color="#E5E7EB"/>
+    <!-- 弹窗的顶部标题栏 / 底部按钮栏底色（浅色沿用 UID 窗口的 #F8FAFC，深色调亮一档便于区分） -->
+    <SolidColorBrush x:Key="DialogHeaderBackgroundBrush" Color="#F8FAFC"/>
     <SolidColorBrush x:Key="Gray300Brush" Color="#D1D5DB"/>
     <SolidColorBrush x:Key="Gray400Brush" Color="#9CA3AF"/>
     <SolidColorBrush x:Key="Gray500Brush" Color="#6B7280"/>

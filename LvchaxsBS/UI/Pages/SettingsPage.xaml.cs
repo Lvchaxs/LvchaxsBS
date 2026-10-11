@@ -260,7 +260,7 @@ namespace LvchaxsBS.UI.Pages
             };
             dialog.SetOptionCheckBox(visible: false);
 
-            if (dialog.ShowDialog() != true)
+            if (ModalOverlayService.ShowModalDialog(dialog) != true)
                 return;
 
             try
@@ -348,7 +348,7 @@ namespace LvchaxsBS.UI.Pages
                 dialog.SetOptionCheckBox(visible: false);
             }
 
-            if (dialog.ShowDialog() != true)
+            if (ModalOverlayService.ShowModalDialog(dialog) != true)
                 return;
 
             // 预存新版本的改动内容：更新完成、程序重启后，「版本改动」按新版本号读到的就是这一版。
@@ -381,7 +381,7 @@ namespace LvchaxsBS.UI.Pages
             {
                 Owner = Window.GetWindow(this)
             };
-            dialog.ShowDialog();
+            ModalOverlayService.ShowModalDialog(dialog);
         }
 
         // ============ 开源许可 ============
@@ -396,7 +396,7 @@ namespace LvchaxsBS.UI.Pages
             {
                 Owner = Window.GetWindow(this)
             };
-            dialog.ShowDialog();
+            ModalOverlayService.ShowModalDialog(dialog);
         }
 
         // ============ 超链接跳转到浏览器 ============

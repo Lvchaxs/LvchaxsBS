@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:controls="clr-namespace:LvchaxsBS.UI.Controls"
+        xmlns:ui="clr-namespace:LvchaxsBS.UI.Controls"
         mc:Ignorable="d"
         Title="LvchaxsBS"
         Height="580" Width="1000"
@@ -86,11 +87,75 @@
                                Margin="0,0,8,0"
                                VerticalAlignment="Center"/>
 
-                        <TextBlock Text="Lvchaxs伴生"
+                        <TextBlock x:Name="AppTitleText"
+                                   Text="Lvchaxs伴生"
                                    FontSize="13"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    VerticalAlignment="Center"/>
+
+                        <!-- ===== UID 模式专用（内容区显示账号管理时才出现，见 SetUidTitleMode）=====
+                             标题后缀「_UID」+ 账号管理的「使用说明」入口。
+                             原来那个「!」按钮画在模块自己的页面上，现在统一放到标题栏这里。 -->
+                        <TextBlock x:Name="UidTitleSuffix"
+                                   Text="_UID"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Visibility="Collapsed"/>
+
+                        <Button x:Name="UidHelpButton"
+                                Width="20" Height="20"
+                                Margin="6,0,0,0"
+                                Padding="0"
+                                BorderThickness="0"
+                                Background="Transparent"
+                                Cursor="Hand"
+                                VerticalAlignment="Center"
+                                Visibility="Collapsed"
+                                Click="UidHelpButton_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Grid Background="Transparent">
+                                        <!-- 圆形底 + 感叹号，配色走主题主色，深浅色下都清晰 -->
+                                        <Ellipse x:Name="circleBackground"
+                                                 Width="18" Height="18"
+                                                 RenderTransformOrigin="0.5,0.5">
+                                            <Ellipse.Fill>
+                                                <SolidColorBrush Color="#3B82F6" Opacity="0.16"/>
+                                            </Ellipse.Fill>
+                                            <Ellipse.RenderTransform>
+                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                            </Ellipse.RenderTransform>
+                                        </Ellipse>
+                                        <TextBlock Text="!"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource PrimaryBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="circleBackground" Property="Opacity" Value="1"/>
+                                            <Setter TargetName="circleBackground" Property="Fill">
+                                                <Setter.Value>
+                                                    <SolidColorBrush Color="#3B82F6" Opacity="0.3"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="circleBackground" Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <ScaleTransform ScaleX="0.9" ScaleY="0.9"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
 
                         <!-- Toast 消息 -->
                         <controls:TitleBarToast x:Name="TitleBarToast"
@@ -171,6 +236,25 @@
                                       Grid.Row="0"
                                       Grid.RowSpan="4"
                                       Panel.ZIndex="99"/>
+
+            <!-- ============ 全局模态层（遮罩 + 模态内容） ============
+                 遮罩必须盖住整个窗口（含顶部栏）：只压暗内容区会很难看。
+                 结构上「先遮罩、再 ModalHost」，各来源的模态框放进 ModalHost，
+                 就自然浮在遮罩之上——包括 UID 模块的页内模态框（由宿主代为承载）。
+                 使用方式见 Services/ModalOverlayService.cs。 -->
+            <Grid x:Name="ModalLayer"
+                  Grid.Row="0"
+                  Grid.RowSpan="4"
+                  Panel.ZIndex="500"
+                  Visibility="Collapsed"
+                  Focusable="False">
+                <Border x:Name="ModalMask"
+                        Background="#000000"
+                        Opacity="0"
+                        Focusable="False"/>
+                <Grid x:Name="ModalHost"
+                      Focusable="False"/>
+            </Grid>
         </Grid>
     </Border>
 </Window>

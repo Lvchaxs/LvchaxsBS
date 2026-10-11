@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
@@ -62,6 +62,8 @@ namespace LvchaxsBS.UI.Dialogs
         public LicenseDialog()
         {
             InitializeComponent();
+            // 独立窗口不会继承主界面那层 LayoutTransform，自己跟一下「窗口缩放」
+            UI.Helpers.UiScale.ApplyTo(this);
 
             LicenseText.Text = LicenseNotice;
 

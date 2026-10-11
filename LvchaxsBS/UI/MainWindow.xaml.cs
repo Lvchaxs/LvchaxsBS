@@ -57,6 +57,15 @@ namespace LvchaxsBS.UI
             TopLeft.OfficialServerClicked += TopLeft_OfficialServerClicked;
             TopLeft.InternationalServerClicked += TopLeft_InternationalServerClicked;
 
+            // UID 账号管理模块（可选插件：exe 同目录有 LvchaxsBS_uid.dll 才显示按钮）
+            TopLeft.UidClicked += TopLeft_UidClicked;
+            UidModuleService.Probe();
+            TopLeft.SetUidVisible(UidModuleService.IsAvailable);
+            UidModuleService.CloseToolRequested += UidModuleService_CloseToolRequested;
+
+            // 全局模态遮罩层：宿主的弹窗和 UID 模块的页内模态框都用它压暗整个窗口
+            ModalOverlayService.Attach(ModalLayer, ModalMask, ModalHost);
+
             TopCenter.FunctionClicked += TopCenter_FunctionClicked;
 
             TopRight.ThemeToggleClicked += TopRight_ThemeToggleClicked;
@@ -501,6 +510,18 @@ namespace LvchaxsBS.UI
             TopLeft.SetSettingsActive(e.Content is Pages.SettingsPage);
             TopLeft.SetPersonalizationActive(e.Content is Pages.PersonalizationPage);
             TopLeft.SetVoiceActive(e.Content is Pages.VoicePage);
+
+            // 内容区是不是 UID 页面？是就保持高亮 + 标题后缀「_UID」+ 标题栏「!」按钮。
+            //
+            // 注意：这里必须按"当前内容"判断，而不是只靠 TopLeft_UidClicked 里那次显式调用 ——
+            // 给 Frame.Content 赋值会**异步**触发一次 Navigated，如果这里无脑写 false，
+            // 就会把刚打开的后缀/按钮又关掉（实测踩过这个坑）。
+            bool isUidPage = UidModuleService.IsAvailable
+                             && e.Content != null
+                             && ReferenceEquals(e.Content, UidModuleService.CurrentView);
+
+            TopLeft.SetUidActive(isUidPage);
+            SetUidTitleMode(isUidPage);
         }
 
         // ============ 顶部栏事件 ============
@@ -524,6 +545,60 @@ namespace LvchaxsBS.UI
         {
             MainFrame.Navigate(new Pages.VoicePage());
         }
+
+        /// <summary>
+        /// 把 UID 账号管理界面显示到内容区（由外部插件 LvchaxsBS_uid.dll 提供）。
+        ///
+        /// <para>
+        /// 这里刻意用 <see cref="System.Windows.Controls.ContentControl.Content"/> 直接赋值、
+        /// 而不是 <c>MainFrame.Navigate(...)</c>：
+        /// 模块内部是单例，复用同一个实例才能保住用户上次浏览到的分组、页面位置；
+        /// 每次 new 一个新页面会把状态清空。副作用是不会触发 Navigated 事件，
+        /// 所以导航高亮在这里手动处理。
+        /// </para>
+        /// </summary>
+        private void TopLeft_UidClicked(object? sender, EventArgs e)
+        {
+            var view = UidModuleService.GetAccountManagerView();
+            if (view == null) return;
+
+            MainFrame.Content = view;
+
+            TopCenter.SetAlignment(false, animate: true);
+            TopLeft.SetHomeActive(false);
+            TopLeft.SetSettingsActive(false);
+            TopLeft.SetPersonalizationActive(false);
+            TopLeft.SetVoiceActive(false);
+            TopLeft.SetUidActive(true);
+            SetUidTitleMode(true);         // 标题变成「Lvchaxs伴生_UID」并显示「使用说明」入口
+        }
+
+        /// <summary>
+        /// 标题栏的「UID 模式」外观：进入账号管理时把标题后缀显示成 <c>_UID</c>，
+        /// 并在右边露出「使用说明」的「!」按钮；离开时全部收掉、回到原样。
+        ///
+        /// <para>
+        /// 那个「!」按钮原先画在模块自己的页面里，挪到标题栏后整窗统一、也不再占内容区一行。
+        /// 模块未加载（没有 dll）时按钮不出现。
+        /// </para>
+        /// </summary>
+        private void SetUidTitleMode(bool on)
+        {
+            if (UidTitleSuffix != null)
+                UidTitleSuffix.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+
+            if (UidHelpButton != null)
+                UidHelpButton.Visibility = (on && UidModuleService.IsAvailable)
+                    ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>标题栏「!」：打开账号管理的「使用说明」窗口（由模块提供）。</summary>
+        private void UidHelpButton_Click(object sender, RoutedEventArgs e)
+            => UidModuleService.ShowHelp();
+
+        /// <summary>模块帮助窗里点了『关闭工具』：切回宿主自己的首页。</summary>
+        private void UidModuleService_CloseToolRequested(object? sender, EventArgs e)
+            => Dispatcher.Invoke(() => MainFrame.Navigate(new Pages.HomePage()));
 
         private void TopLeft_OfficialServerClicked(object? sender, EventArgs e)
             => LaunchGameAsync(true);
@@ -647,7 +722,7 @@ namespace LvchaxsBS.UI
         {
             try
             {
-                new ScreenshotToolWindow().ShowDialog();
+                ModalOverlayService.ShowModalDialog(new ScreenshotToolWindow());
             }
             catch (Exception ex)
             {

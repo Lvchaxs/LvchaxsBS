@@ -39,9 +39,10 @@ namespace LvchaxsBS.UI.Helpers
         private const int CacheLimit = 32;
 
         /// <summary>
-        /// 加载图片资源。路径形如：
-        /// pack://application:,,,/Resources/Images/图标/xxx.png
-        /// 加载失败返回 null。
+        /// 加载图片资源。<paramref name="packUri"/> 用
+        /// <see cref="LvchaxsBS.Core.AssetLocator.Pack(string)"/> 生成，形如：
+        /// pack://application:,,,/LvchaxsBS_Resources;component/Resources/Images/图标/xxx.png
+        /// 加载失败（含资源包缺失 / 传空串）返回 null。
         /// </summary>
         public static BitmapImage? Load(string packUri)
         {

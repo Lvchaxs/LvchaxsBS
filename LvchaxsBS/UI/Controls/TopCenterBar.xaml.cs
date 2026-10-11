@@ -15,6 +15,9 @@ namespace LvchaxsBS.UI.Controls
         public event EventHandler? OfficialServerClicked;
         public event EventHandler? InternationalServerClicked;
 
+        /// <summary>UID 账号管理按钮点击（模块未加载时该按钮隐藏，不会触发）。</summary>
+        public event EventHandler? UidClicked;
+
         private string _activePage = "";
 
         public TopLeftBar()
@@ -50,6 +53,9 @@ namespace LvchaxsBS.UI.Controls
         private void ButtonVoice_Click(object sender, RoutedEventArgs e)
             => VoiceClicked?.Invoke(this, EventArgs.Empty);
 
+        private void ButtonUid_Click(object sender, RoutedEventArgs e)
+            => UidClicked?.Invoke(this, EventArgs.Empty);
+
         private void CenterButton1_Click(object sender, RoutedEventArgs e)
             => OfficialServerClicked?.Invoke(this, EventArgs.Empty);
 
@@ -69,6 +75,33 @@ namespace LvchaxsBS.UI.Controls
             var v = visible ? Visibility.Visible : Visibility.Collapsed;
             if (CenterButton1 != null) CenterButton1.Visibility = v;
             if (CenterButton2 != null) CenterButton2.Visibility = v;
+        }
+
+        /// <summary>
+        /// 控制「UID」按钮显隐。只有 exe 同目录存在可用的 LvchaxsBS_uid.dll 时才显示。
+        /// </summary>
+        public void SetUidVisible(bool visible)
+        {
+            if (ButtonUid != null)
+                ButtonUid.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// UID 页面是否为当前页（和「首页 / 设置」等导航项一样高亮）。
+        /// </summary>
+        public void SetUidActive(bool active)
+        {
+            var brush = active ? ThemeBrushProvider.PrimaryBrush()
+                               : ThemeBrushProvider.TextSecondaryBrush();
+
+            if (UidText != null) UidText.Foreground = brush;
+
+            if (ButtonUid != null)
+            {
+                ButtonUid.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
+                                               : ThemeBrushProvider.BorderStrongBrush();
+                ButtonUid.BorderThickness = new Thickness(1);
+            }
         }
 
         // ============ 当前页高亮 ============

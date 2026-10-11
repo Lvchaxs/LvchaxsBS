@@ -1,4 +1,4 @@
-using LvchaxsBS.Services;
+﻿using LvchaxsBS.Services;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -55,6 +55,8 @@ namespace LvchaxsBS.UI.Dialogs
         public ChangelogDialog()
         {
             InitializeComponent();
+            // 独立窗口不会继承主界面那层 LayoutTransform，自己跟一下「窗口缩放」
+            UI.Helpers.UiScale.ApplyTo(this);
 
             string localVersion = UpdateCheckService.GetLocalVersion();
 

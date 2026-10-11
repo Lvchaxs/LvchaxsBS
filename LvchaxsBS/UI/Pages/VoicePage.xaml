@@ -122,8 +122,8 @@
             <StackPanel>
 
                 <Border x:Name="KongCard"
-                        Style="{StaticResource ModuleFunctionCardAutoStyle}">
-                    <Grid Margin="10,8">
+                        Style="{StaticResource ModuleFunctionCardStyle}">
+                    <Grid Margin="10,8" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -137,7 +137,8 @@
                                 ClipToBounds="True"
                                 Background="{DynamicResource Gray100Brush}"
                                 Margin="0,0,8,0">
-                            <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/Voice/Pictures/空.png"
+                            <!-- 立绘放在共用资源包里；资源包缺失时 Source 为 null，留白不报错 -->
+                            <Image Source="{ui:Asset Images/Pictures/角色头像/空.png}"
                                    Width="48" Height="48"
                                    Stretch="UniformToFill"/>
                         </Border>
@@ -170,8 +171,8 @@
                 </Border>
 
                 <Border x:Name="YingCard"
-                        Style="{StaticResource ModuleFunctionCardAutoStyle}">
-                    <Grid Margin="10,8">
+                        Style="{StaticResource ModuleFunctionCardStyle}">
+                    <Grid Margin="10,8" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -185,7 +186,7 @@
                                 ClipToBounds="True"
                                 Background="{DynamicResource Gray100Brush}"
                                 Margin="0,0,8,0">
-                            <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/Voice/Pictures/荧.png"
+                            <Image Source="{ui:Asset Images/Pictures/角色头像/荧.png}"
                                    Width="48" Height="48"
                                    Stretch="UniformToFill"/>
                         </Border>

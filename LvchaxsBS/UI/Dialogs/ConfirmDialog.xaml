@@ -11,16 +11,17 @@
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         SizeToContent="Height"
-        Width="360"
+        Width="380"
         ShowInTaskbar="False"
         Focusable="False"
         KeyboardNavigation.IsTabStop="False"
         Title="ConfirmDialog">
-    <!-- 背景用 PopupBackgroundBrush 而不是 CardBackgroundBrush：
+    <!-- 统一成「顶部标题栏 + 内容 + 底部按钮栏」三段式（与 UID 的 AddEditGroupWindow 同一套布局）。
+         背景用 PopupBackgroundBrush 而不是 CardBackgroundBrush：
          卡片色会被「个性化 → 卡片透明度」覆盖成带 alpha 的画刷，
          弹窗跟着变透明就看不清了；这个键专供浮层、始终不透明。 -->
     <Border Background="{DynamicResource PopupBackgroundBrush}"
-            CornerRadius="8"
+            CornerRadius="10"
             BorderBrush="{DynamicResource BorderStrongBrush}"
             BorderThickness="1"
             Margin="12">
@@ -28,106 +29,125 @@
             <DropShadowEffect BlurRadius="15" ShadowDepth="0" Opacity="0.15" Color="Black"/>
         </Border.Effect>
 
-        <StackPanel Margin="20,18,20,16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="52"/>
+            </Grid.RowDefinitions>
 
-            <TextBlock x:Name="TitleText"
-                       Text="确认"
-                       FontSize="15"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       Margin="0,0,0,10"/>
-
-            <TextBlock x:Name="MessageText"
-                       Text="确定要执行此操作吗？"
-                       FontSize="13"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       TextWrapping="Wrap"
-                       LineHeight="20"
-                       Margin="0,0,0,20"/>
-
-            <!-- 附加内容区（如「新版本改动」）：默认隐藏，由调用处 SetExtraContent 填充。
-                 用边框而不是填充背景 —— 避免被「卡片透明度」影响、与浮层底色保持一致。 -->
-            <Border x:Name="ExtraContentBorder"
-                    Visibility="Collapsed"
-                    BorderBrush="{DynamicResource BorderStrongBrush}"
-                    BorderThickness="1"
-                    CornerRadius="6"
-                    Margin="0,0,0,18">
-                <ScrollViewer MaxHeight="190"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled"
-                              Padding="10,8,6,8">
-                    <StackPanel>
-                        <TextBlock x:Name="ExtraTitleText"
-                                   Text=""
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   Margin="0,0,0,6"/>
-                        <TextBlock x:Name="ExtraContentText"
-                                   Text=""
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   TextWrapping="Wrap"
-                                   LineHeight="19"/>
-                    </StackPanel>
-                </ScrollViewer>
+            <!-- ===== 顶部：标题栏（灰底 + 下边框 + 居中标题 + 右上关闭） ===== -->
+            <Border Grid.Row="0"
+                    Background="{DynamicResource DialogHeaderBackgroundBrush}"
+                    CornerRadius="10,10,0,0"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,0,1">
+                <Grid>
+                    <TextBlock x:Name="TitleText"
+                               Text="确认"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"/>
+                </Grid>
             </Border>
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <!-- ===== 中间：内容 ===== -->
+            <StackPanel Grid.Row="1" Margin="20,16,20,14">
 
-                <!-- 通用复选框：默认显示，文案/初始值由调用处覆盖 -->
-                <CheckBox x:Name="OptionCheckBox"
-                          Grid.Column="0"
-                          Content=""
-                          Style="{StaticResource PurpleCheckBoxStyle}"
-                          Visibility="Visible"
-                          VerticalAlignment="Center"
-                          Margin="0,0,8,0"/>
+                <TextBlock x:Name="MessageText"
+                           Text="确定要执行此操作吗？"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           LineHeight="20"
+                           Margin="0,0,0,16"/>
 
-                <StackPanel Grid.Column="1"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right">
-
-                    <Button x:Name="OkBtn"
-                            MinWidth="80" Height="30"
-                            Margin="0,0,8,0"
-                            Padding="10,0"
-                            Style="{StaticResource SettingsButtonStyleRound6}"
-                            Click="OkBtn_Click">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="✓"
-                                       Foreground="{DynamicResource TagGreenFgBrush}"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
-                            <TextBlock Text="确认" VerticalAlignment="Center"/>
+                <!-- 附加内容区（如「新版本改动」）：默认隐藏，由调用处 SetExtraContent 填充。
+                     用边框而不是填充背景 —— 避免被「卡片透明度」影响、与浮层底色保持一致。 -->
+                <Border x:Name="ExtraContentBorder"
+                        Visibility="Collapsed"
+                        BorderBrush="{DynamicResource BorderStrongBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                    <ScrollViewer MaxHeight="190"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="10,8,6,8">
+                        <StackPanel>
+                            <TextBlock x:Name="ExtraTitleText"
+                                       Text=""
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,6"/>
+                            <TextBlock x:Name="ExtraContentText"
+                                       Text=""
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       LineHeight="19"/>
                         </StackPanel>
-                    </Button>
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
 
-                    <Button x:Name="CancelBtn"
-                            MinWidth="80" Height="30"
-                            Padding="10,0"
-                            Style="{StaticResource SettingsButtonStyleRound6}"
-                            Click="CancelBtn_Click">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="✕"
-                                       Foreground="{DynamicResource TagRedFgBrush}"
-                                       FontSize="14"
-                                       FontWeight="Bold"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,5,0"/>
-                            <TextBlock Text="取消" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
+            <!-- ===== 底部：按钮栏（灰底 + 上边框；左侧通用复选框、右侧按钮组） ===== -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource DialogHeaderBackgroundBrush}"
+                    CornerRadius="0,0,10,10"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,1,0,0">
+                <Grid Margin="16,0">
+                    <!-- 通用复选框：默认显示，文案/初始值由调用处覆盖 -->
+                    <CheckBox x:Name="OptionCheckBox"
+                              Content=""
+                              Style="{StaticResource PurpleCheckBoxStyle}"
+                              Visibility="Visible"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Center"/>
 
-                </StackPanel>
-            </Grid>
-        </StackPanel>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+
+                        <Button x:Name="OkBtn"
+                                MinWidth="80" Height="30"
+                                Margin="0,0,8,0"
+                                Padding="10,0"
+                                Style="{StaticResource SettingsButtonStyleRound6}"
+                                Click="OkBtn_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✓"
+                                           Foreground="{DynamicResource TagGreenFgBrush}"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,5,0"/>
+                                <TextBlock Text="确认" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="CancelBtn"
+                                MinWidth="80" Height="30"
+                                Padding="10,0"
+                                Style="{StaticResource SettingsButtonStyleRound6}"
+                                Click="CancelBtn_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✕"
+                                           Foreground="{DynamicResource TagRedFgBrush}"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,5,0"/>
+                                <TextBlock Text="取消" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
     </Border>
 </Window>

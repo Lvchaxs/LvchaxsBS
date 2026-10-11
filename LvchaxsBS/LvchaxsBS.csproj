@@ -31,9 +31,11 @@
 		<Resource Include="UI\Assets\Images\**\*.jpg" />
 		<Resource Include="UI\Assets\Images\**\*.jpeg" />
 
-		<Resource Include="Resources\Images\**\*.png" />
-		<Resource Include="Resources\Images\**\*.ico" />
-		<Resource Include="Resources\Template\**\*.png" />
+		<!--
+			原来的 Resources\ 目录（UI 图标 + 图像识别模板）已整体搬到独立工程
+			..\LvchaxsBS_Resources\，编译成 LvchaxsBS_Resources.dll（可选组件）。
+			代码里统一用 Core\AssetLocator.cs 拼路径，不要再往宿主工程里加图片。
+		-->
 	</ItemGroup>
 
 </Project>

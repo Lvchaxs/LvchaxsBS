@@ -700,14 +700,14 @@ namespace LvchaxsBS.Core
         {
             var random = new Random();
             string file = _avatarFiles[random.Next(_avatarFiles.Length)];
-            return $"pack://application:,,,/Resources/Template/角色头像/150x150/{file}";
+            return AssetLocator.Pack($"Template/角色头像/150x150/{file}");
         }
 
         private static string PickOtherAvatarPath(string otherPath)
         {
             foreach (var file in _avatarFiles)
             {
-                string path = $"pack://application:,,,/Resources/Template/角色头像/150x150/{file}";
+                string path = AssetLocator.Pack($"Template/角色头像/150x150/{file}");
                 if (path != otherPath)
                     return path;
             }

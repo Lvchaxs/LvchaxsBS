@@ -1,4 +1,4 @@
-<Window x:Class="LvchaxsBS.UI.Dialogs.LicenseDialog"
+﻿<Window x:Class="LvchaxsBS.UI.Dialogs.LicenseDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -16,9 +16,10 @@
         Focusable="False"
         KeyboardNavigation.IsTabStop="False"
         Title="开源许可">
-    <!-- 背景用 PopupBackgroundBrush（浮层专用、始终不透明），与 ConfirmDialog 保持一致 -->
+    <!-- 与 ConfirmDialog 同一套：顶部标题栏 + 内容 + 底部按钮栏。
+         背景用 PopupBackgroundBrush（浮层专用、始终不透明）。 -->
     <Border Background="{DynamicResource PopupBackgroundBrush}"
-            CornerRadius="8"
+            CornerRadius="10"
             BorderBrush="{DynamicResource BorderStrongBrush}"
             BorderThickness="1"
             Margin="12">
@@ -26,19 +27,35 @@
             <DropShadowEffect BlurRadius="15" ShadowDepth="0" Opacity="0.15" Color="Black"/>
         </Border.Effect>
 
-        <StackPanel Margin="20,18,20,16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="52"/>
+            </Grid.RowDefinitions>
 
-            <TextBlock Text="开源许可"
-                       FontSize="15"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       Margin="0,0,0,10"/>
+            <!-- ===== 顶部：标题栏 ===== -->
+            <Border Grid.Row="0"
+                    Background="{DynamicResource DialogHeaderBackgroundBrush}"
+                    CornerRadius="10,10,0,0"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,0,1">
+                <Grid>
+                    <TextBlock Text="开源许可"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"/>
+                </Grid>
+            </Border>
 
-            <ScrollViewer MaxHeight="252"
+            <!-- ===== 中间：内容 ===== -->
+            <ScrollViewer Grid.Row="1"
+                          MaxHeight="252"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
-                          Padding="0,0,6,0"
-                          Margin="0,0,0,16">
+                          Padding="20,14,14,14">
                 <TextBlock x:Name="LicenseText"
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}"
@@ -46,26 +63,35 @@
                            LineHeight="19"/>
             </ScrollViewer>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <!-- ===== 底部：按钮栏 ===== -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource DialogHeaderBackgroundBrush}"
+                    CornerRadius="0,0,10,10"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
 
-                <Button x:Name="ViewFullBtn"
-                        MinWidth="112" Height="30"
-                        Margin="0,0,8,0"
-                        Padding="10,0"
-                        Style="{StaticResource SettingsButtonStyleRound6}"
-                        Click="ViewFullBtn_Click">
-                    <TextBlock Text="查看完整许可证" VerticalAlignment="Center"/>
-                </Button>
+                    <Button x:Name="ViewFullBtn"
+                            MinWidth="112" Height="30"
+                            Margin="0,0,8,0"
+                            Padding="10,0"
+                            Style="{StaticResource SettingsButtonStyleRound6}"
+                            Click="ViewFullBtn_Click">
+                        <TextBlock Text="查看完整许可证" VerticalAlignment="Center"/>
+                    </Button>
 
-                <Button x:Name="CloseBtn"
-                        MinWidth="80" Height="30"
-                        Padding="10,0"
-                        Style="{StaticResource SettingsButtonStyleRound6}"
-                        Click="CloseBtn_Click">
-                    <TextBlock Text="关闭" VerticalAlignment="Center"/>
-                </Button>
+                    <Button x:Name="CloseBtn"
+                            MinWidth="80" Height="30"
+                            Padding="10,0"
+                            Style="{StaticResource SettingsButtonStyleRound6}"
+                            Click="CloseBtn_Click">
+                        <TextBlock Text="关闭" VerticalAlignment="Center"/>
+                    </Button>
 
-            </StackPanel>
-        </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Border>
 </Window>

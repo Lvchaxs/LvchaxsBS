@@ -22,8 +22,12 @@ namespace LvchaxsBS.UI.Pages
         private static readonly string ConfigPath =
             Path.Combine(AppContext.BaseDirectory, "Voice", "voice_config.json");
 
-        private static readonly string PicturesDir =
-            Path.Combine(AppContext.BaseDirectory, "Voice", "Pictures");
+        /// <summary>
+        /// 角色头像在资源包里的目录（<c>LvchaxsBS_Resources.dll</c>）。
+        /// 头像不再从磁盘 <c>Voice/Pictures</c> 读取 —— 角色清单就以这里的图片为准，
+        /// 数量固定（由资源包编译时决定），不会出现"没有头像的角色"。
+        /// </summary>
+        private const string AvatarResourceDir = "Images/Pictures/角色头像";
 
         private static readonly string VoicesDir =
             Path.Combine(AppContext.BaseDirectory, "Voice", "Voices");
@@ -41,8 +45,18 @@ namespace LvchaxsBS.UI.Pages
 
         // ===== 静态缓存（跨页面实例复用，避免每次进页都扫盘/重载头像） =====
 
-        /// <summary>扫描结果缓存：目录没变就不重扫</summary>
-        private static (VoiceConfig cfg, long totalBytes, DateTime voiceStamp, DateTime voicesStamp, DateTime picturesStamp)? _scanCache;
+        /// <summary>扫描结果缓存：语音目录没变就不重扫（头像来自资源包，不需要时间戳）</summary>
+        private static (VoiceConfig cfg, long totalBytes, DateTime voiceStamp, DateTime voicesStamp)? _scanCache;
+
+        /// <summary>
+        /// 资源包里的角色清单（只读、进程内缓存一次）。这就是"固定角色数量"的来源。
+        /// 资源包缺失时为空列表 → 界面无角色卡片，但不影响程序其它部分。
+        /// </summary>
+        private static IReadOnlyList<string> AvatarNames => _avatarNames ??= BuildAvatarNames();
+        private static IReadOnlyList<string>? _avatarNames;
+
+        private static IReadOnlyList<string> BuildAvatarNames()
+            => AssetLocator.ListFileNames(AvatarResourceDir);
 
         /// <summary>
         /// 当前生效的配置。**必须是静态的**：渲染好的卡片控件会被跨页面实例复用，
@@ -258,11 +272,12 @@ namespace LvchaxsBS.UI.Pages
         }
 
         /// <summary>
-        /// 刷新 = 不重启重新加载：重扫 Pictures\*.png 与 Voices\*.wav，重写 voice_config.json 并刷新界面。
+        /// 刷新 = 不重启重新加载：重扫 Voices\*.wav，重写 voice_config.json 并刷新界面。
+        /// （角色头像来自资源包，加图需要重新编译资源包，刷新按钮不会变更角色清单。）
         /// </summary>
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            // 强制重扫：头像与渲染结果缓存一并清空（用户可能刚放进或替换了图片 / 音频）
+            // 强制重扫：清掉渲染结果缓存（用户可能刚放进或替换了语音文件）
             _avatarCache.Clear();
             _jsonKeyOrder = null;      // json 顺序可能变了（新增角色），重新读取
             ClearContentCache();
@@ -279,15 +294,14 @@ namespace LvchaxsBS.UI.Pages
 
         private VoiceConfig ScanAndBuildConfig(bool force = false)
         {
-            // 目录没变 + 非强制刷新 → 直接复用上次扫描结果
+            // 语音目录没变 + 非强制刷新 → 直接复用上次扫描结果
+            // （角色清单来自资源包，编译期固定，无需参与失效判断）
             var voiceStamp = GetDirStamp(VoiceDir);
             var voicesStamp = GetDirStamp(VoicesDir);
-            var picturesStamp = GetDirStamp(PicturesDir);
 
             if (!force && _scanCache is { } cache
                 && cache.voiceStamp == voiceStamp
-                && cache.voicesStamp == voicesStamp
-                && cache.picturesStamp == picturesStamp)
+                && cache.voicesStamp == voicesStamp)
             {
                 _totalSizeBytes = cache.totalBytes;
                 return cache.cfg;
@@ -310,19 +324,13 @@ namespace LvchaxsBS.UI.Pages
 
             var cfg = new VoiceConfig();
 
+            // 角色清单 = 资源包 Resources/Images/Pictures/角色头像 下的图片（固定数量），
+            // 不再扫磁盘目录 → 不可能出现"无头像的角色"
             var avatarSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (Directory.Exists(PicturesDir))
-            {
-                try
-                {
-                    foreach (var file in Directory.GetFiles(PicturesDir, "*.png"))
-                        avatarSet.Add(Path.GetFileNameWithoutExtension(file));
-                }
-                catch { }
-            }
+            foreach (var name in AvatarNames)
+                avatarSet.Add(name);
 
             var roleMap = new Dictionary<string, List<(string fileBase, string dur, string text)>>(StringComparer.OrdinalIgnoreCase);
-            var noRoleList = new List<(string fileBase, string dur, string text)>();
 
             // json 里已有的文本（用户可能编辑过标点）。重扫时优先沿用，否则会把编辑结果覆盖回文件名推导出的文本。
             var existingTexts = LoadExistingVoiceTexts();
@@ -344,7 +352,7 @@ namespace LvchaxsBS.UI.Pages
 
                         if (dashIndex <= 0 || dashIndex >= fileBase.Length - 1)
                         {
-                            noRoleList.Add((fileBase, duration, hasSaved ? savedText! : fileBase));
+                            // 文件名里没有"角色-文本"结构：不再单独归类显示
                             continue;
                         }
 
@@ -353,7 +361,7 @@ namespace LvchaxsBS.UI.Pages
 
                         if (string.IsNullOrEmpty(roleName) || string.IsNullOrEmpty(voiceText))
                         {
-                            noRoleList.Add((fileBase, duration, hasSaved ? savedText! : fileBase));
+                            // 文件名里没有"角色-文本"结构：不再单独归类显示
                             continue;
                         }
 
@@ -368,18 +376,19 @@ namespace LvchaxsBS.UI.Pages
                 catch { }
             }
 
-            var allNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var k in avatarSet) allNames.Add(k);
-            foreach (var k in roleMap.Keys) allNames.Add(k);
-            allNames.Remove(NoRoleKey);
+            // 角色清单只取资源包里"有头像"的那批（固定数量）；
+            // 没有头像的角色、以及没有"角色-"前缀的零散音频，都不再单独列出。
+            var allNames = new HashSet<string>(avatarSet, StringComparer.OrdinalIgnoreCase);
 
             foreach (var name in allNames)
             {
-                bool hasAvatar = avatarSet.Contains(name);
                 bool hasVoices = roleMap.ContainsKey(name);
 
-                var cc = new CharacterConfig();
-                cc.Matched = hasAvatar && hasVoices;
+                var cc = new CharacterConfig
+                {
+                    // 头像必然存在（清单本身就来自资源包图片），所以"匹配"只取决于有没有语音
+                    Matched = hasVoices
+                };
 
                 if (hasVoices)
                 {
@@ -392,17 +401,7 @@ namespace LvchaxsBS.UI.Pages
                 cfg[name] = cc;
             }
 
-            if (noRoleList.Count > 0)
-            {
-                var cc = new CharacterConfig { Matched = false };
-                foreach (var v in noRoleList)
-                {
-                    cc.Wavs[v.fileBase] = $"{v.dur}-{v.text}";
-                }
-                cfg[NoRoleKey] = cc;
-            }
-
-            _scanCache = (cfg, _totalSizeBytes, voiceStamp, voicesStamp, picturesStamp);
+            _scanCache = (cfg, _totalSizeBytes, voiceStamp, voicesStamp);
             return cfg;
         }
 
@@ -987,32 +986,18 @@ namespace LvchaxsBS.UI.Pages
             return card;
         }
 
-        /// <summary>加载头像（带静态缓存，Freeze 后可安全复用）。无头像返回 null。</summary>
+        /// <summary>
+        /// 加载角色头像。图片来自共用资源包的
+        /// <c>Resources/Images/Pictures/角色头像/</c>（不再读磁盘的 Voice/Pictures 目录）。
+        /// 带静态缓存，Freeze 后可安全复用；资源包缺失或没有这张图时返回 null。
+        /// </summary>
         private static BitmapSource? LoadAvatar(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;
             if (_avatarCache.TryGetValue(name, out var cached)) return cached;
 
-            BitmapSource? src = null;
-            string imgPath = Path.Combine(PicturesDir, name + ".png");
-            if (File.Exists(imgPath))
-            {
-                try
-                {
-                    var bmp = new BitmapImage();
-                    bmp.BeginInit();
-                    bmp.CacheOption = BitmapCacheOption.OnLoad;
-                    // 关键：告诉 WPF 不要用按 Uri 的图片缓存。
-                    // 否则"替换同名 png"后即使清了 _avatarCache，刷新仍会显示旧图，
-                    // 必须重启才更新。加上这个选项后，刷新即可读到磁盘上的最新图片。
-                    bmp.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-                    bmp.UriSource = new Uri(imgPath, UriKind.Absolute);
-                    bmp.EndInit();
-                    bmp.Freeze();
-                    src = bmp;
-                }
-                catch { src = null; }
-            }
+            // AssetLocator.Load 内部走统一的解码缓存：同一个 URI 只解一份像素
+            BitmapSource? src = AssetLocator.Load($"{AvatarResourceDir}/{name}.png");
 
             _avatarCache[name] = src;
             return src;

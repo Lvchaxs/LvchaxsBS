@@ -39,6 +39,9 @@ namespace LvchaxsBS
 
             // 3. 初始化功能引擎
             InitializeEngine();
+
+            // 4. 探测可选插件（exe 同目录的 LvchaxsBS_uid.dll = UID 账号管理模块）
+            UidModuleService.Probe();
         }
 
         /// <summary>

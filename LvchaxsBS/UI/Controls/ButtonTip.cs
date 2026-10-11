@@ -209,9 +209,44 @@ namespace LvchaxsBS.UI.Controls
                 if (scale <= 0) scale = 1.0;
 
                 double delta = (desired - tipLeft) / scale;
-                if (Math.Abs(delta) < 0.5) return;
+                if (Math.Abs(delta) >= 0.5)
+                    popup.HorizontalOffset += delta;
 
-                popup.HorizontalOffset += delta;
+                // 3) 竖直方向：默认弹在按钮上方；上方放不下（标题栏按钮 + 窗口最大化时必然如此）就翻到下面。
+                //
+                //    踩过的两个坑：
+                //    ① 不能拿"气泡当前顶边 < 屏幕顶边"当条件 —— WPF 会先把气泡夹到屏幕顶边，
+                //       那个条件永远不成立；这里改成直接量"按钮上方还剩多少空间"。
+                //    ② Popup 改变 Offset 时会重新走一次定位回调，偏移量与屏幕位移的换算
+                //       不能想当然，所以先用一个 10 单位的小试探量出真实比例再折算。
+                double btnTop = target.PointToScreen(new Point(0, 0)).Y / dpi;
+                double spaceAbove = btnTop - SystemParameters.VirtualScreenTop;
+                double needAbove = (tip.ActualHeight + 8) * scale;      // 气泡高 + 间隙，都随缩放
+
+                if (spaceAbove < needAbove)
+                {
+                    double desiredTop = target.PointToScreen(new Point(0, target.ActualHeight)).Y / dpi
+                                        + 8 * scale;
+                    double y0 = tip.PointToScreen(new Point(0, 0)).Y / dpi;
+
+                    popup.VerticalOffset += 10;      // 试探步长
+
+                    var dispatcher = popup.Dispatcher;
+                    dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, new Action(() =>
+                    {
+                        try
+                        {
+                            double y1 = tip.PointToScreen(new Point(0, 0)).Y / dpi;
+                            double gain = (y1 - y0) / 10.0;          // 偏移单位 → 屏幕位移
+                            if (Math.Abs(gain) < 0.01) gain = 1.0;
+                            popup.VerticalOffset += (desiredTop - y1) / gain;
+                        }
+                        catch
+                        {
+                            // 量不到就算了，保持现状
+                        }
+                    }));
+                }
             }
             catch
             {

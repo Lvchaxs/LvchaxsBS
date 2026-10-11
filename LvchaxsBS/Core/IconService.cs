@@ -117,7 +117,7 @@ namespace LvchaxsBS.Core
             foreach (var kvp in _iconMap)
             {
                 var bitmap = ResourceImageHelper.Load(
-                    $"pack://application:,,,/Resources/Images/图标/{kvp.Value[0]}");
+                    AssetLocator.Pack($"Images/图标/{kvp.Value[0]}"));
                 _cachedImages.Add(bitmap);
             }
 
@@ -1375,7 +1375,7 @@ namespace LvchaxsBS.Core
                 if (canvas.Children[index] is WpfImage image)
                 {
                     var bitmap = ResourceImageHelper.Load(
-                        $"pack://application:,,,/Resources/Images/图标/{iconName}");
+                        AssetLocator.Pack($"Images/图标/{iconName}"));
                     if (bitmap == null) return;
 
                     image.Source = bitmap;
@@ -1460,7 +1460,7 @@ namespace LvchaxsBS.Core
                 string iconName = _iconMap[moduleName][0];
 
                 var bitmap = ResourceImageHelper.Load(
-                    $"pack://application:,,,/Resources/Images/图标/{iconName}");
+                    AssetLocator.Pack($"Images/图标/{iconName}"));
                 if (bitmap == null) continue;
 
                 var image = new WpfImage
@@ -1494,7 +1494,7 @@ namespace LvchaxsBS.Core
                         string iconName = GetCurrentIconName(moduleName);
 
                         var bitmap = ResourceImageHelper.Load(
-                            $"pack://application:,,,/Resources/Images/图标/{iconName}");
+                            AssetLocator.Pack($"Images/图标/{iconName}"));
                         if (bitmap == null) continue;
 
                         image.Source = bitmap;

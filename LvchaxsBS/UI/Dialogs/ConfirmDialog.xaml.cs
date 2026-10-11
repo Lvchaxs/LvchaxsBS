@@ -25,6 +25,8 @@ namespace LvchaxsBS.UI.Dialogs
                              string okText = "确定", string cancelText = "取消")
         {
             InitializeComponent();
+            // 独立窗口不会继承主界面那层 LayoutTransform，自己跟一下「窗口缩放」
+            UI.Helpers.UiScale.ApplyTo(this);
 
             TitleText.Text = title;
             MessageText.Text = message;
