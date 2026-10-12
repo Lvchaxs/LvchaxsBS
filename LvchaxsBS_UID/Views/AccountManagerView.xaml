@@ -1173,14 +1173,14 @@
                                                                 Click="TogglePasswordButton_Click" ui:ButtonTip.Text="显示/隐藏">
                                                             <Viewbox Width="12" Height="12">
                                                                 <Grid Width="12" Height="12">
+                                                                    <!-- 睁眼：账号/密码可见。图标反映的是「当前状态」，不是点击动作 -->
                                                                     <Path Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                                          Data="M6,2 C9,2 12,6 12,6 C12,6 9,10 6,10 C3,10 0,6 0,6 C0,6 3,2 6,2 Z M6,4 C4.9,4 4,4.9 4,6 C4,7.1 4.9,8 6,8 C7.1,8 8,7.1 8,6 C8,4.9 7.1,4 6,4 Z"
+                                                                          Data="{DynamicResource EyeVisibleGeometry}"
                                                                           Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1" Fill="Transparent"/>
-                                                                    <Grid Visibility="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}">
-                                                                        <Path Data="M6,2 C9,2 12,6 12,6 C12,6 9,10 6,10 C3,10 0,6 0,6 C0,6 3,2 6,2 Z M6,4 C4.9,4 4,4.9 4,6 C4,7.1 4.9,8 6,8 C7.1,8 8,7.1 8,6 C8,4.9 7.1,4 6,4 Z"
-                                                                              Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1" Fill="Transparent"/>
-                                                                        <Line X1="2" Y1="2" X2="10" Y2="10" Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1"/>
-                                                                    </Grid>
+                                                                    <!-- 睁眼 + 斜线：账号/密码隐藏 -->
+                                                                    <Path Visibility="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+                                                                          Data="{DynamicResource EyeHiddenGeometry}"
+                                                                          Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1" Fill="Transparent"/>
                                                                 </Grid>
                                                             </Viewbox>
                                                         </Button>
@@ -1210,14 +1210,14 @@
                                                                 Click="TogglePasswordButton_Click" ui:ButtonTip.Text="显示/隐藏">
                                                             <Viewbox Width="12" Height="12">
                                                                 <Grid Width="12" Height="12">
+                                                                    <!-- 睁眼：账号/密码可见。图标反映的是「当前状态」，不是点击动作 -->
                                                                     <Path Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                                          Data="M6,2 C9,2 12,6 12,6 C12,6 9,10 6,10 C3,10 0,6 0,6 C0,6 3,2 6,2 Z M6,4 C4.9,4 4,4.9 4,6 C4,7.1 4.9,8 6,8 C7.1,8 8,7.1 8,6 C8,4.9 7.1,4 6,4 Z"
+                                                                          Data="{DynamicResource EyeVisibleGeometry}"
                                                                           Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1" Fill="Transparent"/>
-                                                                    <Grid Visibility="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}">
-                                                                        <Path Data="M6,2 C9,2 12,6 12,6 C12,6 9,10 6,10 C3,10 0,6 0,6 C0,6 3,2 6,2 Z M6,4 C4.9,4 4,4.9 4,6 C4,7.1 4.9,8 6,8 C7.1,8 8,7.1 8,6 C8,4.9 7.1,4 6,4 Z"
-                                                                              Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1" Fill="Transparent"/>
-                                                                        <Line X1="2" Y1="2" X2="10" Y2="10" Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1"/>
-                                                                    </Grid>
+                                                                    <!-- 睁眼 + 斜线：账号/密码隐藏 -->
+                                                                    <Path Visibility="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+                                                                          Data="{DynamicResource EyeHiddenGeometry}"
+                                                                          Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1" Fill="Transparent"/>
                                                                 </Grid>
                                                             </Viewbox>
                                                         </Button>

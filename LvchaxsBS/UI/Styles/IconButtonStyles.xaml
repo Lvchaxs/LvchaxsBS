@@ -648,4 +648,34 @@
     <PathGeometry x:Key="CopyIconGeometry"
                   Figures="M3.6,3.6 V1.7 A1.1,1.1 0 0 1 4.7,0.6 H11.3 A1.1,1.1 0 0 1 12.4,1.7 V8.3 A1.1,1.1 0 0 1 11.3,9.4 H9.4 M0.6,4.7 A1.1,1.1 0 0 1 1.7,3.6 H6.4 L9.4,6.6 V11.3 A1.1,1.1 0 0 1 8.3,12.4 H1.7 A1.1,1.1 0 0 1 0.6,11.3 Z M6.4,3.6 V6.6 H9.4"/>
 
+    <!--
+        ============ 显示 / 隐藏（眼睛）图标几何（UID 插件用） ============
+        账号 / 密码那一行的「显示·隐藏」按钮，设计尺寸 12×12，
+        外轮廓与原来手写的那只眼睛**同一 footprint**（0..12 宽、2..10 高），换过来位置和大小不变。
+
+        图标反映的是「当前状态」而不是点击动作，所以两个状态各一条几何：
+            密码可见 → EyeVisibleGeometry（睁眼）
+            密码隐藏 → EyeHiddenGeometry（睁眼 + 一条斜线）
+
+        用法（Path.Data 是依赖属性；插件编译期引用不到宿主，必须 DynamicResource）：
+
+            <Path Data="{DynamicResource EyeVisibleGeometry}"
+                  Stroke="{DynamicResource TextDisabledBrush}"
+                  StrokeThickness="1" Fill="Transparent"/>
+
+        ★ 两条几何的包围盒**不一样**（隐藏态多了斜线，四周各多出约 1.1）。
+          所以引用时必须放在**固定 12×12 的容器**里（原来的 <Grid Width="12" Height="12"> 继续保留），
+          否则 Viewbox 会按包围盒各自缩放，两个状态一切换眼睛就一大一小地跳。
+    -->
+    <GeometryGroup x:Key="EyeVisibleGeometry">
+        <EllipseGeometry Center="6,6" RadiusX="5.5" RadiusY="3.5"/>
+        <EllipseGeometry Center="6,6" RadiusX="1.8" RadiusY="1.8"/>
+    </GeometryGroup>
+
+    <GeometryGroup x:Key="EyeHiddenGeometry">
+        <EllipseGeometry Center="6,6" RadiusX="5.5" RadiusY="3.5"/>
+        <EllipseGeometry Center="6,6" RadiusX="1.8" RadiusY="1.8"/>
+        <LineGeometry StartPoint="1.4,1.4" EndPoint="10.6,10.6"/>
+    </GeometryGroup>
+
 </ResourceDictionary>
