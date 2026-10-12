@@ -50,7 +50,7 @@ namespace LvchaxsBS.Core.Function
         private const string CONFIRM_STORAGE_TEMPLATE_KEY = "自动烹饪_确认";
 
         private const string AUTO_MAIN_REGION_KEY = "通用_主界面区域";
-        private const string AUTO_MAIN_TEMPLATE_KEY = "自动化_主界面";
+        private const string AUTO_MAIN_TEMPLATE_KEY = "通用模版_主界面";
 
         private const string DISMANTLE_REGION_KEY = "自动清药_拆除区域";
         private const string DISMANTLE_TEMPLATE_KEY = "自动清药_拆除";
