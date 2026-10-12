@@ -504,42 +504,6 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static MatchRect 自动伐木_退出游戏区域 = new MatchRect(71, 70, 121, 120, 0.9,
-            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
-            {
-                [(5120, 2160)] = (114, 0, 110, 0),
-                [(3440, 1440)] = (77, 0, 72, 0),
-                [(2560, 1080)] = (56, 0, 56, 0),
-            }
-        );
-
-        public static MatchRect 自动伐木_退出至登录界面 = new MatchRect(1378, 1055, 1425, 1105, 0.9,
-            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
-            {
-                [(5120, 2160)] = (180, -2, 165, 3),
-                [(3440, 1440)] = (124, -1, 115, 2),
-                [(2560, 1080)] = (91, 0, 82, 0),
-            }
-        );
-
-        public static MatchRect 自动伐木_点击进入区域 = new MatchRect(1834, 2026, 2003, 2054, 0.9,
-            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
-            {
-                [(5120, 2160)] = (25, 0, -15, 0),
-                [(3440, 1440)] = (14, 0, 0, 0),
-                [(2560, 1080)] = (12, 0, 0, 0),
-            }
-        );
-
-        public static Point 退出游戏点击坐标 = new Point(92, 2055,
-            new Dictionary<(int, int), (int, int)>
-            {
-                [(5120, 2160)] = (114, 0),
-                [(3440, 1440)] = (68, 0),
-                [(2560, 1080)] = (49, 0),
-            }
-        );
-
         #endregion
 
         #region 坐标定义 自动烹饪
@@ -747,6 +711,44 @@ namespace LvchaxsBS.Services
                 [(5120, 2160)] = (122, 0, 112, 0),
                 [(3440, 1440)] = (78, 0, 76, 0),
                 [(2560, 1080)] = (60, 0, 65, 0),
+            }
+        );
+
+        // ---- 下面 4 个原本放在「自动伐木」下，实际各功能通用（配套模板也已移到 通用模版/）----
+
+        public static MatchRect 通用_退出游戏区域 = new MatchRect(71, 70, 121, 120, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (114, 0, 110, 0),
+                [(3440, 1440)] = (77, 0, 72, 0),
+                [(2560, 1080)] = (56, 0, 56, 0),
+            }
+        );
+
+        public static MatchRect 通用_退出至登录界面 = new MatchRect(1378, 1055, 1425, 1105, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (180, -2, 165, 3),
+                [(3440, 1440)] = (124, -1, 115, 2),
+                [(2560, 1080)] = (91, 0, 82, 0),
+            }
+        );
+
+        public static MatchRect 通用_点击进入区域 = new MatchRect(1834, 2026, 2003, 2054, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (25, 0, -15, 0),
+                [(3440, 1440)] = (14, 0, 0, 0),
+                [(2560, 1080)] = (12, 0, 0, 0),
+            }
+        );
+
+        public static Point 通用_退出游戏点击坐标 = new Point(92, 2055,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (114, 0),
+                [(3440, 1440)] = (68, 0),
+                [(2560, 1080)] = (49, 0),
             }
         );
 
