@@ -1,6 +1,7 @@
 ﻿using LvchaxsBS.Config;
 using LvchaxsBS.Config.FunctionConfigs;
 using LvchaxsBS.Services;
+using LvchaxsBS.Services.Hooks;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -276,6 +277,9 @@ namespace LvchaxsBS.Core
                     var tcs = new TaskCompletionSource<bool>();
                     SimulationService.POINT pressPointCopy = pressPoint;
 
+                    // 抬起瞬间的焦点快照：初值先用按下时的状态，真正的判定在 LeftButtonUp 里刷新
+                    bool focusedAtRelease = isFocused;
+
                     void OnMouseEvent(object? sender, MouseEventArgs args)
                     {
                         if (args.EventType == MouseEventType.LeftButtonUp)
@@ -286,7 +290,12 @@ namespace LvchaxsBS.Core
                             double dy = pressPointCopy.Y - releasePoint.Y;
                             double distance = Math.Sqrt(dx * dx + dy * dy);
 
-                            tcs.TrySetResult(distance <= 15);
+                            // ★ 左键**抬起那一刻**用真实前台窗口重新核对焦点（不等轮询、不认按下时的快照）：
+                            //   在地图界面点到客户区外面时，按下时窗口往往还是焦点的，
+                            //   只看按下时的判定会把这种"点到别处"也当成一次快速传送。
+                            focusedAtRelease = WindowFocusService.Reevaluate();
+
+                            tcs.TrySetResult(distance <= 15 && focusedAtRelease);
                         }
                     }
 
@@ -297,6 +306,9 @@ namespace LvchaxsBS.Core
                         bool shouldExecute = await tcs.Task;
                         if (!shouldExecute)
                         {
+                            Debug.WriteLine(focusedAtRelease
+                                ? "【快速传送】左键按下到抬起之间移动过大（视为拖动），已取消"
+                                : "【快速传送】左键抬起时游戏窗口不在焦点，已拦截（点到客户区外面）");
                             return;
                         }
                     }
@@ -311,7 +323,7 @@ namespace LvchaxsBS.Core
                         return;
                     }
 
-                    await ExecuteTeleportLogic(isFocused, token);
+                    await ExecuteTeleportLogic(focusedAtRelease, token);
                 }
                 else
                 {
