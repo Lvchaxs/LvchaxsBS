@@ -45,7 +45,7 @@ dotnet build LvchaxsBS_Resources.csproj
 ```
 
 编译后会自动把 `LvchaxsBS_Resources.dll` 复制到
-`..\LvchaxsBS\LvchaxsBS\bin\<配置>\net8.0-windows\`（与 `LvchaxsBS.exe` 并列）。
+`..\LvchaxsBS\bin\<配置>\net8.0-windows\`（与 `LvchaxsBS.exe` 并列）。
 
 工程也已加入 `LvchaxsBS.sln`，在 Visual Studio 里随解决方案一起生成。
 

@@ -644,7 +644,7 @@ namespace LvchaxsBS.Core
                 if (source == null)
                     return (false, 0, sw.ElapsedMilliseconds);
 
-                var template = TemplateManager.GetCachedTemplate("自动伐木_退出游戏");
+                var template = TemplateManager.GetCachedTemplate("通用模版_ESC菜单");
                 if (template == null)
                     return (false, 0, sw.ElapsedMilliseconds);
 
@@ -682,7 +682,7 @@ namespace LvchaxsBS.Core
                 if (source == null)
                     return (false, 0, sw.ElapsedMilliseconds, 0, 0);
 
-                var template = TemplateManager.GetCachedTemplate("自动伐木_退出至登录界面");
+                var template = TemplateManager.GetCachedTemplate("通用模版_退出至登录界面");
                 if (template == null)
                     return (false, 0, sw.ElapsedMilliseconds, 0, 0);
 
@@ -724,7 +724,7 @@ namespace LvchaxsBS.Core
                 if (source == null)
                     return (false, 0, sw.ElapsedMilliseconds, 0, 0);
 
-                var template = TemplateManager.GetCachedTemplate("自动伐木_点击进入");
+                var template = TemplateManager.GetCachedTemplate("通用模版_点击进入");
                 if (template == null)
                     return (false, 0, sw.ElapsedMilliseconds, 0, 0);
 

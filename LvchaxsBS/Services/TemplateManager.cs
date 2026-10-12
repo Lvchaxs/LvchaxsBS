@@ -232,9 +232,6 @@ namespace LvchaxsBS.Core
 
                 AddTemplateFromPath(AssetLocator.Pack("Template/自动伐木/王树瑞佑.png"));
                 AddTemplateFromPath(AssetLocator.Pack("Template/自动伐木/获得.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动伐木/退出游戏.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动伐木/退出至登录界面.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动伐木/点击进入.png"));
 
                 AddTemplateFromPath(AssetLocator.Pack("Template/自动烹饪/烹饪界面.png"));
                 AddTemplateFromPath(AssetLocator.Pack("Template/自动烹饪/自动烹饪.png"));
@@ -280,7 +277,11 @@ namespace LvchaxsBS.Core
                 AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/白灵果派.png"));
                 AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/肉末酿豆腐.png"));
 
+                // 通用模版：多个功能共用（这三张原先放在 自动伐木/ 下，2026-10-12 移入）
                 AddTemplateFromPath(AssetLocator.Pack("Template/通用模版/主界面.png"));
+                AddTemplateFromPath(AssetLocator.Pack("Template/通用模版/点击进入.png"));
+                AddTemplateFromPath(AssetLocator.Pack("Template/通用模版/退出至登录界面.png"));
+                AddTemplateFromPath(AssetLocator.Pack("Template/通用模版/ESC菜单.png"));
 
                 System.Diagnostics.Debug.WriteLine($"模板加载成功: {_templates.Count} 个");
             }
