@@ -18,6 +18,17 @@ namespace LvchaxsBS.UI.Controls
         /// <summary>UID 账号管理按钮点击（模块未加载时该按钮隐藏，不会触发）。</summary>
         public event EventHandler? UidClicked;
 
+        // ============ 导航页标识 ============
+        // 唯一来源：SetXxxActive 写入、RefreshActiveVisual 读取，两边必须用同一套常量，
+        // 否则就会出现"记的是 A、刷的是 B"这类对不上的高亮残留。
+
+        private const string PageHome = "Home";
+        private const string PagePersonalization = "Personalization";
+        private const string PageVoice = "Voice";
+        private const string PageSettings = "Settings";
+        private const string PageUid = "Uid";
+
+        /// <summary>当前高亮的导航页标识；空串表示哪个导航项都不该亮。</summary>
         private string _activePage = "";
 
         public TopLeftBar()
@@ -35,10 +46,15 @@ namespace LvchaxsBS.UI.Controls
 
         private void RefreshActiveVisual()
         {
-            SetHomeActive(_activePage == "Home");
-            SetSettingsActive(_activePage == "Settings");
-            SetPersonalizationActive(_activePage == "Personalization");
-            SetVoiceActive(_activePage == "Voice");
+            SetHomeActive(_activePage == PageHome);
+            SetSettingsActive(_activePage == PageSettings);
+            SetPersonalizationActive(_activePage == PagePersonalization);
+            SetVoiceActive(_activePage == PageVoice);
+
+            // ★ UID 也要在这里刷：它是 TopLeftBar 里的第 5 个导航项，
+            //   以前漏了这一行，导致"UID 页切主题后 UID 还亮着上个主题的旧色、
+            //   而 _activePage 里记着的上一个页面反倒被重新点亮"。
+            SetUidActive(_activePage == PageUid);
         }
 
         private void ButtonHome_Click(object sender, RoutedEventArgs e)
@@ -91,33 +107,29 @@ namespace LvchaxsBS.UI.Controls
         /// </summary>
         public void SetUidActive(bool active)
         {
-            var brush = active ? ThemeBrushProvider.PrimaryBrush()
-                               : ThemeBrushProvider.TextSecondaryBrush();
+            RememberActivePage(active, PageUid);
 
-            if (UidText != null) UidText.Foreground = brush;
+            if (UidText != null)
+                UidText.Foreground = active ? ThemeBrushProvider.PrimaryBrush()
+                                            : ThemeBrushProvider.TextSecondaryBrush();
 
-            if (ButtonUid != null)
-            {
-                ButtonUid.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                               : ThemeBrushProvider.BorderStrongBrush();
-                ButtonUid.BorderThickness = new Thickness(1);
-            }
+            ApplyNavFrame(ButtonUid, active);
         }
 
         // ============ 当前页高亮 ============
 
-        public void SetHomeActive(bool active) => SetNavActive(active, "Home", ButtonHome, IconHome);
+        public void SetHomeActive(bool active) => SetNavActive(active, PageHome, ButtonHome, IconHome);
 
         public void SetSettingsActive(bool active)
-            => SetNavActive(active, "Settings", ButtonSettings, IconSettingsOuter, IconSettingsInner);
+            => SetNavActive(active, PageSettings, ButtonSettings, IconSettingsOuter, IconSettingsInner);
 
         public void SetPersonalizationActive(bool active)
-            => SetNavActive(active, "Personalization", ButtonPersonalization,
+            => SetNavActive(active, PagePersonalization, ButtonPersonalization,
                 IconSliderLine1, IconSliderLine2, IconSliderLine3,
                 IconSliderKnob1, IconSliderKnob2, IconSliderKnob3);
 
         public void SetVoiceActive(bool active)
-            => SetNavActive(active, "Voice", ButtonVoice,
+            => SetNavActive(active, PageVoice, ButtonVoice,
                 IconVoiceBubble, IconVoiceLine1, IconVoiceLine2);
 
         /// <summary>
@@ -130,7 +142,7 @@ namespace LvchaxsBS.UI.Controls
         /// <param name="icons">该按钮里所有需要跟着变色的图标元素</param>
         private void SetNavActive(bool active, string page, Button button, params Shape[] icons)
         {
-            if (active) _activePage = page;
+            RememberActivePage(active, page);
 
             var iconBrush = active ? ThemeBrushProvider.PrimaryBrush()
                                    : ThemeBrushProvider.TextSecondaryBrush();
@@ -138,12 +150,33 @@ namespace LvchaxsBS.UI.Controls
             foreach (var icon in icons)
                 if (icon != null) icon.Stroke = iconBrush;
 
-            if (button != null)
-            {
-                button.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
-                                            : ThemeBrushProvider.BorderStrongBrush();
-                button.BorderThickness = new Thickness(1);
-            }
+            ApplyNavFrame(button, active);
+        }
+
+        /// <summary>
+        /// 记录 / 清除"当前页"。
+        ///
+        /// <para>
+        /// ★ 取消高亮时必须把记录一并清掉。旧代码只在 <c>active == true</c> 时写 <c>_activePage</c>：
+        /// 进 UID 页时四个导航项全部传 <c>false</c>，记录却仍停在上一个导航页，于是
+        /// 一旦切主题触发 <see cref="RefreshActiveVisual"/>，那一项就被重新点亮 ——
+        /// 这就是「在 UID 页却看到设置 / 字幕设置自己变蓝」的直接原因。
+        /// </para>
+        /// </summary>
+        private void RememberActivePage(bool active, string page)
+        {
+            if (active) _activePage = page;
+            else if (_activePage == page) _activePage = "";
+        }
+
+        /// <summary>导航按钮外框：当前页用主色描边，其余用中性描边。</summary>
+        private static void ApplyNavFrame(Button? button, bool active)
+        {
+            if (button == null) return;
+
+            button.BorderBrush = active ? ThemeBrushProvider.PrimaryBrush()
+                                        : ThemeBrushProvider.BorderStrongBrush();
+            button.BorderThickness = new Thickness(1);
         }
     }
 }
