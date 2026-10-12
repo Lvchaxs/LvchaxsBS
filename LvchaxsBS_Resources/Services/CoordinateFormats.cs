@@ -695,16 +695,7 @@ namespace LvchaxsBS.Services
 
         #region 通用坐标
 
-
-        public static MatchRect 通用_小地图区域 = new MatchRect(211, 124, 461, 374, 0.9,
-            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
-            {
-                [(5120, 2160)] = (0, 0, 0, 0),
-                [(3440, 1440)] = (0, 0, 0, 0),
-                [(2560, 1080)] = (0, 0, 0, 0),
-            }
-        );
-
+        //左上角派蒙头像存在为主界面
         public static MatchRect 通用_主界面区域 = new MatchRect(72, 100, 106, 134, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
@@ -714,9 +705,8 @@ namespace LvchaxsBS.Services
             }
         );
 
-        // ---- 下面 4 个原本放在「自动伐木」下，实际各功能通用（配套模板也已移到 通用模版/）----
-
-        public static MatchRect 通用_退出游戏区域 = new MatchRect(71, 70, 121, 120, 0.9,
+        //主界面按下ESC后→派蒙菜单页面
+        public static MatchRect 通用_派蒙菜单区域 = new MatchRect(71, 70, 121, 120, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (114, 0, 110, 0),
@@ -749,36 +739,6 @@ namespace LvchaxsBS.Services
                 [(5120, 2160)] = (114, 0),
                 [(3440, 1440)] = (68, 0),
                 [(2560, 1080)] = (49, 0),
-            }
-        );
-
-        public static MatchRect 通用_冒险之证区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9,
-
-            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
-            {
-                [(5120, 2160)] = (0, 0, 0, 0),
-                [(3440, 1440)] = (0, 0, 0, 0),
-                [(2560, 1080)] = (0, 0, 0, 0),
-            }
-        );
-
-        public static MatchRect 通用_冒险之证讨伐区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9,
-
-            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
-            {
-                [(5120, 2160)] = (0, 0, 0, 0),
-                [(3440, 1440)] = (0, 0, 0, 0),
-                [(2560, 1080)] = (0, 0, 0, 0),
-            }
-        );
-
-        public static MatchRect 通用_冒险之证首领材料区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9, 
-
-            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
-            {
-                [(5120, 2160)] = (0, 0, 0, 0),
-                [(3440, 1440)] = (0, 0, 0, 0),
-                [(2560, 1080)] = (0, 0, 0, 0),
             }
         );
 

@@ -636,7 +636,7 @@ namespace LvchaxsBS.Core
                 if (!CoordinateFormats.CacheReady)
                     return (false, 0, sw.ElapsedMilliseconds);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("通用_退出游戏区域");
+                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("通用_派蒙菜单区域");
                 if (matchRect == null)
                     return (false, 0, sw.ElapsedMilliseconds);
 
