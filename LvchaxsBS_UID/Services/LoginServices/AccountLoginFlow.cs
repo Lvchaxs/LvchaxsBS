@@ -13,7 +13,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///
     /// <para>
     /// 从「确认登录」开始：游戏窗口已被激活（见 <c>Utils.GameWindow.GameWindowActivator</c>），
-    /// 然后每轮同时识别八个区域。整个流程分两大段：
+    /// 然后每轮同时识别九个区域。整个流程分两大段：
     /// </para>
     /// <para>
     /// <b>第一段 · 退出当前账号</b>（前五个区域）：
@@ -34,6 +34,8 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///     （<c>登录其他账号区域</c> + 模板 <c>其他模版_登录账号_登录其他账号</c>）</item>
     ///   <item><b>进入游戏</b>：账密输入页的登录按钮（<c>进入游戏区域</c> + 模板 <c>其他模版_登录账号_进入游戏</c>）；
     ///     名字叫"进入游戏"，实际是"用这套账密登录"的意思</item>
+    ///   <item><b>同意</b>：账密提交后弹出的确认登录窗口里的同意按钮
+    ///     （<c>同意登录区域</c> + 模板 <c>其他模版_登录账号_同意登录</c>）</item>
     ///   <item><b>点击进入</b>：登录完成、加载完毕后登录界面上的进入按钮
     ///     （<c>点击进入区域</c> + 模板 <c>其他模版_点击进入</c>），点它即全部完成</item>
     /// </list>
@@ -52,17 +54,20 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///   <item><b>登录其他账号</b>：点击此处打开账密输入页；</item>
     ///   <item><b>进入游戏</b>：点 <c>确输入账号点击坐标</c> → 粘账号 → 等
     ///     <c>AfterAccountPasteMs</c> → 点 <c>输入密码点击坐标</c> 切到密码框（不用 TAB，
-    ///     TAB 偶尔会把密码粘到账号框里）→ 粘密码 → 点「进入游戏」提交；</item>
+    ///     TAB 偶尔会把密码粘到账号框里）→ 粘密码 → <b>直接按 ENTER 提交</b>（不点按钮）；</item>
+    ///   <item><b>同意</b>：提交后会弹出确认登录窗口，点「同意」。★ 它只有提交过账密才可能出现，
+    ///     所以和「点击进入」同时命中时<b>同意优先</b>；</item>
     ///   <item><b>点击进入</b>：点一下，<b>全部步骤完成</b>。</item>
     /// </list>
     /// <para>
-    /// ★ <b>自适应接续</b>：每轮都重新检测八个区域来判定「当前处于哪个阶段」，只做该阶段的动作，
+    /// ★ <b>自适应接续</b>：每轮都重新检测九个区域来判定「当前处于哪个阶段」，只做该阶段的动作，
     /// 不记历史状态。所以从任何一步中断之后都能接着跑 —— 已经在设置界面就直接走第三步，
     /// 不会按一路 ESC 回主界面重来。一轮里同时命中多个区域时（界面切换动画中可能出现），
     /// <b>越靠后的阶段越优先</b>：既然已经能看到用户中心，就没有必要退回菜单再点一次设置。
+    /// 唯一的例外是「同意」与「点击进入」：同意只有提交过账密才会出现，所以它压在点击进入前面。
     /// </para>
     /// <para>
-    /// 八个区域都没命中时的处理分两档：
+    /// 九个区域都没命中时的处理分两档：
     /// </para>
     /// <list type="bullet">
     ///   <item><b>初始档</b>（还从没命中过）：刚激活窗口，不知道当前停在哪个画面，
@@ -77,7 +82,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
     /// 不等的话第一轮很可能全线未命中，白白按一次 ESC。
     /// </para>
     /// <para>
-    /// 节拍：每轮之内八个区域连续检测、彼此无间隔；一轮结束后等
+    /// 节拍：每轮之内九个区域连续检测、彼此无间隔；一轮结束后等
     /// <see cref="RoundIntervalMs"/> 毫秒进下一轮；命中之后、执行点击之前额外等
     /// <see cref="ClickDelayMs"/> 毫秒，让刚切换出来的画面稳定下来再点。
     /// 唯一例外是「按 ESC 找画面」那一轮（初始档 / 已知档超过宽限期）——
@@ -133,6 +138,13 @@ namespace LvchaxsBS_UID.Services.LoginServices
         /// <summary>「点击进入」：登录完成、加载完毕后登录界面上的进入按钮，点它即全部完成。</summary>
         public const string ClickEnterRegionKey = "点击进入区域";
         public const string ClickEnterTemplateKey = "其他模版_点击进入";
+
+        /// <summary>
+        /// 「同意」按钮：账密按 ENTER 提交后弹出的确认登录窗口里的同意按钮。
+        /// ★ 它只有在提交过账密之后才可能出现，所以和「点击进入」同时命中时它优先。
+        /// </summary>
+        public const string AgreeRegionKey = "同意登录区域";
+        public const string AgreeTemplateKey = "其他模版_登录账号_同意登录";
 
         /// <summary>账号输入框。</summary>
         public const string AccountInputClickKey = "确输入账号点击坐标";
@@ -268,7 +280,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
             {
                 token.ThrowIfCancellationRequested();
 
-                // 每轮识别一次，八个区域一起（区域之间没有间隔，连着测完再统一决策）
+                // 每轮识别一次，九个区域一起（区域之间没有间隔，连着测完再统一决策）
                 var main = Detect(MainRegionKey, MainTemplateKey);
                 var paimon = Detect(PaimonRegionKey, PaimonTemplateKey);
                 var settings = Detect(SettingsRegionKey, SettingsTemplateKey);
@@ -276,10 +288,12 @@ namespace LvchaxsBS_UID.Services.LoginServices
                 var userCenter = Detect(UserCenterRegionKey, UserCenterTemplateKey);
                 var loginOther = Detect(LoginOtherRegionKey, LoginOtherTemplateKey);
                 var enterGame = Detect(EnterGameRegionKey, EnterGameTemplateKey);
+                var agree = Detect(AgreeRegionKey, AgreeTemplateKey);
                 var clickEnter = Detect(ClickEnterRegionKey, ClickEnterTemplateKey);
 
                 if (main.detected || paimon.detected || settings.detected || jump.detected ||
-                    userCenter.detected || loginOther.detected || enterGame.detected || clickEnter.detected)
+                    userCenter.detected || loginOther.detected || enterGame.detected ||
+                    agree.detected || clickEnter.detected)
                 {
                     everHitAny = true;
                     lastHitTicks = Environment.TickCount64;
@@ -294,10 +308,22 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     $"用户中心 {userCenter.similarity * 100:F1}%({(userCenter.detected ? "中" : "-")}) " +
                     $"登录其他账号 {loginOther.similarity * 100:F1}%({(loginOther.detected ? "中" : "-")}) " +
                     $"进入游戏 {enterGame.similarity * 100:F1}%({(enterGame.detected ? "中" : "-")}) " +
+                    $"同意登录 {agree.similarity * 100:F1}%({(agree.detected ? "中" : "-")}) " +
                     $"点击进入 {clickEnter.similarity * 100:F1}%({(clickEnter.detected ? "中" : "-")})" +
                     (everHitAny ? "" : "  [初始档]"));
 
-                // ① 点击进入（终点）—— 登录页加载完毕后的「点击进入」，点它就全部完成
+                // ① 同意登录（提交账密后弹出的确认窗）—— 必须在「点击进入」之前判：
+                //    同意按钮只有提交过账密才会出现，两者同时命中时它才是当前这一步
+                if (agree.detected)
+                {
+                    Debug.WriteLine("[UID/登录] → 阶段7.5：检测到「同意」，点击同意");
+                    await Task.Delay(ClickDelayMs, token);
+                    ClickRegionCenter(AgreeRegionKey);
+                    await Task.Delay(RoundIntervalMs, token);
+                    continue;
+                }
+
+                // ② 点击进入（终点）—— 登录页加载完毕后的「点击进入」，点它就全部完成
                 if (clickEnter.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段8：检测到「点击进入」，点击，全部步骤完成");
@@ -306,7 +332,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     return true;
                 }
 
-                // ② 进入游戏（第七步）—— 账密输入页：填账号 → 填密码 → 点「进入游戏」
+                // ③ 进入游戏（第七步）—— 账密输入页：填账号 → 填密码 → 回车提交
                 if (enterGame.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段7：进入游戏（账密页），输入账号密码并点击进入游戏");
@@ -329,13 +355,13 @@ namespace LvchaxsBS_UID.Services.LoginServices
 
                     await Task.Delay(ClickDelayMs, token);
 
-                    // 点「进入游戏」提交
-                    ClickRegionCenter(EnterGameRegionKey);
+                    // 不点「进入游戏」，直接回车提交 —— 会弹出带「同意」的确认登录窗口
+                    SimulationService.PressEnter();
                     await Task.Delay(RoundIntervalMs, token);
                     continue;
                 }
 
-                // ③ 登录其他账号（第六步）—— 退出后停在带登录记录的界面，点它打开账密页
+                // ④ 登录其他账号（第六步）—— 退出后停在带登录记录的界面，点它打开账密页
                 if (loginOther.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段6：检测到「登录其他账号」，点击打开账密登录页");
@@ -345,7 +371,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ④ 用户中心（第五步，退出流程的终点）—— 点过跳转后加载出来的页面，
+                // ⑤ 用户中心（第五步，退出流程的终点）—— 点过跳转后加载出来的页面，
                 //    看到刷新按钮就说明页面好了：原地点一下 → TAB → ENTER → ENTER，
                 //    把当前账号退出去，之后进入登录流程（不结束，继续检测）
                 if (userCenter.detected)
@@ -365,7 +391,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ⑤ 账户跳转（第四步）—— 点一下进用户中心，然后继续检测（还没完）
+                // ⑥ 账户跳转（第四步）—— 点一下进用户中心，然后继续检测（还没完）
                 if (jump.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段4：检测到账户跳转，点击跳转");
@@ -375,7 +401,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ⑥ 设置界面（第三步的前半）—— 只看到设置界面：说明还没选中「账户」选项，
+                // ⑦ 设置界面（第三步的前半）—— 只看到设置界面：说明还没选中「账户」选项，
                 //    跳转按钮在账户选项里所以看不到。点一次「账户」，下一轮就能看到跳转了
                 if (settings.detected)
                 {
@@ -386,7 +412,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ⑦ 派蒙菜单（第二步）—— 点左下角「设置」，进入设置界面后再继续检测
+                // ⑧ 派蒙菜单（第二步）—— 点左下角「设置」，进入设置界面后再继续检测
                 if (paimon.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段2：派蒙菜单，点击「设置」");
@@ -396,7 +422,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ⑧ 主界面（第一步）—— 这一下 ESC 正好打开派蒙菜单
+                // ⑨ 主界面（第一步）—— 这一下 ESC 正好打开派蒙菜单
                 if (main.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段1：主界面，按 ESC 打开派蒙菜单");
@@ -405,7 +431,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ⑨ 八个都没检测到
+                // ⑩ 九个都没检测到
                 if (ShouldPressEscape(everHitAny, Environment.TickCount64 - lastHitTicks))
                 {
                     Debug.WriteLine(everHitAny
