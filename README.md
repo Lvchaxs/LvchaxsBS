@@ -125,20 +125,23 @@ dotnet build LvchaxsBS.sln -c Release
 ## 目录结构
 
 ```
-LvchaxsBS/            # 工程主目录（C# 源码）
-  Core/               # 功能引擎与业务逻辑（含 AssetLocator：图片资源包入口）
-  UI/                 # 自定义控件、页面、样式与主题资源
-  Config/             # 配置模型与读写（JSON）
-LvchaxsBS.sln         # 解决方案文件
+LvchaxsBS.sln          # 解决方案文件
+LvchaxsBS/             # 主程序工程（C# 源码）
+  Core/                # 功能引擎与业务逻辑（含 AssetLocator：图片资源包入口）
+  UI/                  # 自定义控件、页面、样式与主题资源
+  Config/              # 配置模型与读写（JSON）
+LvchaxsBS_Resources/   # 可选组件：图片与数据资源包工程
+LvchaxsBS_UID/         # 可选组件：账号管理模块工程
 ```
 
-此外还有两个**可选组件**，与 `LvchaxsBS.exe` 并列摆放，缺失时主程序照常运行
+三个工程与 `LvchaxsBS.sln` 同级摆放，直接用解决方案即可一次编译全部。
+其中后两个是**可选组件**，编译产物与 `LvchaxsBS.exe` 并列摆放，缺失时主程序照常运行
 （只少对应功能，不会崩溃）：
 
 | 组件 | 产物 | 缺少时的表现 |
 | --- | --- | --- |
-| [LvchaxsBS_Resources](../LvchaxsBS_Resources) | `LvchaxsBS_Resources.dll` | 所有图标与识别模板取不到，显示空白；图像识别功能整体失效 |
-| [LvchaxsBS_UID](../LvchaxsBS_UID) | `LvchaxsBS_uid.dll` | 没有账号管理模块入口 |
+| [LvchaxsBS_Resources](LvchaxsBS_Resources) | `LvchaxsBS_Resources.dll` | 所有图标与识别模板取不到，显示空白；图像识别功能整体失效 |
+| [LvchaxsBS_UID](LvchaxsBS_UID) | `LvchaxsBS_uid.dll` | 没有账号管理模块入口 |
 
 图片资源（UI 图标 + 图像识别模板）统一放在 `LvchaxsBS_Resources` 工程里，
 代码通过 `Core/AssetLocator.cs` 取用，路径一律相对 `Resources/`。

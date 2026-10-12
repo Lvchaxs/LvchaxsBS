@@ -1,0 +1,516 @@
+﻿<Window x:Class="LvchaxsBS_UID.Views.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="使用说明"
+        Width="450"
+        Height="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        FocusManager.IsFocusScope="False">
+
+    <Window.Effect>
+        <DropShadowEffect Color="#1F000000" 
+                          Direction="315" 
+                          ShadowDepth="3" 
+                          Opacity="0.1" 
+                          BlurRadius="10"/>
+    </Window.Effect>
+
+    <Window.Resources>
+        <!-- 缓动函数 -->
+        <QuadraticEase x:Key="QuadEaseOut" EasingMode="EaseOut"/>
+
+        <!-- 动画 -->
+        <Storyboard x:Key="FadeInAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                             From="0.95" To="1" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                             From="0.95" To="1" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+        </Storyboard>
+
+        <Storyboard x:Key="FadeOutAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="1" To="0" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                             From="1" To="0.95" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                             From="1" To="0.95" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+        </Storyboard>
+
+        <!-- 颜色资源 -->
+        <Color x:Key="PrimaryBlueColor">#3B82F6</Color>
+        <Color x:Key="PrimaryBlueHoverColor">#2563EB</Color>
+        <Color x:Key="BorderGrayColor">#E2E8F0</Color>
+        <Color x:Key="LightGrayColor">#64748B</Color>
+        <Color x:Key="DarkGrayColor">#374151</Color>
+        <Color x:Key="LightBlueColor">#F0F9FF</Color>
+        <Color x:Key="LightBlueBorderColor">#BAE6FD</Color>
+        <Color x:Key="LightBackgroundColor">#F8FAFC</Color>
+        <Color x:Key="MediumBackgroundColor">#F9FAFB</Color>
+        <Color x:Key="TextColor">#111827</Color>
+        <Color x:Key="WarningYellow">#FBBF24</Color>
+        <Color x:Key="InfoBlue">#60A5FA</Color>
+        <Color x:Key="SuccessGreen">#10B981</Color>
+        <Color x:Key="Purple">#8B5CF6</Color>
+        <Color x:Key="DangerRedColor">#EF4444</Color>
+        <Color x:Key="DangerRedHoverColor">#DC2626</Color>
+        <Color x:Key="DangerRedPressedColor">#B91C1C</Color>
+        <Color x:Key="GrayTextColor">#374151</Color>
+        <Color x:Key="LightGrayTextColor">#6B7280</Color>
+
+        <!-- 画笔 -->
+        <SolidColorBrush x:Key="PrimaryBlueBrush" Color="{StaticResource PrimaryBlueColor}"/>
+        <SolidColorBrush x:Key="PrimaryBlueHoverBrush" Color="{StaticResource PrimaryBlueHoverColor}"/>
+        <SolidColorBrush x:Key="BorderGrayBrush" Color="{StaticResource BorderGrayColor}"/>
+        <SolidColorBrush x:Key="LightGrayBrush" Color="{StaticResource LightGrayColor}"/>
+        <SolidColorBrush x:Key="DarkGrayBrush" Color="{StaticResource DarkGrayColor}"/>
+        <SolidColorBrush x:Key="LightBlueBrush" Color="{StaticResource LightBlueColor}"/>
+        <SolidColorBrush x:Key="LightBlueBorderBrush" Color="{StaticResource LightBlueBorderColor}"/>
+        <SolidColorBrush x:Key="LightBackgroundBrush" Color="{StaticResource LightBackgroundColor}"/>
+        <SolidColorBrush x:Key="MediumBackgroundBrush" Color="{StaticResource MediumBackgroundColor}"/>
+        <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
+        <SolidColorBrush x:Key="WarningYellowBrush" Color="{StaticResource WarningYellow}"/>
+        <SolidColorBrush x:Key="InfoBlueBrush" Color="{StaticResource InfoBlue}"/>
+        <SolidColorBrush x:Key="SuccessGreenBrush" Color="{StaticResource SuccessGreen}"/>
+        <SolidColorBrush x:Key="PurpleBrush" Color="{StaticResource Purple}"/>
+        <SolidColorBrush x:Key="DangerRedBrush" Color="{StaticResource DangerRedColor}"/>
+        <SolidColorBrush x:Key="DangerRedHoverBrush" Color="{StaticResource DangerRedHoverColor}"/>
+        <SolidColorBrush x:Key="DangerRedPressedBrush" Color="{StaticResource DangerRedPressedColor}"/>
+        <SolidColorBrush x:Key="GrayTextBrush" Color="{StaticResource GrayTextColor}"/>
+        <SolidColorBrush x:Key="LightGrayTextBrush" Color="{StaticResource LightGrayTextColor}"/>
+
+        <!-- 无焦点边框样式 -->
+        <Style x:Key="NoFocusBorderStyle" TargetType="Border">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+
+        <!-- 基础按钮样式 -->
+        <Style x:Key="BaseButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+
+        <!-- 紧凑主按钮样式 -->
+        <Style x:Key="CompactPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
+            <Setter Property="Background" Value="{StaticResource PrimaryBlueBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryBlueHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 透明图标按钮样式 -->
+        <Style x:Key="TransparentIconButtonStyle" TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 边框按钮样式 -->
+        <Style x:Key="OutlineButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource GrayTextBrush}"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F3F4F6"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#9CA3AF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E5E7EB"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#6B7280"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 基础复选框样式 -->
+        <Style x:Key="BaseCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+
+        <!-- 帮助窗口复选框样式 -->
+        <Style x:Key="HelpCheckBoxStyle" TargetType="CheckBox" BasedOn="{StaticResource BaseCheckBoxStyle}">
+            <Setter Property="Foreground" Value="{StaticResource LightGrayBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border x:Name="checkBoxBorder"
+                                    Width="14"
+                                    Height="14"
+                                    BorderBrush="#D1D5DB"
+                                    BorderThickness="1"
+                                    Background="White"
+                                    CornerRadius="3"
+                                    Margin="0,0,6,0">
+                                <TextBlock x:Name="checkMark"
+                                           Text="✓"
+                                           FontSize="10"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter x:Name="contentPresenter"
+                                              VerticalAlignment="Center"
+                                              Margin="2,0,0,0"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="checkBoxBorder" Property="Background" Value="{StaticResource PrimaryBlueBrush}"/>
+                                <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="{StaticResource PrimaryBlueBrush}"/>
+                                <Setter TargetName="checkMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="checkBoxBorder" Property="BorderBrush" Value="#9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 文本样式 -->
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource DarkGrayBrush}"/>
+            <Setter Property="Margin" Value="0,20,0,8"/>
+        </Style>
+
+        <Style x:Key="FeatureTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Margin" Value="0,12,0,4"/>
+        </Style>
+
+        <Style x:Key="FeatureDescriptionStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource LightGrayBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="20"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="BulletPointStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="LineHeight" Value="20"/>
+            <Setter Property="Margin" Value="16,0,0,4"/>
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="mainBorder"
+            Background="White"
+            CornerRadius="10"
+            BorderThickness="1"
+            BorderBrush="{StaticResource BorderGrayBrush}"
+            Opacity="0"
+            d:Opacity="1"
+            RenderTransformOrigin="0.5,0.5"
+            Focusable="False"
+            FocusVisualStyle="{x:Null}"
+            Style="{StaticResource NoFocusBorderStyle}">
+        <Border.RenderTransform>
+            <ScaleTransform ScaleX="0.95" ScaleY="0.95"
+                            d:ScaleX="1" d:ScaleY="1"/>
+        </Border.RenderTransform>
+
+        <Grid Focusable="False" FocusVisualStyle="{x:Null}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏 -->
+            <Border Grid.Row="0"
+                    Background="{StaticResource LightBackgroundBrush}"
+                    CornerRadius="10,10,0,0"
+                    BorderBrush="{StaticResource BorderGrayBrush}"
+                    BorderThickness="0,0,0,1"
+                    Focusable="False"
+                    FocusVisualStyle="{x:Null}">
+                <Grid Focusable="False" FocusVisualStyle="{x:Null}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="📖"
+                                   FontSize="20"
+                                   Margin="0,0,8,0"/>
+                        <TextBlock Text="使用说明"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="#334155"/>
+                    </StackPanel>
+                    <Button x:Name="closeButton"
+                            Style="{StaticResource TransparentIconButtonStyle}"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Margin="0,0,8,0"
+                            Click="CloseButton_Click"/>
+                </Grid>
+            </Border>
+
+            <!-- 内容区域 -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="20,10,10,20"
+                          Focusable="False"
+                          FocusVisualStyle="{x:Null}">
+                <StackPanel Focusable="False" FocusVisualStyle="{x:Null}">
+
+                    <!-- 账号管理 -->
+                    <Border Background="#F0F9FF" 
+                            BorderBrush="#BAE6FD" 
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,8"
+                            Focusable="False"
+                            FocusVisualStyle="{x:Null}">
+                        <StackPanel>
+                            <TextBlock Text="账号管理"
+                                       Style="{StaticResource FeatureTitleStyle}"/>
+                            <TextBlock Text="• 添加、编辑、删除、置顶、置底、分组、查看原神账号"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 自动加密存储账号密码信息"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 支持UID、冒险等级、昵称、账号和密码的完整信息查看和管理"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 账号支持官服与国际服登录框可输入的格式：手机号、邮箱"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 分组管理 -->
+                    <Border Background="#F3E8FF" 
+                            BorderBrush="#DDD6FE" 
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,8"
+                            Focusable="False"
+                            FocusVisualStyle="{x:Null}">
+                        <StackPanel>
+                            <TextBlock Text="分组管理"
+                                       Style="{StaticResource FeatureTitleStyle}"/>
+                            <TextBlock Text="• 创建分组来分类管理游戏账号，每个分组独立互不干扰"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 支持账号的批量移入已添加的账号"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 分组内置底功能可以让账号排列到最下方，代表今日已登录并完成任务"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#D1FAE5" 
+                            BorderBrush="#A7F3D0" 
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,8"
+                            Focusable="False"
+                            FocusVisualStyle="{x:Null}">
+                        <StackPanel>
+                            <TextBlock Text="本地加密存储"
+                                       Style="{StaticResource FeatureTitleStyle}"/>
+                            <TextBlock Text="• 所有账号密码信息均在本机加密存储"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 使用加密算法保护敏感信息"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 完全本地运行没有联网功能数据不会上传到任何服务器"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                        </StackPanel>
+                    </Border>
+
+
+                    <Border Background="#E0F2FE" 
+                            BorderBrush="#BAE6FD" 
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,8"
+                            Focusable="False"
+                            FocusVisualStyle="{x:Null}">
+                        <StackPanel>
+                            <TextBlock Text="快捷操作"
+                                       Style="{StaticResource FeatureTitleStyle}"/>
+                            <TextBlock Text="• 置顶：常用账号分组可始终置顶在最上方"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 置底：分组内账号今日已登录并完成任务后始终置底在最下方"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#F5F5F5" 
+        BorderBrush="#E5E5E5" 
+        BorderThickness="1"
+        CornerRadius="6"
+        Padding="12"
+        Margin="0,0,0,8"
+        Focusable="False"
+        FocusVisualStyle="{x:Null}">
+                        <TextBlock FontSize="11"
+           Foreground="{StaticResource DarkGrayBrush}"
+           TextWrapping="Wrap">
+                            <Run Text="作者:LvchaxsBS/伴生/" Foreground="{StaticResource DarkGrayBrush}"/>
+                            <Hyperlink NavigateUri="https://gitee.com/accompanying-it/associated-with-lvchaxs"
+                                       RequestNavigate="Hyperlink_RequestNavigate"
+                                       Foreground="#3B82F6"
+                                       TextDecorations="None"
+                                       Focusable="False">
+                                <Run Text="更新地址:gitee"/>
+                            </Hyperlink>
+                            <Run Text="/" Foreground="{StaticResource DarkGrayBrush}"/>
+                            <Hyperlink NavigateUri="https://github.com/Lvchaxs/LvchaxsBS"
+                                       RequestNavigate="Hyperlink_RequestNavigate"
+                                       Foreground="#3B82F6"
+                                       TextDecorations="None"
+                                       Focusable="False">
+                                <Run Text="开源地址:github"/>
+                            </Hyperlink>
+                        </TextBlock>
+                    </Border>
+
+                    <!-- 最后提示 -->
+                    <TextBlock Text="💝 免责声明"
+                               Style="{StaticResource FeatureTitleStyle}"
+                               Margin="0,16,0,0"/>
+                    <TextBlock Text="本工具最初是作者为了方便管理多个游戏账号而制作。如果你通过分享安装了此工具请您在充分了解工具功能后，请谨慎思考再决定是否使用。本工具完全免费，但我们深知账号信息的安全至关重要可点击关闭工具不使用。"
+                               Style="{StaticResource FeatureDescriptionStyle}"
+                               FontSize="15"
+                               Foreground="#DC2626"/>
+
+                    <!-- 按钮区域 -->
+                    <Border Margin="0,16,0,0"
+        Padding="0"
+        Background="Transparent"
+        Focusable="False"
+        FocusVisualStyle="{x:Null}">
+                        <StackPanel HorizontalAlignment="Center" Focusable="False" FocusVisualStyle="{x:Null}">
+                            <!-- 按钮容器 -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <!-- 关闭工具按钮（亮红色） -->
+                                <Button x:Name="closeToolButton"
+                    Content="拒绝使用"
+                    Height="32"
+                    MinWidth="100"
+                    Margin="0,0,12,0"
+                    Click="CloseToolButton_Click">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                            <Setter Property="Background" Value="#EF4444"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                            <Setter Property="FontSize" Value="12"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="Cursor" Value="Hand"/>
+                                            <Setter Property="Height" Value="32"/>
+                                            <Setter Property="Padding" Value="18,0"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="border" 
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="6">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="border" Property="Background" Value="#DC2626"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsPressed" Value="True">
+                                                                <Setter TargetName="border" Property="Background" Value="#B91C1C"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+
+                                <Button x:Name="okButton"
+                    Content="我已了解"
+                    Style="{StaticResource CompactPrimaryButtonStyle}"
+                    Click="OkButton_Click"
+                    Width="100"
+                    Height="32"/>
+                            </StackPanel>
+
+                            <!-- 复选框 -->
+                            <CheckBox x:Name="dontShowAgainCheckBox"
+                  Content="下次启动不再显示此窗口，可通过左上角感叹号按钮再次打开此窗口"
+                  Style="{StaticResource HelpCheckBoxStyle}"
+                  Margin="0,16,0,8"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</Window>

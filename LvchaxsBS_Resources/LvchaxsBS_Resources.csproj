@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!--
+			纯资源程序集：只把 Resources 下的图片编译进 dll（g.resources），不含任何 C# 代码。
+			宿主 LvchaxsBS.exe 与 UID 模块通过 pack URI 访问：
+
+			    pack://application:,,,/LvchaxsBS_Resources;component/Resources/Images/图标/xxx.png
+
+			★ 这是可选组件：dll 不在 exe 同目录时，主程序照常启动，
+			  只是所有图片取不到（Image 显示为空白），不会抛异常、不会崩溃。
+		-->
+		<OutputType>Library</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<AssemblyName>LvchaxsBS_Resources</AssemblyName>
+		<RootNamespace>LvchaxsBS_Resources</RootNamespace>
+
+		<Version>1.0.0.0</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+		<!-- 与仓库根目录的 LICENSE 保持一致 -->
+		<Copyright>Copyright (C) 2026 Lvchaxs</Copyright>
+		<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!--
+			全部用通配符包含：往 Resources 下新增图片（无论是 UI 图标还是识别模板）
+			直接放进去即可，不需要改这个工程文件，也不需要重新分类。
+
+			★ 注意：增量构建是按"输入文件时间 vs 上次输出时间"判断的。
+			  如果新加进来的是修改时间较早的老文件（比如从别处剪切过来的），
+			  构建会认为"没变化"而跳过打包，表现为运行时图还是旧的。
+			  遇到这种情况执行一次 Rebuild：
+			      dotnet build LvchaxsBS_Resources.csproj -t:Rebuild
+		-->
+		<None Remove="Resources\**" />
+		<Resource Include="Resources\**\*.png" />
+		<Resource Include="Resources\**\*.ico" />
+		<Resource Include="Resources\**\*.jpg" />
+		<Resource Include="Resources\**\*.jpeg" />
+		<Resource Include="Resources\**\*.bmp" />
+		<Resource Include="Resources\**\*.gif" />
+		<!-- 数据文件（角色→元素对照表等）也一起打包 -->
+		<Resource Include="Resources\**\*.json" />
+		<Resource Include="Resources\**\*.txt" />
+	</ItemGroup>
+
+	<!--
+		编译完成后把资源 dll 复制到宿主 LvchaxsBS 的输出目录，
+		这样直接运行 LvchaxsBS.exe 就能加载到最新的资源包。
+		dll 不存在时主程序照常运行（图片留空）。
+	-->
+	<Target Name="CopyToHost" AfterTargets="Build">
+		<PropertyGroup>
+			<HostBinDir>$(MSBuildThisFileDirectory)..\LvchaxsBS\bin\$(Configuration)\net8.0-windows\</HostBinDir>
+		</PropertyGroup>
+		<ItemGroup>
+			<PluginArtifacts Include="$(TargetPath)" />
+			<PluginArtifacts Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PluginArtifacts)"
+		      DestinationFolder="$(HostBinDir)"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(HostBinDir)')" />
+	</Target>
+
+</Project>

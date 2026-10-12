@@ -1,0 +1,277 @@
+﻿<Window x:Class="LvchaxsBS_UID.Views.AddEditGroupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LvchaxsBS_UID.Views"
+        mc:Ignorable="d"
+        Title="分组管理"
+        Width="337"
+        Height="228"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
+
+    <Window.Effect>
+        <DropShadowEffect Color="#1F000000" 
+                          Direction="315" 
+                          ShadowDepth="3" 
+                          Opacity="0.1" 
+                          BlurRadius="10"/>
+    </Window.Effect>
+
+    <Window.Resources>
+        <QuadraticEase x:Key="QuadEaseOut" EasingMode="EaseOut"/>
+
+        <!-- 动画 -->
+        <Storyboard x:Key="FadeInAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                             From="0.95" To="1" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                             From="0.95" To="1" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+        </Storyboard>
+
+        <Storyboard x:Key="FadeOutAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                             From="1" To="0" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                             From="1" To="0.95" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                             From="1" To="0.95" Duration="0:0:0.15"
+                             EasingFunction="{StaticResource QuadEaseOut}"/>
+        </Storyboard>
+
+        <!-- 按钮样式 -->
+        <!-- 主按钮：原为硬编码蓝色底白字。这些弹窗的内容底是固定白底（不跟随主题），
+             所以这里用固定的中性灰底 + 深字，深浅主题下都协调。 -->
+        <Style x:Key="CompactPrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource BorderBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Gray400Brush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource BorderStrongBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CompactSecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1.2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="InputBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1.2"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Height" Value="32"/>
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="mainBorder"
+            Background="{DynamicResource PopupBackgroundBrush}"
+            CornerRadius="10"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource BorderBrush}"
+            Opacity="0"
+            d:Opacity="1"
+            RenderTransformOrigin="0.5,0.5">
+        <Border.RenderTransform>
+            <ScaleTransform ScaleX="0.95" ScaleY="0.95"
+                            d:ScaleX="1" d:ScaleY="1"/>
+        </Border.RenderTransform>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="52"/>
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏 -->
+            <Border Grid.Row="0"
+                    Background="{DynamicResource DialogHeaderBackgroundBrush}"
+                    CornerRadius="10,10,0,0"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,0,1">
+                <Grid>
+                    <TextBlock x:Name="windowTitle"
+                               Text="添加分组"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"/>
+                                    </Grid>
+            </Border>
+
+            <!-- 内容区域 -->
+            <Grid Grid.Row="1"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Center">
+                <StackPanel Width="260">
+                    <!-- 分组名称 -->
+                    <TextBlock Text="分组名称"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               FontWeight="Medium"
+                               Margin="0,0,0,4"/>
+
+                    <Border Style="{StaticResource InputBorderStyle}">
+                        <Grid>
+                            <TextBlock x:Name="groupNameWatermark" 
+                                       Text="请输入分组名称" 
+                                       VerticalAlignment="Center"
+                                       Margin="8,0"
+                                       Foreground="{DynamicResource TextDisabledBrush}"
+                                       IsHitTestVisible="False"/>
+                            <TextBox x:Name="groupNameTextBox"
+                                     Text=""
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Height="32"
+                                     FontSize="12"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                     VerticalAlignment="Center"
+                                     Padding="8,6"
+                                     TextChanged="GroupNameTextBox_TextChanged"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 新增：标签备注 -->
+                    <TextBlock Text="标签备注"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               FontWeight="Medium"
+                               Margin="0,8,0,4"/>
+
+                    <Border Style="{StaticResource InputBorderStyle}">
+                        <Grid>
+                            <TextBlock x:Name="tagNoteWatermark" 
+                                       Text="可填可不填的备注信息" 
+                                       VerticalAlignment="Center"
+                                       Margin="8,0"
+                                       Foreground="{DynamicResource TextDisabledBrush}"
+                                       IsHitTestVisible="False"/>
+                            <TextBox x:Name="tagNoteTextBox"
+                                     Text=""
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Height="32"
+                                     FontSize="12"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     CaretBrush="{DynamicResource TextPrimaryBrush}"
+                                     VerticalAlignment="Center"
+                                     Padding="8,6"
+                                     TextChanged="TagNoteTextBox_TextChanged"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- 按钮区域 -->
+            <Border Grid.Row="2"
+                    Background="{DynamicResource DialogHeaderBackgroundBrush}"
+                    CornerRadius="0,0,10,10"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,1,0,0">
+                <!-- 同 AddEditAccountWindow：直接引用主程序的按钮样式，交互效果完全一致 -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Margin="0">
+                    <Button x:Name="saveButton"
+                            Style="{DynamicResource SettingsButtonStyleRound6}"
+                            Click="SaveButton_Click"
+                            MinWidth="80"
+                            Height="30"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="✓"
+                                       Foreground="{DynamicResource TagGreenFgBrush}"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,5,0"/>
+                            <TextBlock Text="保存" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="cancelButton"
+                            Style="{DynamicResource SettingsButtonStyleRound6}"
+                            Click="CancelButton_Click"
+                            MinWidth="80"
+                            Height="30">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="✕"
+                                       Foreground="{DynamicResource TagRedFgBrush}"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,5,0"/>
+                            <TextBlock Text="取消" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

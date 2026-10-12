@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<!-- 作为宿主 LvchaxsBS.exe 的插件模块编译，输出 LvchaxsBS_uid.dll -->
+		<OutputType>Library</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<RootNamespace>LvchaxsBS_UID</RootNamespace>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<AssemblyName>LvchaxsBS_uid</AssemblyName>
+
+		<!-- 插件里不再自带 App，应用级资源由宿主提供，因此 App.xaml 不参与编译 -->
+		<EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ApplicationDefinition Remove="App.xaml" />
+		<Page Remove="App.xaml" />
+		<Compile Remove="App.xaml.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="爱可菲.ico" />
+	</ItemGroup>
+
+	<!--
+		编译完成后把插件 dll 复制到宿主 LvchaxsBS 的输出目录，
+		这样直接运行 LvchaxsBS.exe 就能加载到最新的 UID 模块。
+	-->
+	<Target Name="CopyPluginToHost" AfterTargets="Build">
+		<PropertyGroup>
+			<HostBinDir>$(MSBuildThisFileDirectory)..\LvchaxsBS\bin\$(Configuration)\net8.0-windows\</HostBinDir>
+		</PropertyGroup>
+		<ItemGroup>
+			<PluginArtifacts Include="$(TargetPath)" />
+			<PluginArtifacts Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+		</ItemGroup>
+		<Copy SourceFiles="@(PluginArtifacts)"
+		      DestinationFolder="$(HostBinDir)"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(HostBinDir)')" />
+	</Target>
+</Project>

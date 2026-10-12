@@ -5,9 +5,9 @@ VisualStudioVersion = 17.14.37710.0 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LvchaxsBS", "LvchaxsBS\LvchaxsBS.csproj", "{1FF21320-85B7-4991-B984-31D78127A255}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LvchaxsBS_UID", "..\LvchaxsBS_UID\LvchaxsBS_UID.csproj", "{2B74A65B-D10F-4106-87B3-13A4CA453C61}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LvchaxsBS_UID", "LvchaxsBS_UID\LvchaxsBS_UID.csproj", "{2B74A65B-D10F-4106-87B3-13A4CA453C61}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LvchaxsBS_Resources", "..\LvchaxsBS_Resources\LvchaxsBS_Resources.csproj", "{0B78B8F4-7D9D-4677-B226-08F6E9BAECEE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LvchaxsBS_Resources", "LvchaxsBS_Resources\LvchaxsBS_Resources.csproj", "{0B78B8F4-7D9D-4677-B226-08F6E9BAECEE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
