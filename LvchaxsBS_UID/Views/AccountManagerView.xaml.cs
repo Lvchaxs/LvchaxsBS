@@ -1,5 +1,6 @@
 ﻿using LvchaxsBS_UID.Models;
 using LvchaxsBS_UID.Utils.File;
+using LvchaxsBS_UID.Utils.GameWindow;
 using LvchaxsBS_UID.Services.DataServices;
 using LvchaxsBS_UID.Services.UI;
 using LvchaxsBS_UID.Utils.Clipboard;
@@ -1724,11 +1725,12 @@ namespace LvchaxsBS_UID.Views
         }
         #endregion
 
-        #region 登录窗口（仅保留界面，不执行任何登录操作）
+        #region 登录窗口（当前只做窗口激活）
         // ============================================================================
-        // 登录按钮与登录确认窗口的界面全部保留，与旧版一致；
-        // 但不再包含截图 / 图像识别 / 窗口激活 / 模拟输入 / 自动登录等任何执行逻辑。
-        // 「确认登录」在这里只提示本版本不提供登录功能，不做其它事情。
+        // 登录按钮与登录确认窗口的界面全部保留，与旧版一致。
+        // 目前「确认登录」只做一件事：把游戏客户区调到前台（激活窗口）。
+        // 真正的登录流程（识别登录界面 → 输入账号密码 → 点击登录）还没接，
+        // 后续要接的话走共享库 LvchaxsBS_Resources 的图像识别能力。
         // ============================================================================
 
         private void LoginAccountButton_Click(object sender, RoutedEventArgs e)
@@ -1864,9 +1866,31 @@ namespace LvchaxsBS_UID.Views
 
         private void LoginConfirmWindow_ConfirmLogin(object sender, LoginConfirmEventArgs e)
         {
-            // 本版本只保留界面，不执行登录
-            _toastManager.Show("提示", "本版本仅做账号管理，未包含登录功能");
+            // ========================================================================
+            // 「确认登录」目前只做一步：把原神客户区调到前台（激活窗口）。
+            //
+            // ★ 顺序很重要：必须在本模态窗口【关闭之前】激活。
+            //   此刻本窗口还是前台窗口，SetForegroundWindow 才被系统放行；
+            //   若先关窗，前台会先落回宿主主窗口，再去抢给游戏就容易被「前台锁定」挡下。
+            //   激活成功后游戏成为前台窗口，之后关闭本窗口不会再把前台抢回来。
+            // ========================================================================
+            bool activated = GameWindowActivator.Activate();
+
+            if (activated)
+                _toastManager.Show("已激活游戏窗口", $"已将游戏客户区调到前台（账号：{CurrentLoginAccountNameForToast()}）");
+            else
+                _toastManager.Show("未找到游戏窗口", "请先启动原神，再点确认登录", false);
+
             _loginConfirmWindow?.Close();
+        }
+
+        /// <summary>取当前登录窗口里展示的账号名，仅用于提示文案。</summary>
+        private string CurrentLoginAccountNameForToast()
+        {
+            if (_currentLoginAccountIndex >= 0 && _currentLoginAccountIndex < _currentLoginAccountList.Count)
+                return _currentLoginAccountList[_currentLoginAccountIndex].Nickname;
+
+            return string.Empty;
         }
 
         private void LoginConfirmWindow_CloseRequested(object sender, EventArgs e) => _loginConfirmWindow?.Close();
