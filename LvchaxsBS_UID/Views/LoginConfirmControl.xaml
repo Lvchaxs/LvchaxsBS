@@ -230,65 +230,6 @@
             </Setter>
         </Style>
 
-        <!-- 复制按钮样式 -->
-        <Style x:Key="CopyButtonStyle" TargetType="Button">
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource Gray400Brush}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Width" Value="24"/>
-            <Setter Property="Height" Value="24"/>
-            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" 
-                                Background="Transparent"
-                                CornerRadius="3">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-                                              RenderTransformOrigin="0.5,0.5">
-                                <ContentPresenter.RenderTransform>
-                                    <ScaleTransform x:Name="contentScale" ScaleX="1" ScaleY="1"/>
-                                </ContentPresenter.RenderTransform>
-                            </ContentPresenter>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="contentScale"
-                                                             Storyboard.TargetProperty="ScaleX"
-                                                             To="1.2" Duration="0:0:0.15"
-                                                             EasingFunction="{StaticResource ExponentialEaseOut}"/>
-                                            <DoubleAnimation Storyboard.TargetName="contentScale"
-                                                             Storyboard.TargetProperty="ScaleY"
-                                                             To="1.2" Duration="0:0:0.15"
-                                                             EasingFunction="{StaticResource ExponentialEaseOut}"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="contentScale"
-                                                             Storyboard.TargetProperty="ScaleX"
-                                                             To="1" Duration="0:0:0.15"
-                                                             EasingFunction="{StaticResource ExponentialEaseOut}"/>
-                                            <DoubleAnimation Storyboard.TargetName="contentScale"
-                                                             Storyboard.TargetProperty="ScaleY"
-                                                             To="1" Duration="0:0:0.15"
-                                                             EasingFunction="{StaticResource ExponentialEaseOut}"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
 
     <Border x:Name="mainBorder"
@@ -427,7 +368,7 @@
 
                         <Button Grid.Column="2"
                                 x:Name="CopyPrevUidButton"
-                                Style="{StaticResource CopyButtonStyle}"
+                                Style="{DynamicResource IconCopyButtonStyle}"
                                 Click="CopyPrevUidButton_Click"
                                 ToolTip="复制 UID"
                                 Margin="8,0,0,0"
@@ -490,7 +431,7 @@
 
                             <Button Grid.Column="2"
                                     x:Name="CopyUidButton"
-                                    Style="{StaticResource CopyButtonStyle}"
+                                    Style="{DynamicResource IconCopyButtonStyle}"
                                     Click="CopyUidButton_Click"
                                     ToolTip="复制 UID"
                                     Margin="8,0,0,0"
@@ -551,7 +492,7 @@
 
                         <Button Grid.Column="2"
                                 x:Name="CopyNextUidButton"
-                                Style="{StaticResource CopyButtonStyle}"
+                                Style="{DynamicResource IconCopyButtonStyle}"
                                 Click="CopyNextUidButton_Click"
                                 ToolTip="复制 UID"
                                 Margin="8,0,0,0"

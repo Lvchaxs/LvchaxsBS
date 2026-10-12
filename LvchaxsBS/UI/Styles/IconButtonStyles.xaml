@@ -133,16 +133,16 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                    <Border Background="{TemplateBinding Background}" BorderThickness="0"
+                            helpers:InteractionScale.HoverScale="1.15"
+                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.Target="{Binding ElementName=IconHost}">
                         <!-- 铅笔还是原来那个 Segoe 字形（&#xE70F;），**没有换图标**，
                              只是在它下面补了一条短横线 —— 原来斜着的一笔看着太单薄。
                              铅笔上移 2px 给横线腾位置；两者都绑 Button.Foreground，
                              所以悬停时的变色（下面那个 Trigger）会一起生效。 -->
-                        <Grid Width="12" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        <Grid x:Name="IconHost" Width="12" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"
                               RenderTransformOrigin="0.5,0.5">
-                            <Grid.RenderTransform>
-                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
-                            </Grid.RenderTransform>
                             <TextBlock x:Name="icon"
                                        Text="&#xE70F;"
                                        FontFamily="Segoe MDL2 Assets"
@@ -165,42 +165,6 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         </Trigger>
-                        <EventTrigger RoutedEvent="Button.MouseEnter">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                        <EventTrigger RoutedEvent="Button.MouseLeave">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -215,7 +179,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                    <Border Background="{TemplateBinding Background}" BorderThickness="0"
+                            helpers:InteractionScale.HoverScale="1.15"
+                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.Target="{Binding ElementName=icon}">
                         <TextBlock x:Name="icon"
                                    Text="&#xE74D;"
                                    FontFamily="Segoe MDL2 Assets"
@@ -224,51 +191,12 @@
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
                                    RenderTransformOrigin="0.5,0.5">
-                            <TextBlock.RenderTransform>
-                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
-                            </TextBlock.RenderTransform>
                         </TextBlock>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource DangerHoverBrush}"/>
                         </Trigger>
-                        <EventTrigger RoutedEvent="Button.MouseEnter">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                        <EventTrigger RoutedEvent="Button.MouseLeave">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -351,7 +279,10 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="border" Width="18" Height="18" CornerRadius="2"
                             BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
-                            Background="Transparent">
+                            Background="Transparent"
+                            helpers:InteractionScale.HoverScale="1.15"
+                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.Target="{Binding ElementName=pinIcon}">
                         <!-- 箭头尺寸/颜色全部写在 Path.Style 里 —— **不能写成元素上的本地值**：
                              WPF 依赖属性优先级里「本地值」高于「ControlTemplate 的 Trigger」，
                              本地写死之后下面的 DataTrigger 改不动它（静默失效）。
@@ -378,9 +309,6 @@
                                     <Setter Property="Fill" Value="Transparent"/>
                                 </Style>
                             </Path.Style>
-                            <Path.RenderTransform>
-                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
-                            </Path.RenderTransform>
                         </Path>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -397,42 +325,6 @@
                             <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource TextDisabledBrush}"/>
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource Gray100Brush}"/>
                         </Trigger>
-                        <EventTrigger RoutedEvent="Button.MouseEnter">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                        <EventTrigger RoutedEvent="Button.MouseLeave">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -548,7 +440,10 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="border" Width="18" Height="18" CornerRadius="2"
                             BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
-                            Background="Transparent">
+                            Background="Transparent"
+                            helpers:InteractionScale.HoverScale="1.15"
+                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.Target="{Binding ElementName=markIcon}">
                                         <!-- 向下箭头 = 置底（把置顶那个箭头上下翻转）。
                                              与置顶同一套处理：两态都是 13x13，只换颜色与空心/实心 -->
                                         <Path x:Name="markIcon"
@@ -566,9 +461,6 @@
                                                     <Setter Property="Fill" Value="Transparent"/>
                                                 </Style>
                                             </Path.Style>
-                                            <Path.RenderTransform>
-                                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
-                                            </Path.RenderTransform>
                                         </Path>
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -582,42 +474,6 @@
                             <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource TextDisabledBrush}"/>
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource Gray100Brush}"/>
                         </Trigger>
-                        <EventTrigger RoutedEvent="Button.MouseEnter">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                        <EventTrigger RoutedEvent="Button.MouseLeave">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -677,5 +533,46 @@
         <EllipseGeometry Center="6,6" RadiusX="1.8" RadiusY="1.8"/>
         <LineGeometry StartPoint="1.4,1.4" EndPoint="10.6,10.6"/>
     </GeometryGroup>
+
+    <!--
+        ============ 复制 / 显示隐藏 按钮（UID 插件用） ============
+        账号卡片里 UID·账号·密码 三个「复制」按钮，以及账号、密码的「显示 / 隐藏」眼睛按钮，
+        共用这一份样式：24×24 透明底，悬停放大 1.2、按下回到 1.0。
+
+        ★ 这份样式原来在插件自己的 XAML 里各写了一份（AccountManagerView / LoginConfirmControl），
+          插件编译期引用不到宿主的 helpers:InteractionScale，只能手抄 EventTrigger + Storyboard，
+          既重复又带着"按住拖出去再松开会卡在放大态"的老毛病。
+          提到宿主后插件用 {DynamicResource IconCopyButtonStyle} 引用（必须 DynamicResource），
+          改这一处两边同时生效。
+
+        缩放对象是模板里的 ContentPresenter（= 图标本身），不是整个按钮 ——
+        所以命中区域仍是完整的 24×24。
+    -->
+    <Style x:Key="IconCopyButtonStyle" TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border"
+                            Background="Transparent"
+                            CornerRadius="3"
+                            helpers:InteractionScale.HoverScale="1.2"
+                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.Target="{Binding ElementName=IconHost}">
+                        <ContentPresenter x:Name="IconHost"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          RenderTransformOrigin="0.5,0.5"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
 </ResourceDictionary>
