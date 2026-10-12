@@ -98,6 +98,25 @@ namespace LvchaxsBS_UID
         }
 
         /// <summary>
+        /// 宿主注入「客户区字幕」入口（命令, 参数）。
+        ///
+        /// <para>
+        /// 模块要在游戏画面上显示登录进度，但显示层（铺在客户区上的分层窗口 + 随机头像）
+        /// 在主程序里 —— 一个进程只能有一个，所以复用宿主那一个，
+        /// 风格与钓鱼 / 自动烹饪 / 自动伐木完全一致。
+        /// </para>
+        /// <para>
+        /// 命令：<c>subtitle:start</c>（参数=位置坐标 key）/ <c>subtitle:text</c> /
+        /// <c>subtitle:suffix</c> / <c>subtitle:hide</c> / <c>subtitle:opacity</c>。
+        /// 宿主没注入时（例如共享组件缺失）模块这边全部走空操作。
+        /// </para>
+        /// </summary>
+        public static void SetHostSubtitle(Action<string, object?> handler)
+        {
+            Utils.UI.SubtitlePresenter.Host = handler;
+        }
+
+        /// <summary>
         /// 宿主注入「窗口缩放」系数来源。
         ///
         /// <para>

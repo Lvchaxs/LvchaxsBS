@@ -144,6 +144,31 @@ namespace LvchaxsBS.Services
                     });
                     Debug.WriteLine("[UID] 已注入标题栏提示");
                 }
+
+                // 客户区字幕也交给宿主：模块登录时要在游戏画面上显示进度，
+                // 复用宿主那一个覆盖层窗口（一个进程只能有一个），风格与钓鱼/烹饪/伐木一致。
+                // 覆盖层由 InitializeEngine() 初始化，而那一步只在共享组件存在时才跑，
+                // 所以这里也跟着 IsAvailable 走，缺 dll 时不注入（模块侧自动空操作）。
+                var setSubtitle = type.GetMethod("SetHostSubtitle", BindingFlags.Public | BindingFlags.Static);
+                if (setSubtitle != null && setSubtitle.GetParameters().Length == 1)
+                {
+                    if (SubtitleHostBridge.IsAvailable)
+                    {
+                        setSubtitle.Invoke(null, new object[]
+                        {
+                            new Action<string, object?>(SubtitleHostBridge.Handle)
+                        });
+                        Debug.WriteLine("[UID] 已注入客户区字幕");
+                    }
+                    else
+                    {
+                        Debug.WriteLine("[UID] 共享组件缺失，未注入客户区字幕");
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine("[UID] 模块未提供 SetHostSubtitle，登录进度不会显示在游戏画面上");
+                }
             }
             catch (Exception ex)
             {

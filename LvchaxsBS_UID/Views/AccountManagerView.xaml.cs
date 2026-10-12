@@ -1725,13 +1725,20 @@ namespace LvchaxsBS_UID.Views
         }
         #endregion
 
-        #region 登录窗口（当前只做窗口激活）
+        #region 登录窗口（当前只做窗口激活 + 客户区字幕）
         // ============================================================================
         // 登录按钮与登录确认窗口的界面全部保留，与旧版一致。
-        // 目前「确认登录」只做一件事：把游戏客户区调到前台（激活窗口）。
-        // 真正的登录流程（识别登录界面 → 输入账号密码 → 点击登录）还没接，
-        // 后续要接的话走共享库 LvchaxsBS_Resources 的图像识别能力。
+        // 目前「确认登录」做两件事：
+        //   ① 把游戏客户区调到前台（激活窗口）
+        //   ② 在游戏画面上挂一行字幕（头像每次随机 空 / 荧，风格同 钓鱼/烹饪/伐木）
+        // 真正的登录流程（识别登录界面 → 输入账号密码 → 点击登录）还没接。
         // ============================================================================
+
+        /// <summary>
+        /// 登录字幕的显示位置 key。坐标定义在共享库 <c>CoordinateFormats</c> 的
+        /// 「退出登录-用户中心退出」段里；取不到坐标时字幕不会被定位（会出现在错位置）。
+        /// </summary>
+        private const string LoginSubtitlePositionKey = "登录_字幕显示坐标";
 
         private void LoginAccountButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1745,6 +1752,9 @@ namespace LvchaxsBS_UID.Views
 
         private void ShowLoginModal(Account account)
         {
+            // 每次打开登录窗口都先收起上一条可能还挂在游戏画面上的登录字幕
+            SubtitlePresenter.Hide();
+
             _loginConfirmWindow = new LoginConfirmWindow();
 
             _loginConfirmWindow.ConfirmLogin += LoginConfirmWindow_ConfirmLogin;
@@ -1867,7 +1877,9 @@ namespace LvchaxsBS_UID.Views
         private void LoginConfirmWindow_ConfirmLogin(object sender, LoginConfirmEventArgs e)
         {
             // ========================================================================
-            // 「确认登录」目前只做一步：把原神客户区调到前台（激活窗口）。
+            // 「确认登录」目前做两步：
+            //   ① 把原神客户区调到前台（激活窗口）
+            //   ② 在游戏画面上挂一行字幕（头像每次随机 空 / 荧，风格同 钓鱼/烹饪/伐木）
             //
             // ★ 顺序很重要：必须在本模态窗口【关闭之前】激活。
             //   此刻本窗口还是前台窗口，SetForegroundWindow 才被系统放行；
@@ -1875,11 +1887,24 @@ namespace LvchaxsBS_UID.Views
             //   激活成功后游戏成为前台窗口，之后关闭本窗口不会再把前台抢回来。
             // ========================================================================
             bool activated = GameWindowActivator.Activate();
+            string accountName = CurrentLoginAccountNameForToast();
 
             if (activated)
-                _toastManager.Show("已激活游戏窗口", $"已将游戏客户区调到前台（账号：{CurrentLoginAccountNameForToast()}）");
+            {
+                // 字幕走宿主那一层覆盖层（本模块不自己建窗口，一个进程只能有一个）。
+                // StartRun 会重掷一个随机头像（空 / 荧）并按 登录_字幕显示坐标 定位。
+                // 正文暂定，等真正的登录流程接上再换成实际进度（那时由流程负责 Hide）。
+                SubtitlePresenter.StartRun(LoginSubtitlePositionKey);
+                SubtitlePresenter.SetText(string.IsNullOrEmpty(accountName)
+                    ? "正在登录…"
+                    : $"正在登录 {accountName}…");
+
+                _toastManager.Show("已激活游戏窗口", $"已将游戏客户区调到前台（账号：{accountName}）");
+            }
             else
+            {
                 _toastManager.Show("未找到游戏窗口", "请先启动原神，再点确认登录", false);
+            }
 
             _loginConfirmWindow?.Close();
         }
@@ -1893,7 +1918,12 @@ namespace LvchaxsBS_UID.Views
             return string.Empty;
         }
 
-        private void LoginConfirmWindow_CloseRequested(object sender, EventArgs e) => _loginConfirmWindow?.Close();
+        private void LoginConfirmWindow_CloseRequested(object sender, EventArgs e)
+        {
+            // 用户在登录窗口上点了叉（取消）：把可能已经挂出去的登录字幕一并收起
+            SubtitlePresenter.Hide();
+            _loginConfirmWindow?.Close();
+        }
 
         private void LoginConfirmWindow_MarkPreferenceChanged(object sender, bool newValue)
         {
