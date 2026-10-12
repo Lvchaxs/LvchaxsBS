@@ -537,7 +537,7 @@
     <!--
         ============ 复制 / 显示隐藏 按钮（UID 插件用） ============
         账号卡片里 UID·账号·密码 三个「复制」按钮，以及账号、密码的「显示 / 隐藏」眼睛按钮，
-        共用这一份样式：24×24 透明底，悬停放大 1.06、按下回到 1.0。
+        共用这一份样式：24×24 透明底，悬停放大 1.1、按下回到 1.0。
 
         ★ 这份样式原来在插件自己的 XAML 里各写了一份（AccountManagerView / LoginConfirmControl），
           插件编译期引用不到宿主的 helpers:InteractionScale，只能手抄 EventTrigger + Storyboard，
@@ -569,7 +569,7 @@
                               缩放这个 Grid 等于"从按钮中心缩放图标"，视觉意图和原来完全一致。
                         -->
                         <Grid RenderTransformOrigin="0.5,0.5"
-                              helpers:InteractionScale.HoverScale="1.06"
+                              helpers:InteractionScale.HoverScale="1.1"
                               helpers:InteractionScale.PressScale="1">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
