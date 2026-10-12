@@ -89,6 +89,13 @@ namespace LvchaxsBS_UID.Services.LoginServices
     /// 那轮没有可点的目标，等 <see cref="EscRoundIntervalMs"/> 毫秒再进下一轮。
     /// </para>
     /// <para>
+    /// ★ <b>失焦点暂停</b>：每轮开始前查一次游戏窗口是否仍是焦点窗口
+    /// （宿主注入的 <c>GameFocusProvider</c>，底层是 <c>WindowFocusService.Reevaluate</c>）。
+    /// 不在焦点就停在那里——识别和按键全部停住，第二行字幕换成「已暂停」，
+    /// 每 500ms 查一次，焦点回游戏再接着跑（轮次连续，不从头开始）。
+    /// 宿主没注入这个能力时按"仍在焦点"处理，不暂停。
+    /// </para>
+    /// <para>
     /// 识别能力来自共享库 <c>LvchaxsBS_Resources</c>（本模块只引用它，不引用宿主）。
     /// 字幕走宿主注入的覆盖层（复用钓鱼/烹饪/伐木那一层，本模块不自己建窗口）。
     /// </para>
@@ -198,6 +205,12 @@ namespace LvchaxsBS_UID.Services.LoginServices
         /// <summary>第二行字幕：成功。</summary>
         private const string Line2Succeeded = "登录成功-TAB关闭";
 
+        /// <summary>第二行字幕：暂停中（游戏窗口不在焦点）。</summary>
+        private const string Line2Paused = "已暂停（游戏窗口不在焦点）";
+
+        /// <summary>暂停期间每隔多久查一次焦点。</summary>
+        private const int FocusPollMs = 500;
+
         /// <summary>模板缺失只警告一次，避免每轮刷屏。</summary>
         private static bool _missingTemplateWarned;
 
@@ -279,6 +292,22 @@ namespace LvchaxsBS_UID.Services.LoginServices
             for (int round = 1; ; round++)
             {
                 token.ThrowIfCancellationRequested();
+
+                // 游戏不在焦点就暂停：用户切到别的程序时，识别和按键全部停住，
+                // 免得把点击 / 按键送到别人的窗口里。焦点回来再接着跑（轮次连续，不重新开始）。
+                if (!GameFocusProvider.IsGameFocused())
+                {
+                    Debug.WriteLine("[UID/登录] 游戏窗口不在焦点，暂停（焦点恢复后继续）");
+                    SubtitlePresenter.SetText2(Line2Paused);
+
+                    while (!GameFocusProvider.IsGameFocused())
+                    {
+                        await Task.Delay(FocusPollMs, token);
+                    }
+
+                    Debug.WriteLine("[UID/登录] 焦点已恢复，继续登录");
+                    SubtitlePresenter.SetText2(Line2Running);
+                }
 
                 // 每轮识别一次，九个区域一起（区域之间没有间隔，连着测完再统一决策）
                 var main = Detect(MainRegionKey, MainTemplateKey);

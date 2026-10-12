@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using LvchaxsBS.Services.Hooks;
 
 namespace LvchaxsBS.Services
 {
@@ -168,6 +169,24 @@ namespace LvchaxsBS.Services
                 else
                 {
                     Debug.WriteLine("[UID] 模块未提供 SetHostSubtitle，登录进度不会显示在游戏画面上");
+                }
+
+                // 焦点查询也交给模块：登录流程靠它做「游戏不在焦点就暂停」——
+                // 用户切到别的程序时识别和按键全停，焦点回游戏再接着跑，
+                // 免得把点击 / 按键送到别人的窗口里。
+                // Reevaluate 会用真实前台窗口同步复核一次，比读缓存的轮询值更准。
+                var setFocus = type.GetMethod("SetHostFocusProvider", BindingFlags.Public | BindingFlags.Static);
+                if (setFocus != null && setFocus.GetParameters().Length == 1)
+                {
+                    setFocus.Invoke(null, new object[]
+                    {
+                        new Func<bool>(() => WindowFocusService.Reevaluate())
+                    });
+                    Debug.WriteLine("[UID] 已注入游戏焦点查询");
+                }
+                else
+                {
+                    Debug.WriteLine("[UID] 模块未提供 SetHostFocusProvider，登录过程不会因失焦点暂停");
                 }
             }
             catch (Exception ex)

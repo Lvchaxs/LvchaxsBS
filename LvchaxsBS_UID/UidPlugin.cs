@@ -130,6 +130,19 @@ namespace LvchaxsBS_UID
         }
 
         /// <summary>
+        /// 宿主注入「游戏窗口是否在焦点」的查询。
+        ///
+        /// <para>
+        /// 登录流程靠它做「不在焦点就暂停」：用户切到别的程序时，识别和按键全部停住，
+        /// 焦点回游戏再接着跑。宿主没注入时按"仍在焦点"处理（不暂停）。
+        /// </para>
+        /// </summary>
+        public static void SetHostFocusProvider(Func<bool> provider)
+        {
+            Utils.UI.GameFocusProvider.SetProvider(provider);
+        }
+
+        /// <summary>
         /// 打开账号管理的「使用说明」窗口。
         ///
         /// <para>
