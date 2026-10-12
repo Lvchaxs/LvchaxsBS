@@ -32,8 +32,9 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///   <item><b>设置界面</b>：点一次 <c>账户点击坐标</c> 选中「账户」，下一轮跳转按钮就出来了
     ///     （只命中设置界面时；跳转按钮本来就看得见时这步会自动跳过）；</item>
     ///   <item><b>账户跳转</b>：点一次跳转，等用户中心页面加载；</item>
-    ///   <item><b>用户中心</b>：看到刷新按钮 → 原地点一下（借 <c>账户跳转区域</c> 的位置）→
-    ///     等 <c>ClickDelayMs</c> 按 TAB → 再等 <c>ClickDelayMs</c> 按 ENTER，
+    ///   <item><b>用户中心</b>：看到刷新按钮 → 等 <c>UserCenterDelayMs</c> 原地点一下
+    ///     （借 <c>账户跳转区域</c> 的位置）→ 等 <c>ClickDelayMs</c> 按 TAB →
+    ///     再等 <c>ClickDelayMs</c> 按 ENTER → 再等 <c>ClickDelayMs</c> 按第二次 ENTER，
     ///     <b>登录到此完成</b>。</item>
     /// </list>
     /// <para>
@@ -109,6 +110,12 @@ namespace LvchaxsBS_UID.Services.LoginServices
 
         /// <summary>命中之后、执行点击之前的等待：让刚切换出来的画面稳定下来再点。</summary>
         private const int ClickDelayMs = 200;
+
+        /// <summary>
+        /// 检测到「用户中心刷新按钮」之后、原地点击之前的等待。
+        /// 用户中心页面刚加载完，比普通界面多等一会儿（1000ms）让它彻底稳定。
+        /// </summary>
+        private const int UserCenterDelayMs = 1000;
 
         /// <summary>
         /// 曾命中过任意目标之后，允许连续多久一个都检测不到。
@@ -219,14 +226,18 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     (everHitAny ? "" : "  [初始档]"));
 
                 // ① 用户中心（第五步，终点）—— 点过跳转后加载出来的页面，
-                //    看到刷新按钮就说明页面好了：原地点一下 → TAB → ENTER，登录到此完成
+                //    看到刷新按钮就说明页面好了：原地点一下 → TAB → ENTER → ENTER，登录到此完成
                 if (userCenter.detected)
                 {
-                    Debug.WriteLine("[UID/登录] → 阶段5：用户中心已加载，原地点击 → TAB → ENTER，登录完成");
-                    await Task.Delay(ClickDelayMs, token);
+                    Debug.WriteLine("[UID/登录] → 阶段5：用户中心已加载，原地点击 → TAB → ENTER → ENTER，登录完成");
+
+                    // 页面刚加载完，多等一会儿让它彻底稳定，再点
+                    await Task.Delay(UserCenterDelayMs, token);
                     ClickRegionCenter(JumpRegionKey);   // 这个点击不要精确坐标，借 账户跳转区域 的位置
                     await Task.Delay(ClickDelayMs, token);
                     SimulationService.PressTab();
+                    await Task.Delay(ClickDelayMs, token);
+                    SimulationService.PressEnter();
                     await Task.Delay(ClickDelayMs, token);
                     SimulationService.PressEnter();
                     return true;
