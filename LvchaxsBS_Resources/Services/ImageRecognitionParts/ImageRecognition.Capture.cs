@@ -1,6 +1,4 @@
-﻿using LvchaxsBS.Config;
-using LvchaxsBS.Services.Hooks;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
@@ -11,19 +9,23 @@ namespace LvchaxsBS.Services
         #region 截图源选择
 
         /// <summary>
-        /// 根据配置返回截图源 DC 及对应的坐标转换。
+        /// 根据截图模式返回截图源 DC 及对应的坐标转换。
         /// CaptureMode=0：窗口 DC，坐标需减窗口左上角；
         /// CaptureMode=1：屏幕 DC，坐标直接用屏幕坐标。
+        ///
+        /// <para>
+        /// 模式取自 <see cref="CaptureSettings.CaptureMode"/>（宿主启动时注入的读取器）。
+        /// 本工程是共享库，不直接引用宿主的配置系统，UID 模块复用同一套截图逻辑时也不用改这里。
+        /// </para>
         /// </summary>
         private static (IntPtr hdc, IntPtr hwnd, int offsetX, int offsetY, bool isScreen) GetCaptureSource()
         {
-            var settings = ConfigManager.Get<AppSettings>();
-            if (settings.CaptureMode == 1)
+            if (CaptureSettings.CaptureMode == 1)
             {
                 return (GetDC(IntPtr.Zero), IntPtr.Zero, 0, 0, true);
             }
 
-            var bounds = WindowFocusService.LastBounds;
+            var bounds = WindowBoundsBridge.LastBounds;
             IntPtr hwnd = bounds.Hwnd;
             if (hwnd == IntPtr.Zero)
                 return (IntPtr.Zero, IntPtr.Zero, 0, 0, false);

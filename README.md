@@ -130,7 +130,7 @@ LvchaxsBS/             # 主程序工程（C# 源码）
   Core/                # 功能引擎与业务逻辑（含 AssetLocator：图片资源包入口）
   UI/                  # 自定义控件、页面、样式与主题资源
   Config/              # 配置模型与读写（JSON）
-LvchaxsBS_Resources/   # 可选组件：图片与数据资源包工程
+LvchaxsBS_Resources/   # 可选组件：共享基础库（图片/数据 + 坐标·模板·识别·模拟输入）
 LvchaxsBS_UID/         # 可选组件：账号管理模块工程
 ```
 
@@ -140,9 +140,15 @@ LvchaxsBS_UID/         # 可选组件：账号管理模块工程
 
 | 组件 | 产物 | 缺少时的表现 |
 | --- | --- | --- |
-| [LvchaxsBS_Resources](LvchaxsBS_Resources) | `LvchaxsBS_Resources.dll` | 所有图标与识别模板取不到，显示空白；图像识别功能整体失效 |
+| [LvchaxsBS_Resources](LvchaxsBS_Resources) | `LvchaxsBS_Resources.dll` | 图标与识别模板全部留空；坐标管理 / 图像识别 / 模拟点击整体停用；**UI 交互与配置读写不受影响**（靠 `Services/SharedComponent.cs` 的探测与注入实现，详见该工程 README） |
 | [LvchaxsBS_UID](LvchaxsBS_UID) | `LvchaxsBS_uid.dll` | 没有账号管理模块入口 |
 
 图片资源（UI 图标 + 图像识别模板）统一放在 `LvchaxsBS_Resources` 工程里，
 代码通过 `Core/AssetLocator.cs` 取用，路径一律相对 `Resources/`。
 新增图片直接放进该工程的 `Resources/` 对应目录即可，工程用通配符包含。
+
+`LvchaxsBS_Resources` 同时也是**共享基础库**：坐标管理（`CoordinateFormats`）、
+模板加载（`TemplateManager`）、截图与匹配（`ImageRecognition`）、模拟输入（`SimulationService`）
+都在里面，宿主与 UID 模块共用同一套实现。共享库不能反向引用宿主，
+所以截图模式、资源包可用性、游戏窗口客户区这三项由宿主启动时注入
+（`CaptureSettings` / `ResourcePaths` / `WindowBoundsBridge`）。

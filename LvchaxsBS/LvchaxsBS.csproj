@@ -25,6 +25,16 @@
 		<PackageReference Include="System.Drawing.Common" Version="8.0.0" />
 	</ItemGroup>
 
+	<!--
+		共享基础库：图片资源 + 坐标管理 / 模板加载 / 截图 / 匹配 / 模拟输入
+		（源码工程见同级目录 LvchaxsBS_Resources，UID 模块后续也引用它）。
+		★ 它是可选组件：dll 不在 exe 同目录时主程序照常启动 —— 图片留空、
+		  图像识别与模拟点击停用，但 UI 交互与配置修改正常（见 Services/SharedComponent.cs）。
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\LvchaxsBS_Resources\LvchaxsBS_Resources.csproj" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<Resource Include="UI\Assets\Images\**\*.png" />
 		<Resource Include="UI\Assets\Images\**\*.ico" />
@@ -32,8 +42,8 @@
 		<Resource Include="UI\Assets\Images\**\*.jpeg" />
 
 		<!--
-			原来的 Resources\ 目录（UI 图标 + 图像识别模板）已整体搬到独立工程
-			..\LvchaxsBS_Resources\，编译成 LvchaxsBS_Resources.dll（可选组件）。
+			图片资源（UI 图标 + 图像识别模板）都在共享库工程
+			..\LvchaxsBS_Resources\Resources\ 下，编译进 LvchaxsBS_Resources.dll。
 			代码里统一用 Core\AssetLocator.cs 拼路径，不要再往宿主工程里加图片。
 		-->
 	</ItemGroup>

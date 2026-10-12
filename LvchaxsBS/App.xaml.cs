@@ -34,13 +34,31 @@ namespace LvchaxsBS
             // 1. 一次性加载所有配置
             ConfigManager.LoadAll();
 
-            // 2. 根据配置应用主题
+            // 2. 共享组件（LvchaxsBS_Resources.dll）：
+            //    它是一个可选组件 —— 不在 exe 同目录时下面这步注入整个跳过，
+            //    图片全部留空、图像识别与模拟点击停用，但 UI 与配置照常工作。
+            //    注意：Register() 里引用了共享类型，dll 缺失时连 JIT 都会失败，
+            //    所以必须先用 IsAvailable（纯文件探测）拦一道再调。
+            if (SharedComponent.IsAvailable)
+            {
+                SharedComponent.Register();
+            }
+            else
+            {
+                Debug.WriteLine("【启动】未找到 LvchaxsBS_Resources.dll：图片留空、图像识别与模拟点击停用，" +
+                                "UI 交互与配置修改不受影响");
+            }
+
+            // 3. 根据配置应用主题
             ThemeService.LoadFromConfig();
 
-            // 3. 初始化功能引擎
-            InitializeEngine();
+            // 4. 初始化功能引擎（识别/模拟输入相关的都在这里，缺共享组件时整块跳过）
+            if (SharedComponent.IsAvailable)
+            {
+                InitializeEngine();
+            }
 
-            // 4. 探测可选插件（exe 同目录的 LvchaxsBS_uid.dll = UID 账号管理模块）
+            // 5. 探测可选插件（exe 同目录的 LvchaxsBS_uid.dll = UID 账号管理模块）
             UidModuleService.Probe();
         }
 

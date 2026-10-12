@@ -2,19 +2,28 @@
 
 	<PropertyGroup>
 		<!--
-			纯资源程序集：只把 Resources 下的图片编译进 dll（g.resources），不含任何 C# 代码。
-			宿主 LvchaxsBS.exe 与 UID 模块通过 pack URI 访问：
+			共享基础库：既把 Resources 下的图片打包进 dll（g.resources），也承载"图像识别能力"代码
+			（坐标管理 / 模板加载 / 截图 / 匹配 / 模拟输入 / 窗口跟踪 / 资源定位）。
+			宿主 LvchaxsBS.exe 与 UID 模块都**编译期引用**本工程，用同一套 API：
 
-			    pack://application:,,,/LvchaxsBS_Resources;component/Resources/Images/图标/xxx.png
+			    图片：pack://application:,,,/LvchaxsBS_Resources;component/Resources/Images/图标/xxx.png
+			          或者用 AssetLocator.Pack / Load / ListFileNames
+			    识别：CoordinateFormats / TemplateManager / ImageRecognition / SimulationService
 
-			★ 这是可选组件：dll 不在 exe 同目录时，主程序照常启动，
-			  只是所有图片取不到（Image 显示为空白），不会抛异常、不会崩溃。
+			★ 自 2026-10-12 起它**不再是可以随便删掉的可选组件**：宿主编译期引用了这里的类型，
+			  dll 缺失会导致主程序启动即崩（原先"删掉 dll 也能跑、只是图空白"的特性已取消）。
 		-->
 		<OutputType>Library</OutputType>
 		<TargetFramework>net8.0-windows</TargetFramework>
 		<UseWPF>true</UseWPF>
 		<AssemblyName>LvchaxsBS_Resources</AssemblyName>
 		<RootNamespace>LvchaxsBS_Resources</RootNamespace>
+
+		<!-- 与宿主 LvchaxsBS.csproj 保持一致，免得同一份代码在两个工程里报不同的警告 -->
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<!-- ImageRecognition 的像素处理里有 unsafe 块 -->
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
 		<Version>1.0.0.0</Version>
 		<AssemblyVersion>1.0.0.0</AssemblyVersion>
@@ -25,6 +34,11 @@
 		<Copyright>Copyright (C) 2026 Lvchaxs</Copyright>
 		<PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- 图像识别 / 模板加载用 System.Drawing 的 Bitmap（与宿主同版本） -->
+		<PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<!--
@@ -50,9 +64,8 @@
 	</ItemGroup>
 
 	<!--
-		编译完成后把资源 dll 复制到宿主 LvchaxsBS 的输出目录，
-		这样直接运行 LvchaxsBS.exe 就能加载到最新的资源包。
-		dll 不存在时主程序照常运行（图片留空）。
+		编译完成后把 dll 复制到宿主 LvchaxsBS 的输出目录（宿主已通过 ProjectReference 引用本工程，
+		正常情况下 MSBuild 自己就会复制；这里再兜一次，方便单独 build 本工程时也把文件送过去）。
 	-->
 	<Target Name="CopyToHost" AfterTargets="Build">
 		<PropertyGroup>

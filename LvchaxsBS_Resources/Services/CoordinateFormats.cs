@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using LvchaxsBS.Services.Hooks;
 
 namespace LvchaxsBS.Services
 {
@@ -801,10 +800,10 @@ namespace LvchaxsBS.Services
                 }
             }
 
-            WindowFocusService.BoundsChanged += OnBoundsChanged;
+            WindowBoundsBridge.Changed += OnBoundsChanged;
         }
 
-        private static void OnBoundsChanged(object? sender, WindowFocusService.WindowBounds info)
+        private static void OnBoundsChanged(WindowBoundsInfo info)
         {
             // 窗口无效 → 不清缓存，直接返回
             if (info.IsEmpty)
@@ -890,7 +889,7 @@ namespace LvchaxsBS.Services
 
         #region 日志
 
-        private static void LogCoordDetail(string name, object source, object? cached, WindowFocusService.WindowBounds info)
+        private static void LogCoordDetail(string name, object source, object? cached, WindowBoundsInfo info)
         {
             if (EnableLog != 1) return;
             if (cached == null) return;

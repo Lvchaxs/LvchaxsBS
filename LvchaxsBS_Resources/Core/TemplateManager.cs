@@ -1,5 +1,4 @@
 ﻿using LvchaxsBS.Services;
-using LvchaxsBS.Services.Hooks;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -152,12 +151,12 @@ namespace LvchaxsBS.Core
 
         /// <summary>
         /// 从路径添加模板，自动解析名称
-        /// 例如: AssetLocator.Pack("Template/快速传送/掩码1.png")
+        /// 例如: ResourcePaths.Pack("Template/快速传送/掩码1.png")
         /// 解析为: "快速传送_掩码1"
         ///
         /// <para>
         /// <paramref name="uriString"/> 为空（资源包 LvchaxsBS_Resources.dll 缺失时
-        /// <see cref="AssetLocator.Pack"/> 会返回空串）则直接跳过，
+        /// <see cref="ResourcePaths.Pack"/> 会返回空串）则直接跳过，
         /// 该模板留空 —— 图像识别找不到模板自然匹配不上，但主程序其它功能不受影响。
         /// </para>
         /// </summary>
@@ -202,86 +201,86 @@ namespace LvchaxsBS.Core
         {
             // 资源包是可选的：没有它就没有任何识别模板，图像识别功能整体失效，
             // 但主程序照常启动（不抛异常、不崩）。
-            if (!AssetLocator.IsAvailable)
+            if (!ResourcePaths.IsAvailable)
             {
                 System.Diagnostics.Debug.WriteLine(
-                    $"【模板】未找到资源包 {AssetLocator.ResourceAssemblyName}.dll，图像识别模板全部为空");
+                    $"【模板】未找到资源包 {ResourcePaths.ResourceAssemblyName}.dll，图像识别模板全部为空");
                 return;
             }
 
             try
             {
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/传送.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/靶场.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/七天神像.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/新月神像.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/传送锚点.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/秘境1.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/秘境2.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/列车.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/宅邸.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/幽境危战.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/青玄乘阳华盖.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/快速传送/口袋锚点.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/传送.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/靶场.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/七天神像.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/新月神像.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/传送锚点.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/秘境1.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/秘境2.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/列车.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/宅邸.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/幽境危战.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/青玄乘阳华盖.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/快速传送/口袋锚点.png"));
 
-                AddTemplateFromPath(AssetLocator.Pack("Template/剧情对话/隐藏按钮.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/剧情对话/隐藏按钮.png"));
 
-                AddTemplateFromPath(AssetLocator.Pack("Template/钓鱼辅助/未抛钩.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/钓鱼辅助/已抛钩.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/钓鱼辅助/上钩了.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/钓鱼辅助/未抛钩.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/钓鱼辅助/已抛钩.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/钓鱼辅助/上钩了.png"));
 
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动伐木/王树瑞佑.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动伐木/获得.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动伐木/王树瑞佑.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动伐木/获得.png"));
 
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动烹饪/烹饪界面.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动烹饪/自动烹饪.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动烹饪/手动烹饪.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动烹饪/确认.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动烹饪/烹饪界面.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动烹饪/自动烹饪.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动烹饪/手动烹饪.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动烹饪/确认.png"));
 
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/寄物装置.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/打开寄物装置.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/美味确认.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/拆除.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/凝造.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/寄物装置.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/打开寄物装置.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/美味确认.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/拆除.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/凝造.png"));
 
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/提瓦特煎蛋.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/烤肉排.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/蒙德烤鱼.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/摩拉肉.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/爆炒肉片.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/鸟蛋烧.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/庄园烤松饼.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/素鲍鱼.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/蟹黄豆腐.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/什锦炒面.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/乌冬面.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/绿汁脆球.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/脆饼珐提.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/多彩之森.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/蟹黄火腿焗时蔬.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/绯樱饼.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/椰炭饼.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/塔塔可.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/夏槲蛋糕.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/薄荷泡泡糖.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/提瓦特煎蛋.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/烤肉排.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/蒙德烤鱼.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/摩拉肉.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/爆炒肉片.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/鸟蛋烧.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/庄园烤松饼.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/素鲍鱼.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/蟹黄豆腐.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/什锦炒面.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/乌冬面.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/绿汁脆球.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/脆饼珐提.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/多彩之森.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/蟹黄火腿焗时蔬.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/绯樱饼.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/椰炭饼.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/塔塔可.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/夏槲蛋糕.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/薄荷泡泡糖.png"));
 
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/北地烟熏鸡.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/山珍热卤面.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/阿如拌饭.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/桔香鸭胸肉.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/清心花饼.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/北地烟熏鸡.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/山珍热卤面.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/阿如拌饭.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/桔香鸭胸肉.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/清心花饼.png"));
 
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/炸鱼薯条.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/巧克力.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/钱汤馒头.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/白灵果派.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/自动清药/肉末酿豆腐.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/炸鱼薯条.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/巧克力.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/钱汤馒头.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/白灵果派.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/肉末酿豆腐.png"));
 
                 // 通用模版：多个功能共用（这三张原先放在 自动伐木/ 下，2026-10-12 移入）
-                AddTemplateFromPath(AssetLocator.Pack("Template/通用模版/主界面.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/通用模版/点击进入.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/通用模版/退出至登录界面.png"));
-                AddTemplateFromPath(AssetLocator.Pack("Template/通用模版/ESC菜单.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/通用模版/主界面.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/通用模版/点击进入.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/通用模版/退出至登录界面.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/通用模版/ESC菜单.png"));
 
                 System.Diagnostics.Debug.WriteLine($"模板加载成功: {_templates.Count} 个");
             }
@@ -380,7 +379,8 @@ namespace LvchaxsBS.Core
 
         static TemplateManager()
         {
-            WindowFocusService.BoundsChanged += (s, info) =>
+            // 客户区变化 → 刷新模板缩放用的窗口信息（宿主启动时把 WindowFocusService 的变化转发到这里）
+            WindowBoundsBridge.Changed += info =>
             {
                 if (!info.IsEmpty)
                 {
