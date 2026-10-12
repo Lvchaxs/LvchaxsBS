@@ -1893,11 +1893,12 @@ namespace LvchaxsBS_UID.Views
             {
                 // 字幕走宿主那一层覆盖层（本模块不自己建窗口，一个进程只能有一个）。
                 // StartRun 会重掷一个随机头像（空 / 荧）并按 登录_字幕显示坐标 定位。
-                // 正文暂定，等真正的登录流程接上再换成实际进度（那时由流程负责 Hide）。
+                // 正文暂定「正在登录至 <账号名>」，等真正的登录流程接上再换成实际进度
+                //（那时由流程负责 Hide）。
                 SubtitlePresenter.StartRun(LoginSubtitlePositionKey);
                 SubtitlePresenter.SetText(string.IsNullOrEmpty(accountName)
-                    ? "正在登录…"
-                    : $"正在登录 {accountName}…");
+                    ? "正在登录至"
+                    : $"正在登录至 {accountName}");
 
                 _toastManager.Show("已激活游戏窗口", $"已将游戏客户区调到前台（账号：{accountName}）");
             }
