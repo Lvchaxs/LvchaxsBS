@@ -77,6 +77,16 @@ namespace LvchaxsBS.Core
         private static string _positionKey = "";
         private static string _currentAvatarPath = "";
 
+        /// <summary>
+        /// 待显示的正文。★ 这个字段是必需的：覆盖层只在<b>游戏窗口成为前台</b>时才建窗
+        /// （<c>ShowOverlay()</c> 里有 <c>if (!_isFocused) return;</c>），而宿主判定前台是
+        /// <b>1 秒轮询</b>（<c>WindowFocusService.PollIntervalMs</c>）。所以「先把游戏切到前台、
+        /// 紧接着 SetSubtitle」这种调用，会发生在建窗之前 —— 那时 <c>_subtitleText</c> 还是 null，
+        /// 文本会被丢掉，表现为「头像出来了、气泡里没字」。
+        /// 这里先记下来，<see cref="CreateWindowIfNeeded"/> 建好元素时补上。
+        /// </summary>
+        private static string _pendingSubtitleText = "";
+
         private static Window? _overlayWindow2;
         private static bool _isOverlayVisible2 = false;
         private static bool _isFadingOut2 = false;
@@ -88,6 +98,9 @@ namespace LvchaxsBS.Core
 
         private static bool _isActive2 = false;
         private static string _currentAvatarPath2 = "";
+
+        /// <summary>第二行字幕的待显示正文，作用同 <see cref="_pendingSubtitleText"/>。</summary>
+        private static string _pendingSubtitleText2 = "";
 
         #endregion
 
@@ -239,6 +252,8 @@ namespace LvchaxsBS.Core
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                // 收起时把待显示正文一并清掉，避免下次显示又把旧内容带出来
+                _pendingSubtitleText = "";
                 if (_subtitleText != null) _subtitleText.Text = "";
             });
 
@@ -336,15 +351,19 @@ namespace LvchaxsBS.Core
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                if (_subtitleText == null) return;
-
                 if (!_isActive)
                 {
-                    _subtitleText.Text = "";
+                    _pendingSubtitleText = "";
+                    if (_subtitleText != null) _subtitleText.Text = "";
                     return;
                 }
 
-                _subtitleText.Text = text ?? string.Empty;
+                // 先记下来：窗口可能还没建（游戏尚未被判定为前台），建窗时会补上
+                _pendingSubtitleText = text ?? string.Empty;
+
+                if (_subtitleText == null) return;
+
+                _subtitleText.Text = _pendingSubtitleText;
                 UpdateBubbleWidth();
             });
         }
@@ -355,12 +374,14 @@ namespace LvchaxsBS.Core
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                if (_subtitleText == null) return;
-
-                string cur = _subtitleText.Text ?? "";
+                string cur = _subtitleText?.Text ?? _pendingSubtitleText ?? "";
                 if (cur.EndsWith(suffix)) return;
 
-                _subtitleText.Text = cur + suffix;
+                _pendingSubtitleText = cur + suffix;
+
+                if (_subtitleText == null) return;
+
+                _subtitleText.Text = _pendingSubtitleText;
                 UpdateBubbleWidth();
             });
         }
@@ -417,6 +438,8 @@ namespace LvchaxsBS.Core
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                // 同 HideSubtitle：清掉待显示正文
+                _pendingSubtitleText2 = "";
                 if (_subtitleText2 != null) _subtitleText2.Text = "";
             });
 
@@ -514,15 +537,19 @@ namespace LvchaxsBS.Core
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                if (_subtitleText2 == null) return;
-
                 if (!_isActive2)
                 {
-                    _subtitleText2.Text = "";
+                    _pendingSubtitleText2 = "";
+                    if (_subtitleText2 != null) _subtitleText2.Text = "";
                     return;
                 }
 
-                _subtitleText2.Text = text ?? string.Empty;
+                // 同 SetSubtitle：窗口可能还没建，先记下来
+                _pendingSubtitleText2 = text ?? string.Empty;
+
+                if (_subtitleText2 == null) return;
+
+                _subtitleText2.Text = _pendingSubtitleText2;
                 UpdateBubbleWidth2();
             });
         }
@@ -533,12 +560,14 @@ namespace LvchaxsBS.Core
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                if (_subtitleText2 == null) return;
-
-                string cur = _subtitleText2.Text ?? "";
+                string cur = _subtitleText2?.Text ?? _pendingSubtitleText2 ?? "";
                 if (cur.EndsWith(suffix)) return;
 
-                _subtitleText2.Text = cur + suffix;
+                _pendingSubtitleText2 = cur + suffix;
+
+                if (_subtitleText2 == null) return;
+
+                _subtitleText2.Text = _pendingSubtitleText2;
                 UpdateBubbleWidth2();
             });
         }
@@ -808,7 +837,8 @@ namespace LvchaxsBS.Core
 
             _subtitleText = new TextBlock
             {
-                Text = "",
+                // 建窗可能晚于 SetSubtitle（见 _pendingSubtitleText 注释），这里把已记下的正文补上
+                Text = _pendingSubtitleText ?? "",
                 FontSize = DpiService.PhysicalToDipY(TEXT_FONT_SIZE),
                 FontWeight = FontWeights.SemiBold,
                 Foreground = System.Windows.Media.Brushes.White,
@@ -895,7 +925,8 @@ namespace LvchaxsBS.Core
 
             _subtitleText2 = new TextBlock
             {
-                Text = "",
+                // 同 _subtitleText：建窗晚于 SetSubtitle2 时补上已记下的正文
+                Text = _pendingSubtitleText2 ?? "",
                 FontSize = DpiService.PhysicalToDipY(TEXT_FONT_SIZE),
                 FontWeight = FontWeights.SemiBold,
                 Foreground = System.Windows.Media.Brushes.White,
