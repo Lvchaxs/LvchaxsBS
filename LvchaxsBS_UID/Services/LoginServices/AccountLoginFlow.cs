@@ -54,6 +54,11 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///     （界面切换动画 / 加载中都表现为全线未命中），超过宽限期仍无命中才恢复每轮按 ESC。</item>
     /// </list>
     /// <para>
+    /// 整个流程开始之前会先等 <see cref="StartDelayMs"/> 毫秒：此刻游戏窗口刚被激活
+    /// （见 <c>Utils.GameWindow.GameWindowActivator</c>），切前台的动画和画面加载都要走一会儿，
+    /// 不等的话第一轮很可能全线未命中，白白按一次 ESC。
+    /// </para>
+    /// <para>
     /// 节拍：每轮之内五个区域连续检测、彼此无间隔；一轮结束后等
     /// <see cref="RoundIntervalMs"/> 毫秒进下一轮；命中之后、执行点击之前额外等
     /// <see cref="ClickDelayMs"/> 毫秒，让刚切换出来的画面稳定下来再点。
@@ -107,6 +112,12 @@ namespace LvchaxsBS_UID.Services.LoginServices
         /// 这两种情况下本轮没有任何可点的目标，没必要高频重扫，等久一点让画面切完。
         /// </summary>
         private const int EscRoundIntervalMs = 1500;
+
+        /// <summary>
+        /// 激活游戏窗口之后、第一轮检测之前的等待：切前台的动画和画面加载都要走一会儿，
+        /// 不等的话第一轮大概率全线未命中，白白按一次 ESC。
+        /// </summary>
+        private const int StartDelayMs = 1000;
 
         /// <summary>命中之后、执行点击之前的等待：让刚切换出来的画面稳定下来再点。</summary>
         private const int ClickDelayMs = 200;
@@ -190,7 +201,12 @@ namespace LvchaxsBS_UID.Services.LoginServices
         {
             ShowRunningSubtitles(accountName);
 
-            // 「四个都没命中时按不按 ESC」分两档：
+            // 游戏窗口刚被激活（切前台的动画、画面加载都要走一会儿），等 1 秒再开始扫。
+            // 不等的话第一轮很可能全线未命中，白白按一次 ESC。
+            Debug.WriteLine("[UID/登录] 游戏窗口已激活，等待 1 秒后开始检测");
+            await Task.Delay(StartDelayMs, token);
+
+            // 「五个都没命中时按不按 ESC」分两档：
             //   · 初始档（还从没命中过任何目标）：刚激活窗口，不知道当前停在哪个画面，
             //     每轮检测不到就按一次 ESC，把挡在前面的其他界面关掉再重新找；
             //   · 已知档（命中过一次，说明已经在某个阶段里了）：给 <see cref="LostGraceMs"/>
