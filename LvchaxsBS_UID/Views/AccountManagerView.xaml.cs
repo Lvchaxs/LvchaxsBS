@@ -2,6 +2,7 @@
 using LvchaxsBS_UID.Utils.File;
 using LvchaxsBS_UID.Utils.GameWindow;
 using LvchaxsBS_UID.Services.DataServices;
+using LvchaxsBS_UID.Services.LoginServices;
 using LvchaxsBS_UID.Services.UI;
 using LvchaxsBS_UID.Utils.Clipboard;
 using LvchaxsBS_UID.Utils.UI;
@@ -1725,20 +1726,22 @@ namespace LvchaxsBS_UID.Views
         }
         #endregion
 
-        #region 登录窗口（当前只做窗口激活 + 客户区字幕）
+        #region 登录流程（激活窗口 → 识别循环 → 两行字幕）
         // ============================================================================
-        // 登录按钮与登录确认窗口的界面全部保留，与旧版一致。
-        // 目前「确认登录」做两件事：
+        // 「确认登录」做三件事：
         //   ① 把游戏客户区调到前台（激活窗口）
-        //   ② 在游戏画面上挂一行字幕（头像每次随机 空 / 荧，风格同 钓鱼/烹饪/伐木）
-        // 真正的登录流程（识别登录界面 → 输入账号密码 → 点击登录）还没接。
+        //   ② 挂出两行字幕：第一行「正在执行登录账号 xxx」带头像（随机 空/荧），
+        //      第二行「登录中...」不带头像，显示在第一行下面
+        //   ③ 跑识别循环：每轮识别「主界面区域 / 派蒙菜单区域」，
+        //      检测到派蒙菜单即成功；否则按一次 ESC、等 1 秒再下一轮
+        //      （细节见 Services/LoginServices/AccountLoginFlow.cs）
+        // 登录期间按钮变「停止登录」、禁用关闭；★ 窗口保持打开，不再自动关。
         // ============================================================================
 
-        /// <summary>
-        /// 登录字幕的显示位置 key。坐标定义在共享库 <c>CoordinateFormats</c> 的
-        /// 「退出登录-用户中心退出」段里；取不到坐标时字幕不会被定位（会出现在错位置）。
-        /// </summary>
-        private const string LoginSubtitlePositionKey = "登录_字幕显示坐标";
+        /// <summary>是否正在跑登录流程（决定按钮是「确认登录」还是「停止登录」）。</summary>
+        private bool _isLoginFlowRunning;
+
+        private CancellationTokenSource? _loginFlowCts;
 
         private void LoginAccountButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1752,8 +1755,8 @@ namespace LvchaxsBS_UID.Views
 
         private void ShowLoginModal(Account account)
         {
-            // 每次打开登录窗口都先收起上一条可能还挂在游戏画面上的登录字幕
-            SubtitlePresenter.Hide();
+            // 每次打开登录窗口都先收起上一条可能还挂在游戏画面上的登录字幕（两行都要）
+            AccountLoginFlow.HideSubtitles();
 
             _loginConfirmWindow = new LoginConfirmWindow();
 
@@ -1775,7 +1778,13 @@ namespace LvchaxsBS_UID.Views
             // 与「添加/编辑账号」等窗口一样走 ShowModalWindow：
             // 它会先铺上宿主的全局遮罩，窗口 Closed 时再收掉。
             // 以前这里直接 ShowDialog，所以登录窗口打开时背后是没有遮罩的。
-            _loginConfirmWindow.Closed += (s, e) => _loginConfirmWindow = null;
+            _loginConfirmWindow.Closed += (s, e) =>
+            {
+                _loginConfirmWindow = null;
+                // 窗口万一被关掉（正常流程里登录期间是禁用关闭的），
+                // 正在跑的识别循环也要停掉，免得后台一直往游戏里按 ESC
+                if (_isLoginFlowRunning) CancelLoginFlow();
+            };
             ShowModalWindow(_loginConfirmWindow);
             _loginConfirmWindow = null;
         }
@@ -1876,38 +1885,93 @@ namespace LvchaxsBS_UID.Views
 
         private void LoginConfirmWindow_ConfirmLogin(object sender, LoginConfirmEventArgs e)
         {
-            // ========================================================================
-            // 「确认登录」目前做两步：
-            //   ① 把原神客户区调到前台（激活窗口）
-            //   ② 在游戏画面上挂一行字幕（头像每次随机 空 / 荧，风格同 钓鱼/烹饪/伐木）
-            //
-            // ★ 顺序很重要：必须在本模态窗口【关闭之前】激活。
-            //   此刻本窗口还是前台窗口，SetForegroundWindow 才被系统放行；
-            //   若先关窗，前台会先落回宿主主窗口，再去抢给游戏就容易被「前台锁定」挡下。
-            //   激活成功后游戏成为前台窗口，之后关闭本窗口不会再把前台抢回来。
-            // ========================================================================
-            bool activated = GameWindowActivator.Activate();
-            string accountName = CurrentLoginAccountNameForToast();
-
-            if (activated)
+            // 正在登录时，这个按钮已经是「停止登录」了
+            if (_isLoginFlowRunning)
             {
-                // 字幕走宿主那一层覆盖层（本模块不自己建窗口，一个进程只能有一个）。
-                // StartRun 会重掷一个随机头像（空 / 荧）并按 登录_字幕显示坐标 定位。
-                // 正文暂定「正在登录至 <账号名>」，等真正的登录流程接上再换成实际进度
-                //（那时由流程负责 Hide）。
-                SubtitlePresenter.StartRun(LoginSubtitlePositionKey);
-                SubtitlePresenter.SetText(string.IsNullOrEmpty(accountName)
-                    ? "正在登录至"
-                    : $"正在登录至 {accountName}");
-
-                _toastManager.Show("已激活游戏窗口", $"已将游戏客户区调到前台（账号：{accountName}）");
+                CancelLoginFlow();
+                return;
             }
-            else
+
+            StartLoginFlow();
+        }
+
+        /// <summary>
+        /// 开始登录：先激活游戏窗口，再挂字幕、跑识别循环。
+        /// ★ 激活必须在关闭 / 收起任何窗口之前做 —— 此刻本窗口还是前台窗口，
+        ///   SetForegroundWindow 才被系统放行；先切走的话前台会落回宿主主窗口，
+        ///   再去抢给游戏就容易被「前台锁定」挡下。
+        /// </summary>
+        private void StartLoginFlow()
+        {
+            if (!GameWindowActivator.Activate())
             {
                 _toastManager.Show("未找到游戏窗口", "请先启动原神，再点确认登录", false);
+                return;
             }
 
-            _loginConfirmWindow?.Close();
+            _isLoginFlowRunning = true;
+            _loginFlowCts = new CancellationTokenSource();
+
+            // 按钮变「停止登录」、标题变「登录中...」，并禁用关闭
+            _loginConfirmWindow?.SetLoggingInState();
+
+            _ = RunLoginFlowAsync(CurrentLoginAccountNameForToast(), _loginFlowCts.Token);
+        }
+
+        /// <summary>后台跑识别循环，结束后回到 UI 线程收尾（刷新字幕与窗口状态）。</summary>
+        private async Task RunLoginFlowAsync(string accountName, CancellationToken token)
+        {
+            bool succeeded = false;
+
+            try
+            {
+                succeeded = await AccountLoginFlow.RunAsync(accountName, token);
+            }
+            catch (OperationCanceledException)
+            {
+                // 用户点了「停止登录」，属于正常退出
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[UID/登录] 流程异常：{ex}");
+            }
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                _isLoginFlowRunning = false;
+                _loginFlowCts?.Dispose();
+                _loginFlowCts = null;
+
+                if (succeeded)
+                {
+                    // 第二行换成「登录成功-TAB关闭」，窗口停在「登录完成」
+                    AccountLoginFlow.ShowSucceededSubtitle();
+                    _loginConfirmWindow?.SetLoginCompletedState(true);
+                    _toastManager.Show("登录成功", "已进入派蒙菜单界面");
+                }
+                else
+                {
+                    AccountLoginFlow.HideSubtitles();
+                    _loginConfirmWindow?.SetLoginCancelledState();
+                }
+            });
+        }
+
+        /// <summary>
+        /// 「停止登录」：通知后台循环退出。
+        /// 收尾（隐藏字幕、改窗口状态）统一在 <see cref="RunLoginFlowAsync"/> 里做，
+        /// 这样两条退出路径（成功 / 取消）不会打架。
+        /// </summary>
+        private void CancelLoginFlow()
+        {
+            try
+            {
+                _loginFlowCts?.Cancel();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[UID/登录] 取消失败：{ex.Message}");
+            }
         }
 
         /// <summary>取当前登录窗口里展示的账号名，仅用于提示文案。</summary>
@@ -1922,7 +1986,7 @@ namespace LvchaxsBS_UID.Views
         private void LoginConfirmWindow_CloseRequested(object sender, EventArgs e)
         {
             // 用户在登录窗口上点了叉（取消）：把可能已经挂出去的登录字幕一并收起
-            SubtitlePresenter.Hide();
+            AccountLoginFlow.HideSubtitles();
             _loginConfirmWindow?.Close();
         }
 

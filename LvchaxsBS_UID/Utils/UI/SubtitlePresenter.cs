@@ -25,11 +25,17 @@ namespace LvchaxsBS_UID.Utils.UI
     public static class SubtitlePresenter
     {
         // 命令表（宿主侧实现在 Services/SubtitleHostBridge.cs，两边靠字符串约定）：
+        // 第一行（带头像）
         private const string CmdStart = "subtitle:start";      // 参数：位置坐标 key
         private const string CmdText = "subtitle:text";        // 参数：正文
         private const string CmdSuffix = "subtitle:suffix";    // 参数：后缀
         private const string CmdHide = "subtitle:hide";        // 无参数
         private const string CmdOpacity = "subtitle:opacity";  // 参数：0~100
+        // 第二行（显示在第一行下面；默认也带头像，可用 SetAvatarVisible2 关掉）
+        private const string CmdStart2 = "subtitle2:start";    // 参数：位置坐标 key
+        private const string CmdText2 = "subtitle2:text";      // 参数：正文
+        private const string CmdHide2 = "subtitle2:hide";      // 无参数
+        private const string CmdAvatar2 = "subtitle2:avatar";  // 参数：bool
 
         private static Action<string, object?>? _host;
 
@@ -81,5 +87,25 @@ namespace LvchaxsBS_UID.Utils.UI
 
         /// <summary>设置气泡底色不透明度（0~100）。</summary>
         public static void SetBackgroundOpacity(int percent) => Send(CmdOpacity, percent);
+
+        // ==================== 第二行（显示在第一行下面） ====================
+
+        /// <summary>
+        /// 开始第二行：按 <paramref name="positionKey"/> 定位并显示。
+        /// 与第一行<b>共用同一个位置 key</b>，覆盖层会把第二行自动往下偏移。
+        /// </summary>
+        public static void StartRun2(string positionKey) => Send(CmdStart2, positionKey);
+
+        /// <summary>设置第二行正文。须先 <see cref="StartRun2"/>。</summary>
+        public static void SetText2(string? text) => Send(CmdText2, text);
+
+        /// <summary>收起第二行。</summary>
+        public static void Hide2() => Send(CmdHide2);
+
+        /// <summary>
+        /// 设置第二行是否显示头像。UID 的登录字幕只要文字，所以传 false。
+        /// 覆盖层窗口可能还没建，标志会先存着，建窗时按它生效。
+        /// </summary>
+        public static void SetAvatarVisible2(bool visible) => Send(CmdAvatar2, visible);
     }
 }

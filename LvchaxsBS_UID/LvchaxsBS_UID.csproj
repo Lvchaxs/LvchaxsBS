@@ -24,6 +24,24 @@
 	</ItemGroup>
 
 	<!--
+		共享基础库：坐标管理（CoordinateFormats）/ 模板加载（TemplateManager）/
+		截图与匹配（ImageRecognition）/ 模拟输入（SimulationService）。
+		登录流程要用它做图像识别与按 ESC，所以这里引用它。
+		★ 只引用共享库，**绝不引用宿主**（宿主是 Assembly.LoadFrom 载入本插件的，
+		  反向引用会循环依赖）。
+		★ 少了 LvchaxsBS_Resources.dll 时：账号管理界面照常可用（依赖是逐类型懒加载的），
+		  只有登录流程会抛 FileNotFoundException。
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\LvchaxsBS_Resources\LvchaxsBS_Resources.csproj" />
+	</ItemGroup>
+
+	<!-- 模板是 System.Drawing.Bitmap，用得上这个包（共享库已引用，这里显式声明避免版本漂移） -->
+	<ItemGroup>
+		<PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+	</ItemGroup>
+
+	<!--
 		编译完成后把插件 dll 复制到宿主 LvchaxsBS 的输出目录，
 		这样直接运行 LvchaxsBS.exe 就能加载到最新的 UID 模块。
 	-->
