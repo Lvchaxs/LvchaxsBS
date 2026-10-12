@@ -53,9 +53,11 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///     （界面切换动画 / 加载中都表现为全线未命中），超过宽限期仍无命中才恢复每轮按 ESC。</item>
     /// </list>
     /// <para>
-    /// 节拍：每轮之内四个区域连续检测、彼此无间隔；一轮结束后等
+    /// 节拍：每轮之内五个区域连续检测、彼此无间隔；一轮结束后等
     /// <see cref="RoundIntervalMs"/> 毫秒进下一轮；命中之后、执行点击之前额外等
     /// <see cref="ClickDelayMs"/> 毫秒，让刚切换出来的画面稳定下来再点。
+    /// 唯一例外是「按 ESC 找画面」那一轮（初始档 / 已知档超过宽限期）——
+    /// 那轮没有可点的目标，等 <see cref="EscRoundIntervalMs"/> 毫秒再进下一轮。
     /// </para>
     /// <para>
     /// 识别能力来自共享库 <c>LvchaxsBS_Resources</c>（本模块只引用它，不引用宿主）。
@@ -96,8 +98,14 @@ namespace LvchaxsBS_UID.Services.LoginServices
         /// <summary>设置界面内的「账户」。</summary>
         public const string AccountClickKey = "账户点击坐标";
 
-        /// <summary>每轮之间的等待（轮内四个区域连续检测，彼此无间隔）。</summary>
+        /// <summary>每轮之间的等待（轮内五个区域连续检测，彼此无间隔）。</summary>
         private const int RoundIntervalMs = 100;
+
+        /// <summary>
+        /// 「按 ESC 找画面」那一档的轮间隔：初始档、以及已知档超过宽限期之后。
+        /// 这两种情况下本轮没有任何可点的目标，没必要高频重扫，等久一点让画面切完。
+        /// </summary>
+        private const int EscRoundIntervalMs = 1500;
 
         /// <summary>命中之后、执行点击之前的等待：让刚切换出来的画面稳定下来再点。</summary>
         private const int ClickDelayMs = 200;
@@ -272,9 +280,15 @@ namespace LvchaxsBS_UID.Services.LoginServices
                           "恢复每轮按 ESC"
                         : "[UID/登录] 初始档：未检测到目标，按 ESC 关掉其他界面");
                     SimulationService.PressEscape();
-                }
 
-                await Task.Delay(RoundIntervalMs, token);
+                    // ESC 档等久一点：这轮没有可点的目标，等画面切完再扫
+                    await Task.Delay(EscRoundIntervalMs, token);
+                }
+                else
+                {
+                    // 已知档宽限期内：只是动画 / 加载中，按常规节拍等下一轮
+                    await Task.Delay(RoundIntervalMs, token);
+                }
             }
         }
 
