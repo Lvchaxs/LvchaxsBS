@@ -1229,6 +1229,24 @@ namespace LvchaxsBS_UID.Views
         #endregion
 
         #region 密码操作
+        /// <summary>
+        /// 账号那一行的「显示 / 隐藏」眼睛按钮。
+        /// ★ 只管账号：它和密码是两个**独立开关**（各自有眼睛按钮），
+        ///   以前两个按钮都去翻 IsPasswordVisible，点账号的眼睛会把密码一起露出来。
+        /// </summary>
+        private void ToggleUsernameButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is int id)
+            {
+                var account = _accounts.FirstOrDefault(a => a.Id == id);
+                if (account != null)
+                    account.IsUsernameVisible = !account.IsUsernameVisible;
+            }
+        }
+
+        /// <summary>
+        /// 密码那一行的「显示 / 隐藏」眼睛按钮。只管密码，见 <see cref="ToggleUsernameButton_Click"/>。
+        /// </summary>
         private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is int id)

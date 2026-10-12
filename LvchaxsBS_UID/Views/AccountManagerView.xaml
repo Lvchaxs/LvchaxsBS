@@ -1103,22 +1103,22 @@
                                                         <!-- 完整账号（点了显示才出现） -->
                                                         <TextBlock x:Name="usernameText" Text="{Binding Username}" FontSize="12"
                                                                    Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"
-                                                                   Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                                   Visibility="{Binding IsUsernameVisible, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                                         <!-- 隐藏态：9 个黑点 -->
                                                         <TextBlock x:Name="maskedUsernameText" Text="{Binding MaskedUsername}" FontSize="12"
                                                                    Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"
-                                                                   Visibility="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
-                                                        <!-- 显示/隐藏（与密码共用同一个开关） -->
+                                                                   Visibility="{Binding IsUsernameVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                                                        <!-- 显示/隐藏（只管账号那一列，和密码是两个独立开关） -->
                                                         <Button Style="{DynamicResource IconCopyButtonStyle}" Margin="4,0,0,0" Tag="{Binding Id}"
-                                                                Click="TogglePasswordButton_Click" ui:ButtonTip.Text="显示/隐藏">
+                                                                Click="ToggleUsernameButton_Click" ui:ButtonTip.Text="显示/隐藏">
                                                             <Viewbox Width="12" Height="12">
                                                                 <Grid Width="12" Height="12">
                                                                     <!-- 睁眼：账号/密码可见。图标反映的是「当前状态」，不是点击动作 -->
-                                                                    <Path Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                                    <Path Visibility="{Binding IsUsernameVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                                                                           Data="{DynamicResource EyeVisibleGeometry}"
                                                                           Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1" Fill="Transparent"/>
                                                                     <!-- 睁眼 + 斜线：账号/密码隐藏 -->
-                                                                    <Path Visibility="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+                                                                    <Path Visibility="{Binding IsUsernameVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}"
                                                                           Data="{DynamicResource EyeHiddenGeometry}"
                                                                           Stroke="{DynamicResource TextDisabledBrush}" StrokeThickness="1" Fill="Transparent"/>
                                                                 </Grid>
@@ -1145,7 +1145,7 @@
                                                         <TextBlock x:Name="maskedPasswordText" Text="{Binding MaskedPassword}" FontSize="12"
                                                                    Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"
                                                                    Visibility="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
-                                                        <!-- 显示/隐藏（与账号共用同一个开关） -->
+                                                        <!-- 显示/隐藏（只管密码那一列） -->
                                                         <Button Style="{DynamicResource IconCopyButtonStyle}" Margin="4,0,0,0" Tag="{Binding Id}"
                                                                 Click="TogglePasswordButton_Click" ui:ButtonTip.Text="显示/隐藏">
                                                             <Viewbox Width="12" Height="12">

@@ -16,6 +16,7 @@ namespace LvchaxsBS_UID.Models
         private string _encryptedUsername = "";
         private string _encryptedPassword = "";
         private bool _isPasswordVisible = false;
+        private bool _isUsernameVisible = false;
         private bool _isSelectedForMove = false;
         private bool _isMoveable = true;
         private bool _isMarked = false;
@@ -229,6 +230,11 @@ namespace LvchaxsBS_UID.Models
         [JsonIgnore]
         public string MaskedPassword => GetMaskedPassword();
 
+        /// <summary>
+        /// 密码那一列是否显示明文。纯界面状态，不落盘。
+        /// ★ 和 <see cref="IsUsernameVisible"/> 是**两个独立开关**，别合并 ——
+        ///   账号行和密码行各有一个眼睛按钮，共用一个属性会导致点其中一个把两个都露出来。
+        /// </summary>
         [JsonIgnore]
         public bool IsPasswordVisible
         {
@@ -238,6 +244,22 @@ namespace LvchaxsBS_UID.Models
                 _isPasswordVisible = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(MaskedPassword));
+            }
+        }
+
+        /// <summary>
+        /// 账号那一列是否显示明文。纯界面状态，不落盘。
+        /// 见 <see cref="IsPasswordVisible"/> 的说明：两者独立。
+        /// </summary>
+        [JsonIgnore]
+        public bool IsUsernameVisible
+        {
+            get => _isUsernameVisible;
+            set
+            {
+                _isUsernameVisible = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(MaskedUsername));
             }
         }
 
