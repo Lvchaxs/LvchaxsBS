@@ -754,17 +754,17 @@ namespace LvchaxsBS.Services
         #region 退出登录-用户中心退出
 
         //派蒙菜单页面左下角 设置 戏按钮的坐标
-        public static Point 设置点击坐标 = new Point(92, 2055,
+        public static Point 设置点击坐标 = new Point(95, 1646,
             new Dictionary<(int, int), (int, int)>
             {
-                [(5120, 2160)] = (114, 0),
-                [(3440, 1440)] = (68, 0),
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
                 [(2560, 1080)] = (49, 0),
             }
         );
 
         //派蒙菜单页面左下角 设置 后→打开的设置界面 
-        public static MatchRect 设置界面区域 = new MatchRect(1834, 2026, 2003, 2054, 0.9,
+        public static MatchRect 设置界面区域 = new MatchRect(286, 68, 390, 124, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (25, 0, -15, 0),
@@ -783,18 +783,18 @@ namespace LvchaxsBS.Services
             }
         );
 
-        //设置 界面内的 账户跳转 点击坐标
-        public static Point 账户跳转击坐标 = new Point(3250, 420,
-            new Dictionary<(int, int), (int, int)>
+        //设置 界面内点击 账户 后的→ 跳转 按钮区域
+        public static MatchRect 账户跳转区域 = new MatchRect(3518, 394, 3576, 452, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
-                [(5120, 2160)] = (114, 0),
-                [(3440, 1440)] = (68, 0),
-                [(2560, 1080)] = (49, 0),
+                [(5120, 2160)] = (25, 0, -15, 0),
+                [(3440, 1440)] = (14, 0, 0, 0),
+                [(2560, 1080)] = (12, 0, 0, 0),
             }
         );
 
-        //账户跳转 后→打开的 用户中心 界面内的 切换账号检测区域
-        public static MatchRect 切换账号区域 = new MatchRect(1834, 2026, 2003, 2054, 0.9,
+        //点击 点击跳转之后打开的 → 用户中心界面的刷新按钮区域
+        public static MatchRect 用户中心刷新按钮区域 = new MatchRect(3616, 30, 3820, 97, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (25, 0, -15, 0),
@@ -804,12 +804,77 @@ namespace LvchaxsBS.Services
         );
 
         //用户中心界面 检测到 通用_切换账号区域 之后 确认切换账号 的点击坐标
-        public static Point 确认切换账号击坐标 = new Point(3250, 420,
+        public static Point 切换账号击坐标 = new Point(3250, 420,
             new Dictionary<(int, int), (int, int)>
             {
                 [(5120, 2160)] = (114, 0),
                 [(3440, 1440)] = (68, 0),
                 [(2560, 1080)] = (49, 0),
+            }
+        );
+
+        //登录流程中客户区字幕（头像 + 文字）的显示位置，用法和 钓鱼辅助_字幕显示坐标 一致
+        //★ 数值先照抄 钓鱼辅助 的，实际位置待实测调整
+        public static Point 登录_字幕显示坐标 = new Point(60, 520,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (128, 0),
+                [(3440, 1440)] = (86, 0),
+                [(2560, 1080)] = (64, 0),
+            }
+        );
+
+        #endregion
+
+        #region 登录账号
+
+        //如果游戏有保存登录记录的话从用户中心退出游戏之后会处于无法输入账号密码的的账号登录界面，所以检测到 登录其他账号区域 就点击此处会打开使用账号密码登录其他账号
+        public static MatchRect 登录其他账号区域 = new MatchRect(1772, 1380, 2068, 1436, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (25, 0, -15, 0),
+                [(3440, 1440)] = (14, 0, 0, 0),
+                [(2560, 1080)] = (12, 0, 0, 0),
+            }
+        );
+
+        //检测到这里之后就处于 输入账号密码了 输入之后可以点击此处登录，进入游戏并非直接进入游戏就是登录账号的意思
+        public static MatchRect 进入游戏区域 = new MatchRect(1816, 1392, 2022, 1452, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (25, 0, -15, 0),
+                [(3440, 1440)] = (14, 0, 0, 0),
+                [(2560, 1080)] = (12, 0, 0, 0),
+            }
+        );
+
+        //账号输入框 点击后可粘贴账号 
+        public static Point 输入账号点击坐标 = new Point(2000, 795,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (114, 0),
+                [(3440, 1440)] = (68, 0),
+                [(2560, 1080)] = (49, 0),
+            }
+        );
+
+        //密码输入框 点击后可粘贴密码 点击账号输入框粘贴后可以直接TAB切换至密码输入框内
+        public static Point 输入密码点击坐标 = new Point(2000, 965,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (114, 0),
+                [(3440, 1440)] = (68, 0),
+                [(2560, 1080)] = (49, 0),
+            }
+        );
+
+        //检输入账号密码点击进入之后需要同意才能登录
+        public static MatchRect 同意登录区域 = new MatchRect(2138, 1194, 2240, 1246, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (25, 0, -15, 0),
+                [(3440, 1440)] = (14, 0, 0, 0),
+                [(2560, 1080)] = (12, 0, 0, 0),
             }
         );
 

@@ -147,7 +147,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
         public const string AgreeTemplateKey = "其他模版_登录账号_同意登录";
 
         /// <summary>账号输入框。</summary>
-        public const string AccountInputClickKey = "确输入账号点击坐标";
+        public const string AccountInputClickKey = "输入账号点击坐标";
 
         /// <summary>密码输入框。点一下把焦点切过去 —— 比按 TAB 稳（TAB 偶尔会把内容粘错框）。</summary>
         public const string PasswordInputClickKey = "输入密码点击坐标";
