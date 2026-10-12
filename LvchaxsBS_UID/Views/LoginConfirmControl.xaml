@@ -432,7 +432,13 @@
                                 ToolTip="复制 UID"
                                 Margin="8,0,0,0"
                                 Visibility="Collapsed">
-                            <TextBlock Text="📋" FontSize="12"/>
+                            <Path Data="{DynamicResource CopyIconGeometry}"
+                                  Stroke="{DynamicResource Gray400Brush}"
+                                  StrokeThickness="1.15"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Fill="Transparent"/>
                         </Button>
                     </Grid>
 
@@ -489,7 +495,13 @@
                                     ToolTip="复制 UID"
                                     Margin="8,0,0,0"
                                     Visibility="Collapsed">
-                                <TextBlock Text="📋" FontSize="12"/>
+                                <Path Data="{DynamicResource CopyIconGeometry}"
+                                      Stroke="{DynamicResource Gray400Brush}"
+                                      StrokeThickness="1.15"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Fill="Transparent"/>
                             </Button>
                         </Grid>
                     </Border>
@@ -544,7 +556,13 @@
                                 ToolTip="复制 UID"
                                 Margin="8,0,0,0"
                                 Visibility="Collapsed">
-                            <TextBlock Text="📋" FontSize="12"/>
+                            <Path Data="{DynamicResource CopyIconGeometry}"
+                                  Stroke="{DynamicResource Gray400Brush}"
+                                  StrokeThickness="1.15"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Fill="Transparent"/>
                         </Button>
                     </Grid>
                 </Grid>

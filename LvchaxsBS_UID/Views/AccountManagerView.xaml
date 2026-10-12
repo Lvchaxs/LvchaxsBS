@@ -1148,7 +1148,13 @@
                                                         <Button x:Name="copyUidButton" Style="{StaticResource CopyButtonStyle}" Margin="4,0,0,0"
                                                                 Tag="{Binding Uid}" Click="CopyButton_Click"
                                                                 ui:ButtonTip.Text="复制">
-                                                            <TextBlock Text="📋" FontSize="12"/>
+                                                            <Path Data="{DynamicResource CopyIconGeometry}"
+                                                                  Stroke="{DynamicResource TextDisabledBrush}"
+                                                                  StrokeThickness="1.15"
+                                                                  StrokeStartLineCap="Round"
+                                                                  StrokeEndLineCap="Round"
+                                                                  StrokeLineJoin="Round"
+                                                                  Fill="Transparent"/>
                                                         </Button>
                                                     </StackPanel>
 
@@ -1181,7 +1187,13 @@
                                                         <Button x:Name="copyUsernameButton" Style="{StaticResource CopyButtonStyle}" Margin="4,0,0,0"
                                                                 Tag="{Binding Username}" Click="CopyButton_Click"
                                                                 ui:ButtonTip.Text="复制">
-                                                            <TextBlock Text="📋" FontSize="12"/>
+                                                            <Path Data="{DynamicResource CopyIconGeometry}"
+                                                                  Stroke="{DynamicResource TextDisabledBrush}"
+                                                                  StrokeThickness="1.15"
+                                                                  StrokeStartLineCap="Round"
+                                                                  StrokeEndLineCap="Round"
+                                                                  StrokeLineJoin="Round"
+                                                                  Fill="Transparent"/>
                                                         </Button>
                                                     </StackPanel>
 
@@ -1212,7 +1224,13 @@
                                                         <Button x:Name="copyPasswordButton" Style="{StaticResource CopyButtonStyle}" Margin="4,0,0,0"
                                                                 Tag="{Binding Password}" Click="CopyButton_Click"
                                                                 ui:ButtonTip.Text="复制">
-                                                            <TextBlock Text="📋" FontSize="12"/>
+                                                            <Path Data="{DynamicResource CopyIconGeometry}"
+                                                                  Stroke="{DynamicResource TextDisabledBrush}"
+                                                                  StrokeThickness="1.15"
+                                                                  StrokeStartLineCap="Round"
+                                                                  StrokeEndLineCap="Round"
+                                                                  StrokeLineJoin="Round"
+                                                                  Fill="Transparent"/>
                                                         </Button>
                                                     </StackPanel>
                                                 </StackPanel>

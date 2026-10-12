@@ -624,4 +624,28 @@
         </Setter>
     </Style>
 
+    <!--
+        ============ 复制图标几何（主程序 / UID 插件共用一份） ============
+        「两张纸叠加 + 前页右上折角」的纯矢量描边图形，设计尺寸 13×13。
+        主程序和 UID 插件里总共 6 个复制按钮都引用它（原来是个 📋 emoji），
+        几何只定义这一处，改这里两边同时生效。
+
+        用法（Path.Data 是依赖属性；插件编译期引用不到宿主，必须 DynamicResource）：
+
+            <Path Data="{DynamicResource CopyIconGeometry}"
+                  Stroke="{DynamicResource TextDisabledBrush}"
+                  StrokeThickness="1.15"
+                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                  StrokeLineJoin="Round"
+                  Fill="Transparent"/>
+
+        ★ StrokeThickness 用 1.15 是为了和旁边的 12×12「显示/隐藏」眼睛图标（1.0）视觉重量接近。
+        三段子路径共用一个描边，所以合并在一条 Figures 里：
+          1) 后页：只画露在前页外面的「左 / 上 / 右」三条边，开口不闭合
+          2) 前页：整页闭合，右上角切掉一个折角
+          3) 折痕：折角的两条内边线
+    -->
+    <PathGeometry x:Key="CopyIconGeometry"
+                  Figures="M3.6,3.6 V1.7 A1.1,1.1 0 0 1 4.7,0.6 H11.3 A1.1,1.1 0 0 1 12.4,1.7 V8.3 A1.1,1.1 0 0 1 11.3,9.4 H9.4 M0.6,4.7 A1.1,1.1 0 0 1 1.7,3.6 H6.4 L9.4,6.6 V11.3 A1.1,1.1 0 0 1 8.3,12.4 H1.7 A1.1,1.1 0 0 1 0.6,11.3 Z M6.4,3.6 V6.6 H9.4"/>
+
 </ResourceDictionary>
