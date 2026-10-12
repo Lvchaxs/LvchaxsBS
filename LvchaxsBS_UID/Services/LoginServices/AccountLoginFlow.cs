@@ -43,8 +43,19 @@ namespace LvchaxsBS_UID.Services.LoginServices
     /// <b>越靠后的阶段越优先</b>：既然已经能看到跳转按钮，就没有必要退回菜单再点一次设置。
     /// </para>
     /// <para>
-    /// 四个区域都没命中时按一次 ESC：那是当前停在某个未知画面（登录页 / 加载中 / 用户中心…），
-    /// 先退出来再重新找，等 1 秒进下一轮。
+    /// 四个区域都没命中时的处理分两档：
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><b>初始档</b>（还从没命中过）：刚激活窗口，不知道当前停在哪个画面，
+    ///     每轮按一次 ESC 把挡在前面的其他界面关掉，再重新找；</item>
+    ///   <item><b>已知档</b>（命中过一次）：说明已经在某个阶段里了，给
+    ///     <see cref="LostGraceMs"/> 毫秒宽限期，期间只安静等下一轮
+    ///     （界面切换动画 / 加载中都表现为全线未命中），超过宽限期仍无命中才恢复每轮按 ESC。</item>
+    /// </list>
+    /// <para>
+    /// 节拍：每轮之内四个区域连续检测、彼此无间隔；一轮结束后等
+    /// <see cref="RoundIntervalMs"/> 毫秒进下一轮；命中之后、执行点击之前额外等
+    /// <see cref="ClickDelayMs"/> 毫秒，让刚切换出来的画面稳定下来再点。
     /// </para>
     /// <para>
     /// 识别能力来自共享库 <c>LvchaxsBS_Resources</c>（本模块只引用它，不引用宿主）。
@@ -78,8 +89,18 @@ namespace LvchaxsBS_UID.Services.LoginServices
         /// <summary>设置界面内的「账户」。</summary>
         public const string AccountClickKey = "账户点击坐标";
 
-        /// <summary>每轮之间的等待：给游戏时间把上一轮那次 ESC / 点击处理完、画面稳定下来。</summary>
-        private const int RoundIntervalMs = 1000;
+        /// <summary>每轮之间的等待（轮内四个区域连续检测，彼此无间隔）。</summary>
+        private const int RoundIntervalMs = 100;
+
+        /// <summary>命中之后、执行点击之前的等待：让刚切换出来的画面稳定下来再点。</summary>
+        private const int ClickDelayMs = 200;
+
+        /// <summary>
+        /// 曾命中过任意目标之后，允许连续多久一个都检测不到。
+        /// 超过这个时长才恢复「每轮按 ESC」——期间只安静地等下一轮
+        /// （界面切换动画、加载中都表现为短暂的全线未命中）。
+        /// </summary>
+        private const int LostGraceMs = 10000;
 
         /// <summary>第二行字幕：进行中。</summary>
         private const string Line2Running = "登录中...";
@@ -126,6 +147,18 @@ namespace LvchaxsBS_UID.Services.LoginServices
         #region 主流程
 
         /// <summary>
+        /// 四个区域都没命中时，这一轮要不要按 ESC。
+        /// </summary>
+        /// <param name="everHitAny">本次流程启动以来是否命中过任意目标。</param>
+        /// <param name="lostMs">距离上一次命中任意目标过去了多少毫秒。</param>
+        /// <returns>
+        /// 初始档（从没命中过）→ 按，先把挡在前面的其他界面关掉；
+        /// 已知档 → 宽限期内不按，超过 <see cref="LostGraceMs"/> 才恢复按。
+        /// </returns>
+        internal static bool ShouldPressEscape(bool everHitAny, long lostMs)
+            => !everHitAny || lostMs >= LostGraceMs;
+
+        /// <summary>
         /// 跑登录流程，返回是否达成目标（点击了「账户跳转区域」）。
         /// 被取消时抛 <see cref="OperationCanceledException"/>。
         /// </summary>
@@ -135,22 +168,38 @@ namespace LvchaxsBS_UID.Services.LoginServices
         {
             ShowRunningSubtitles(accountName);
 
+            // 「四个都没命中时按不按 ESC」分两档：
+            //   · 初始档（还从没命中过任何目标）：刚激活窗口，不知道当前停在哪个画面，
+            //     每轮检测不到就按一次 ESC，把挡在前面的其他界面关掉再重新找；
+            //   · 已知档（命中过一次，说明已经在某个阶段里了）：给 <see cref="LostGraceMs"/>
+            //     毫秒宽限期，期间检测不到只是等下一轮（切换动画 / 加载中都表现为全线未命中），
+            //     超过宽限期仍无命中，才退回初始档那样每轮按 ESC。
+            bool everHitAny = false;
+            long lastHitTicks = Environment.TickCount64;
+
             for (int round = 1; ; round++)
             {
                 token.ThrowIfCancellationRequested();
 
-                // 每轮识别一次，四个区域一起
+                // 每轮识别一次，四个区域一起（区域之间没有间隔，连着测完再统一决策）
                 var main = Detect(MainRegionKey, MainTemplateKey);
                 var paimon = Detect(PaimonRegionKey, PaimonTemplateKey);
                 var settings = Detect(SettingsRegionKey, SettingsTemplateKey);
                 var jump = Detect(JumpRegionKey, JumpTemplateKey);
+
+                if (main.detected || paimon.detected || settings.detected || jump.detected)
+                {
+                    everHitAny = true;
+                    lastHitTicks = Environment.TickCount64;
+                }
 
                 Debug.WriteLine(
                     $"[UID/登录] 第 {round} 轮：" +
                     $"主界面 {main.similarity * 100:F1}%({(main.detected ? "中" : "-")}) " +
                     $"派蒙菜单 {paimon.similarity * 100:F1}%({(paimon.detected ? "中" : "-")}) " +
                     $"设置界面 {settings.similarity * 100:F1}%({(settings.detected ? "中" : "-")}) " +
-                    $"账户跳转 {jump.similarity * 100:F1}%({(jump.detected ? "中" : "-")})");
+                    $"账户跳转 {jump.similarity * 100:F1}%({(jump.detected ? "中" : "-")})" +
+                    (everHitAny ? "" : "  [初始档]"));
 
                 // ① 账户跳转（第三步的终点）—— 整个流程就以「点击账户跳转」结束，
                 //    所以只要看到跳转按钮就点，不要求同轮设置界面也命中：
@@ -158,6 +207,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                 if (jump.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段3：检测到账户跳转，点击跳转，流程结束");
+                    await Task.Delay(ClickDelayMs, token);
                     ClickRegionCenter(JumpRegionKey);
                     return true;
                 }
@@ -167,21 +217,23 @@ namespace LvchaxsBS_UID.Services.LoginServices
                 if (settings.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段3：设置界面，先点「账户」");
+                    await Task.Delay(ClickDelayMs, token);
                     ClickPoint(AccountClickKey);
                     await Task.Delay(RoundIntervalMs, token);
                     continue;
                 }
 
-                // ② 派蒙菜单（第二步）—— 点左下角「设置」，进入设置界面后再继续检测
+                // ③ 派蒙菜单（第二步）—— 点左下角「设置」，进入设置界面后再继续检测
                 if (paimon.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段2：派蒙菜单，点击「设置」");
+                    await Task.Delay(ClickDelayMs, token);
                     ClickPoint(SettingsClickKey);
                     await Task.Delay(RoundIntervalMs, token);
                     continue;
                 }
 
-                // ③ 主界面（第一步）—— 这一下 ESC 正好打开派蒙菜单
+                // ④ 主界面（第一步）—— 这一下 ESC 正好打开派蒙菜单
                 if (main.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段1：主界面，按 ESC 打开派蒙菜单");
@@ -190,11 +242,16 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ④ 四个都没检测到 —— 停在某个未知画面，按 ESC 先退出来再重新找
-                Debug.WriteLine("[UID/登录] → 未知画面，按 ESC 后重新检测");
-                SimulationService.PressEscape();
+                // ⑤ 四个都没检测到
+                if (ShouldPressEscape(everHitAny, Environment.TickCount64 - lastHitTicks))
+                {
+                    Debug.WriteLine(everHitAny
+                        ? $"[UID/登录] 已连续 {Environment.TickCount64 - lastHitTicks} ms 未检测到任何目标，" +
+                          "恢复每轮按 ESC"
+                        : "[UID/登录] 初始档：未检测到目标，按 ESC 关掉其他界面");
+                    SimulationService.PressEscape();
+                }
 
-                // 等画面稳定后再进下一轮
                 await Task.Delay(RoundIntervalMs, token);
             }
         }
