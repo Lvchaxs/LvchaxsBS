@@ -36,6 +36,8 @@ namespace LvchaxsBS.Core
         private const byte VK_Z = 0x5A;          // Z键
         private const byte VK_R = 0x52;          // R键
         private const byte VK_T = 0x54;          // T键
+        private const byte VK_TAB = 0x09;        // Tab键
+        private const byte VK_RETURN = 0x0D;     // Enter（回车）键
 
         // 鼠标按键
         private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;    // 鼠标左键按下
@@ -112,8 +114,7 @@ namespace LvchaxsBS.Core
         }
 
         // 按下Z键
-        public static void PressZ()
-        {
+        public static void PressZ()        {
             BeginSimulation();
             try
             {
@@ -149,6 +150,36 @@ namespace LvchaxsBS.Core
             {
                 keybd_event(VK_T, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
                 keybd_event(VK_T, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        // 按下Tab键
+        public static void PressTab()
+        {
+            BeginSimulation();
+            try
+            {
+                keybd_event(VK_TAB, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                keybd_event(VK_TAB, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        // 按下Enter（回车）键
+        public static void PressEnter()
+        {
+            BeginSimulation();
+            try
+            {
+                keybd_event(VK_RETURN, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                keybd_event(VK_RETURN, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
             }
             finally
             {

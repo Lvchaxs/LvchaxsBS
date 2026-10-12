@@ -284,8 +284,8 @@ namespace LvchaxsBS.Core
                 // 退出游戏流程：模板放在子目录里，key 会带上子目录名 —— 其他模版_退出游戏_xxx
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/退出至登录界面.png"));
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/设置.png"));
-                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/切换账号.png"));
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/点击跳转.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/用户中心刷新.png"));
 
                 System.Diagnostics.Debug.WriteLine($"模板加载成功: {_templates.Count} 个");
             }
