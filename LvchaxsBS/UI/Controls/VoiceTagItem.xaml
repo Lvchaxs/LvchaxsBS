@@ -46,60 +46,14 @@
                      LostFocus="EditBox_LostFocus"/>
         </Border>
 
-        <!-- 编辑按钮（16x16：不超过标签的自然高度，避免把行撑高） -->
+        <!-- 编辑按钮（16x16：不超过标签的自然高度，避免把行撑高）。
+             样式改引 UI/Styles/IconButtonStyles.xaml 里的 IconEditButtonStyle ——
+             **和 UID 账号卡片的编辑按钮是同一份**，铅笔+短横、悬停放大、ButtonTip「编辑」
+             都在样式里，这里只留位置、边距和点击事件。改样式一处两边同时生效。 -->
         <Button x:Name="PART_EditButton"
-                Width="16" Height="16"
-                Padding="0"
                 Margin="0,0,2,0"
-                BorderThickness="0"
-                Background="Transparent"
-                Cursor="Hand"
                 VerticalAlignment="Center"
                 Click="EditButton_Click"
-                Style="{StaticResource TransparentButtonStyle}">
-            <Button.RenderTransform>
-                <ScaleTransform x:Name="EditScale" ScaleX="1" ScaleY="1" CenterX="9" CenterY="9"/>
-            </Button.RenderTransform>
-            <Button.Triggers>
-                <EventTrigger RoutedEvent="Button.MouseEnter">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation Storyboard.TargetName="EditScale" Storyboard.TargetProperty="ScaleX" To="1.15" Duration="0:0:0.15">
-                                <DoubleAnimation.EasingFunction>
-                                    <QuadraticEase EasingMode="EaseOut"/>
-                                </DoubleAnimation.EasingFunction>
-                            </DoubleAnimation>
-                            <DoubleAnimation Storyboard.TargetName="EditScale" Storyboard.TargetProperty="ScaleY" To="1.15" Duration="0:0:0.15">
-                                <DoubleAnimation.EasingFunction>
-                                    <QuadraticEase EasingMode="EaseOut"/>
-                                </DoubleAnimation.EasingFunction>
-                            </DoubleAnimation>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-                <EventTrigger RoutedEvent="Button.MouseLeave">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation Storyboard.TargetName="EditScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15">
-                                <DoubleAnimation.EasingFunction>
-                                    <QuadraticEase EasingMode="EaseOut"/>
-                                </DoubleAnimation.EasingFunction>
-                            </DoubleAnimation>
-                            <DoubleAnimation Storyboard.TargetName="EditScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15">
-                                <DoubleAnimation.EasingFunction>
-                                    <QuadraticEase EasingMode="EaseOut"/>
-                                </DoubleAnimation.EasingFunction>
-                            </DoubleAnimation>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </Button.Triggers>
-            <TextBlock Text="&#xE70F;"
-                       FontFamily="Segoe MDL2 Assets"
-                       FontSize="12"
-                       Foreground="#6B7280"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"/>
-        </Button>
+                Style="{StaticResource IconEditButtonStyle}"/>
     </StackPanel>
 </UserControl>

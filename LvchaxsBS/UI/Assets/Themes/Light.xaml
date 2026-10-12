@@ -32,6 +32,8 @@
     <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E"/>
     <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B"/>
     <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
+    <!-- 悬停时的红（删除按钮图标用）：比 DangerBrush 深一档 -->
+    <SolidColorBrush x:Key="DangerHoverBrush" Color="#DC2626"/>
 
     <!-- ============ 标签色 ============ -->
     <SolidColorBrush x:Key="TagBlueBgBrush" Color="#DBEAFE"/>

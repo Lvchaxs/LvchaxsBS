@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:helpers="clr-namespace:LvchaxsBS.UI.Helpers">
+                    xmlns:helpers="clr-namespace:LvchaxsBS.UI.Helpers"
+                    xmlns:ui="clr-namespace:LvchaxsBS.UI.Controls">
 
     <!--
         ============ 文件夹图标按钮（只有图标） ============
@@ -99,6 +100,525 @@
                                               TextBlock.FontSize="{TemplateBinding FontSize}"/>
                         </StackPanel>
                     </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <!--
+        ============ 图标按钮：编辑(铅笔) / 删除(垃圾桶) / 登录 / 置顶(↑) / 置底(↓) ============
+        这一组原先是 UID 插件里自带的副本，现在搬到宿主，**主程序与插件共用同一份**：
+        UID 侧改成 Style="{DynamicResource IconXxxButtonStyle}" 引用，本地不再各存一份，
+        以后改这里一处两边同时生效。
+        颜色一律走宿主主题键（DangerBrush / DangerHoverBrush / SuccessBrush / WarningBrush），
+        深浅主题自动跟随。ui:ButtonTip.Text 用宿主 UI/Controls/ButtonTip.cs 的附加属性。
+    -->
+    <!-- ============ 图标按钮：编辑（铅笔）/ 删除（垃圾桶） ============
+         照主程序「语音标签的编辑按钮」的做法：Segoe MDL2 Assets 图标 + 透明底 +
+         悬停放大 1.15；再挂 ButtonTip，悬停时显示「编辑 / 删除」文字标签。 -->
+    <Style x:Key="IconEditButtonStyle" TargetType="Button">
+        <!-- 16x16：与「字幕设置」里标签的编辑按钮同规格 -->
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="ui:ButtonTip.Text" Value="编辑"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                        <!-- 铅笔还是原来那个 Segoe 字形（&#xE70F;），**没有换图标**，
+                             只是在它下面补了一条短横线 —— 原来斜着的一笔看着太单薄。
+                             铅笔上移 2px 给横线腾位置；两者都绑 Button.Foreground，
+                             所以悬停时的变色（下面那个 Trigger）会一起生效。 -->
+                        <Grid Width="12" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                              RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
+                            <TextBlock x:Name="icon"
+                                       Text="&#xE70F;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="11"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                            <!-- 短横与笔尖齐平（贴底 Margin 的 2 就是它的水平高度）。
+                                 左端缩进 5px、长度 6：右移缩短后左端离笔尖约 2px，不再接触笔尖；
+                                 RadiusX/Y 取高度的一半，四个角是圆润的半圆头。
+                                 想再往右挪就加大 Margin 的第一个数（5），想再短就减小 Width（6）。 -->
+                            <Rectangle Width="5" Height="1.0" RadiusX="0.5" RadiusY="0.5"
+                                       Fill="{TemplateBinding Foreground}"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Bottom"
+                                       Margin="5.5,0,0,1"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                        </Trigger>
+                        <EventTrigger RoutedEvent="Button.MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="Button.MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 删除：红色垃圾桶 -->
+    <Style x:Key="IconDeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource IconEditButtonStyle}">
+        <!-- 与编辑按钮同规格（16x16），红色垃圾桶 -->
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+        <Setter Property="ui:ButtonTip.Text" Value="删除"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                        <TextBlock x:Name="icon"
+                                   Text="&#xE74D;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource DangerBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform>
+                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource DangerHoverBrush}"/>
+                        </Trigger>
+                        <EventTrigger RoutedEvent="Button.MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="Button.MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 登录：绿色「门 + 箭头指向门内」（通用进入图标）。
+         用矢量 Path 手绘（Material 风格的 login 图标，24x24 坐标），
+         不依赖字体，任何机器上形状都一致。 -->
+    <Style x:Key="IconLoginButtonStyle" TargetType="Button" BasedOn="{StaticResource IconEditButtonStyle}">
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+        <Setter Property="ui:ButtonTip.Text" Value="登录"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                        <Viewbox x:Name="icon" Width="18" Height="18"
+                                 RenderTransformOrigin="0.5,0.5">
+                            <Viewbox.RenderTransform>
+                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
+                            </Viewbox.RenderTransform>
+                            <Path Fill="{DynamicResource SuccessBrush}"
+                                  Data="M11 7L9.6 8.4l2.6 2.6H5v2h7.2l-2.6 2.6L11 17l5-5z M20 19h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8z"/>
+                        </Viewbox>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="icon" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <EventTrigger RoutedEvent="Button.MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="Button.MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="IconPinButtonStyle" TargetType="Button" BasedOn="{StaticResource IconEditButtonStyle}">
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="ui:ButtonTip.Text" Value="置顶"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border" Width="18" Height="18" CornerRadius="2"
+                            BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                            Background="Transparent">
+                        <!-- 箭头尺寸/颜色全部写在 Path.Style 里 —— **不能写成元素上的本地值**：
+                             WPF 依赖属性优先级里「本地值」高于「ControlTemplate 的 Trigger」，
+                             本地写死之后下面的 DataTrigger 改不动它（静默失效）。
+                             描边 1.2（缩放后约 0.87px）—— 1.6 太粗，未激活看着"糊成一坨"。
+                             想更细就改 1.0，但别低于 0.8，否则深色主题下灰色几乎看不见。
+                             两态都用 13x13 —— 这个数值是**照着最早那版 `Viewbox Width=14` 定的**：
+                             Viewbox 会把 1.6 的描边算进子元素自然尺寸（18+1.6=19.6），缩放系数 14/19.6=0.714，
+                             几何实际渲染高约 12.9；改成固定 13x13 + Stretch="Uniform"（缩放 13/18=0.722）
+                             渲染高 13 —— 视觉上就是当年"刚好"的那个大小。
+                             激活时 StrokeThickness 归零：实心橙的外轮廓正好落在原描边中线上，
+                             比未激活小约 1.2px（-8%），用来抵消"实心看着胀一圈"的错觉。 -->
+                        <Path x:Name="pinIcon"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              RenderTransformOrigin="0.5,0.5"
+                              Stretch="Uniform"
+                              Data="M12 3 L20 12 H15.5 V21 H8.5 V12 H4 Z"
+                              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Width" Value="13"/>
+                                    <Setter Property="Height" Value="13"/>
+                                    <Setter Property="Stroke" Value="{DynamicResource TextDisabledBrush}"/>
+                                    <Setter Property="StrokeThickness" Value="1.2"/>
+                                    <Setter Property="Fill" Value="Transparent"/>
+                                </Style>
+                            </Path.Style>
+                            <Path.RenderTransform>
+                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
+                            </Path.RenderTransform>
+                        </Path>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- 已置顶：实心橙 + 橙色方块边框（2026-10-12 按用户要求「还原」回这一版）。
+                             中途试过把填充换成淡一档的 PinActiveBrush(#C89A3C / #D9B45A)、边框改中性灰，
+                             用户反馈"没有橙色了、变得很暗"，所以**原样改回 WarningBrush 两层都染**。
+                             以后还想微调淡一点点，优先只改填充、别降太多饱和度（低于 #E0A33A 就开始发闷）。 -->
+                        <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                            <Setter TargetName="pinIcon" Property="StrokeThickness" Value="0"/>
+                            <Setter TargetName="pinIcon" Property="Fill" Value="{DynamicResource WarningBrush}"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
+                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource TextDisabledBrush}"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource Gray100Brush}"/>
+                        </Trigger>
+                        <EventTrigger RoutedEvent="Button.MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="Button.MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 账号卡片专用的置顶按钮：外观完全复用 IconPinButtonStyle，
+         只是提示多一句「可点头像」（账号卡片点头像 = 置顶/取消置顶）。
+         分组卡片没有头像，仍用 IconPinButtonStyle（提示只写「置顶」）。
+         分两个键的原因：UID 的 XAML 引用不了宿主的 ButtonTip 附加属性（编译期类型引用会循环依赖），
+         所以只能在宿主这边把带不同文案的变体备好，让 UID 用 DynamicResource 直接选。 -->
+    <Style x:Key="AccountPinButtonStyle" TargetType="Button" BasedOn="{StaticResource IconPinButtonStyle}">
+        <Setter Property="ui:ButtonTip.Text" Value="置顶/可点头像"/>
+    </Style>
+
+    <!--
+        账号卡片的头像按钮：把头像（48x48 圆形）包成可点的按钮 ——
+        主账号列表里点它 = 置顶/取消置顶；分组内点它 = 置底/取消置底；
+        移入模式点它 = 选中/取消选中。
+        刻意不设 ui:ButtonTip.Text：头像上不弹悬停提示，只用「手型光标」暗示可点。
+
+        悬停放大 1.06（与首页顶栏「设置」按钮同规格，走 helpers:InteractionScale），
+        按下回到 1.0 —— PressScale 写 1 而不是 0.97：这里要的是"按下恢复原大小"，不是再缩小一档。
+        不做 1.15 那种大幅放大：头像面积大，放大太多会顶到旁边文字。
+        这里额外写了 RenderTransformOrigin=0.5,0.5：48px 的图按左上角缩放会有 1.4px 的右下偏移，
+        肉眼能看出来；按中心缩放则四周均匀。
+    -->
+    <Style x:Key="AccountAvatarButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+        <Setter Property="helpers:InteractionScale.HoverScale" Value="1.06"/>
+        <Setter Property="helpers:InteractionScale.PressScale" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderThickness="0" Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        ============ 头像选择列表的格子（添加/编辑账号窗口右侧那一片头像） ============
+        它上面也加了和账号卡头像一模一样的悬停反馈：悬停 1.06、按下回到 1.0。
+        这份样式必须放在宿主的原因跟 AccountAvatarButtonStyle 一样 ——
+        缩放走的是 helpers:InteractionScale，UID 编译期引用不到这个类型，
+        所以整套样式提到宿主，UID 侧用 ItemContainerStyle="{DynamicResource 这个键}" 引用。
+
+        缩放对象是整个 ListBoxItem（含那圈选中描边），所以要写 RenderTransformOrigin=0.5,0.5，
+        否则 54px 的圆会按左上角缩放、往右下偏。
+        格子实际占位仍是 WrapPanel 的 ItemWidth/ItemHeight（由 code-behind 按容器宽/5 算出来），
+        1.06 倍只放大到 57px 左右，不会顶到相邻格子。
+    -->
+    <Style x:Key="AccountAvatarListItemStyle" TargetType="ListBoxItem">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+        <Setter Property="helpers:InteractionScale.HoverScale" Value="1.06"/>
+        <Setter Property="helpers:InteractionScale.PressScale" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="ring"
+                            Width="54" Height="54"
+                            CornerRadius="27"
+                            BorderThickness="2"
+                            BorderBrush="Transparent"
+                            Padding="1"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                        <Border CornerRadius="24"
+                                ClipToBounds="True"
+                                Background="{DynamicResource Gray100Brush}">
+                            <ContentPresenter/>
+                        </Border>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ring" Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}"/>
+                        </Trigger>
+                        <!-- 放在悬停之后：已选中的头像即使被悬停也保持选中色 -->
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ring" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 置底（分组内的「标记」）按钮：与置顶同一套方块边框，里面是**向下箭头**代表置底：
+         未置底 = 灰色箭头，已置底 = 橙色箭头（形状完全不动，只换颜色）。
+         只在分组内显示（Visibility 绑 ShowMarkButton），位置在编辑按钮左侧。 -->
+    <Style x:Key="IconMarkButtonStyle" TargetType="Button" BasedOn="{StaticResource IconEditButtonStyle}">
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="ui:ButtonTip.Text" Value="置底/可点头像"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="border" Width="18" Height="18" CornerRadius="2"
+                            BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                            Background="Transparent">
+                                        <!-- 向下箭头 = 置底（把置顶那个箭头上下翻转）。
+                                             与置顶同一套处理：两态都是 13x13，只换颜色与空心/实心 -->
+                                        <Path x:Name="markIcon"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              RenderTransformOrigin="0.5,0.5"
+                                              Stretch="Uniform"
+                                              Data="M12 21 L4 12 H8.5 V3 H15.5 V12 H20 Z"
+                                              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                                            <Path.Style>
+                                                <Style TargetType="Path">
+                                                    <Setter Property="Width" Value="13"/>
+                                                    <Setter Property="Height" Value="13"/>
+                                                    <Setter Property="Stroke" Value="{DynamicResource TextDisabledBrush}"/>
+                                                    <Setter Property="StrokeThickness" Value="1.2"/>
+                                                    <Setter Property="Fill" Value="Transparent"/>
+                                                </Style>
+                                            </Path.Style>
+                                            <Path.RenderTransform>
+                                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
+                                            </Path.RenderTransform>
+                                        </Path>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <!-- 已置底：与置顶同一套实心橙 + 橙边框（同步还原） -->
+                                        <DataTrigger Binding="{Binding IsMarked}" Value="True">
+                                            <Setter TargetName="markIcon" Property="StrokeThickness" Value="0"/>
+                                            <Setter TargetName="markIcon" Property="Fill" Value="{DynamicResource WarningBrush}"/>
+                                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
+                                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource TextDisabledBrush}"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource Gray100Brush}"/>
+                        </Trigger>
+                        <EventTrigger RoutedEvent="Button.MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1.15" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="Button.MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                     To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <QuadraticEase EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
