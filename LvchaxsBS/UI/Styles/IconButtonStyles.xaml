@@ -559,16 +559,20 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="border"
-                            Background="Transparent"
-                            CornerRadius="3"
-                            helpers:InteractionScale.HoverScale="1.06"
-                            helpers:InteractionScale.PressScale="1"
-                            helpers:InteractionScale.Target="{Binding ElementName=IconHost}">
-                        <ContentPresenter x:Name="IconHost"
-                                          HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          RenderTransformOrigin="0.5,0.5"/>
+                    <Border Background="Transparent" CornerRadius="3">
+                        <!--
+                            ★ 缩放声明直接挂在这个「铺满整个按钮的 Grid」上，**刻意不用
+                              Target="{Binding ElementName=...}"**：模板里的 ElementName 绑定一旦解析不到，
+                              组件会静默退化成「整个按钮一起缩放」——而按钮是透明底、没有背景和边框，
+                              外观上就跟"根本没放大"一样，极难发现（项目备忘里就记着这个坑）。
+                              这里不依赖任何绑定：Grid 铺满 24×24（= 整个命中区域），图标在其中居中，
+                              缩放这个 Grid 等于"从按钮中心缩放图标"，视觉意图和原来完全一致。
+                        -->
+                        <Grid RenderTransformOrigin="0.5,0.5"
+                              helpers:InteractionScale.HoverScale="1.06"
+                              helpers:InteractionScale.PressScale="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
