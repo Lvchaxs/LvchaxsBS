@@ -693,10 +693,10 @@ namespace LvchaxsBS.Services
 
         #endregion
 
-        #region 通用坐标
+        #region 其他坐标
 
         //左上角派蒙头像存在为主界面
-        public static MatchRect 通用_主界面区域 = new MatchRect(72, 100, 106, 134, 0.9,
+        public static MatchRect 主界面区域 = new MatchRect(72, 100, 106, 134, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (122, 0, 112, 0),
@@ -705,8 +705,8 @@ namespace LvchaxsBS.Services
             }
         );
 
-        //主界面按下ESC后→派蒙菜单页面
-        public static MatchRect 通用_派蒙菜单区域 = new MatchRect(71, 70, 121, 120, 0.9,
+        //主界面按下ESC后会打开→派蒙菜单页面
+        public static MatchRect 派蒙菜单区域 = new MatchRect(71, 70, 121, 120, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (114, 0, 110, 0),
@@ -715,16 +715,8 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static MatchRect 通用_退出至登录界面 = new MatchRect(1378, 1055, 1425, 1105, 0.9,
-            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
-            {
-                [(5120, 2160)] = (180, -2, 165, 3),
-                [(3440, 1440)] = (124, -1, 115, 2),
-                [(2560, 1080)] = (91, 0, 82, 0),
-            }
-        );
-
-        public static MatchRect 通用_点击进入区域 = new MatchRect(1834, 2026, 2003, 2054, 0.9,
+        //登录界面操作结束后检测 点击进入 
+        public static MatchRect 点击进入区域 = new MatchRect(1834, 2026, 2003, 2054, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (25, 0, -15, 0),
@@ -733,7 +725,86 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static Point 通用_退出游戏点击坐标 = new Point(92, 2055,
+        #endregion
+
+        #region 退出游戏-正常退出
+
+        //派蒙菜单页面左下角 退出游戏 按钮的坐标
+        public static Point 退出游戏点击坐标 = new Point(92, 2055,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (114, 0),
+                [(3440, 1440)] = (68, 0),
+                [(2560, 1080)] = (49, 0),
+            }
+        );
+
+        //点击 退出游戏 按钮后显示→ 退出至登录界面选项
+        public static MatchRect 退出至登录界面 = new MatchRect(1378, 1055, 1425, 1105, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (180, -2, 165, 3),
+                [(3440, 1440)] = (124, -1, 115, 2),
+                [(2560, 1080)] = (91, 0, 82, 0),
+            }
+        );
+
+        #endregion
+
+        #region 退出登录-用户中心退出
+
+        //派蒙菜单页面左下角 设置 戏按钮的坐标
+        public static Point 设置点击坐标 = new Point(92, 2055,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (114, 0),
+                [(3440, 1440)] = (68, 0),
+                [(2560, 1080)] = (49, 0),
+            }
+        );
+
+        //派蒙菜单页面左下角 设置 后→打开的设置界面 
+        public static MatchRect 设置界面区域 = new MatchRect(1834, 2026, 2003, 2054, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (25, 0, -15, 0),
+                [(3440, 1440)] = (14, 0, 0, 0),
+                [(2560, 1080)] = (12, 0, 0, 0),
+            }
+        );
+
+        //设置 界面内的 账户 点击坐标
+        public static Point 账户点击坐标 = new Point(352, 1140,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (114, 0),
+                [(3440, 1440)] = (68, 0),
+                [(2560, 1080)] = (49, 0),
+            }
+        );
+
+        //设置 界面内的 账户跳转 点击坐标
+        public static Point 账户跳转击坐标 = new Point(3250, 420,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (114, 0),
+                [(3440, 1440)] = (68, 0),
+                [(2560, 1080)] = (49, 0),
+            }
+        );
+
+        //账户跳转 后→打开的 用户中心 界面内的 切换账号检测区域
+        public static MatchRect 切换账号区域 = new MatchRect(1834, 2026, 2003, 2054, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (25, 0, -15, 0),
+                [(3440, 1440)] = (14, 0, 0, 0),
+                [(2560, 1080)] = (12, 0, 0, 0),
+            }
+        );
+
+        //用户中心界面 检测到 通用_切换账号区域 之后 确认切换账号 的点击坐标
+        public static Point 确认切换账号击坐标 = new Point(3250, 420,
             new Dictionary<(int, int), (int, int)>
             {
                 [(5120, 2160)] = (114, 0),

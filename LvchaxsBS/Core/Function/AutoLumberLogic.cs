@@ -636,7 +636,7 @@ namespace LvchaxsBS.Core
                 if (!CoordinateFormats.CacheReady)
                     return (false, 0, sw.ElapsedMilliseconds);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("通用_派蒙菜单区域");
+                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("派蒙菜单区域");
                 if (matchRect == null)
                     return (false, 0, sw.ElapsedMilliseconds);
 
@@ -674,7 +674,7 @@ namespace LvchaxsBS.Core
                 if (!CoordinateFormats.CacheReady)
                     return (false, 0, sw.ElapsedMilliseconds, 0, 0);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("通用_退出至登录界面");
+                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("退出至登录界面");
                 if (matchRect == null)
                     return (false, 0, sw.ElapsedMilliseconds, 0, 0);
 
@@ -716,7 +716,7 @@ namespace LvchaxsBS.Core
                 if (!CoordinateFormats.CacheReady)
                     return (false, 0, sw.ElapsedMilliseconds, 0, 0);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("通用_点击进入区域");
+                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("点击进入区域");
                 if (matchRect == null)
                     return (false, 0, sw.ElapsedMilliseconds, 0, 0);
 
@@ -754,7 +754,7 @@ namespace LvchaxsBS.Core
         {
             try
             {
-                var pointObj = CoordinateFormats.GetCached<object>("通用_退出游戏点击坐标");
+                var pointObj = CoordinateFormats.GetCached<object>("退出游戏点击坐标");
                 if (pointObj == null)
                 {
                     Debug.WriteLine("【自动伐木】退出游戏点击坐标未缓存");
