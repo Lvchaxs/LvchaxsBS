@@ -281,6 +281,11 @@ namespace LvchaxsBS.Core
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/点击进入.png"));
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/ESC菜单.png"));
 
+                // 登录账号流程：从用户中心退出到登录界面之后的登录步骤
+                // （模板在子目录里，key 会带上子目录名 —— 其他模版_登录账号_xxx）
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/登录其他账号.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/进入游戏.png"));
+
                 // 退出游戏流程：模板放在子目录里，key 会带上子目录名 —— 其他模版_退出游戏_xxx
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/退出至登录界面.png"));
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/设置.png"));

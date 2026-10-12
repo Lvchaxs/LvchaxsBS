@@ -1915,17 +1915,28 @@ namespace LvchaxsBS_UID.Views
             // 按钮变「停止登录」、标题变「登录中...」，并禁用关闭
             _loginConfirmWindow?.SetLoggingInState();
 
-            _ = RunLoginFlowAsync(CurrentLoginAccountNameForToast(), _loginFlowCts.Token);
+            _ = RunLoginFlowAsync(CurrentLoginAccount(), _loginFlowCts.Token);
+        }
+
+        /// <summary>当前登录窗口正在操作的那个账号（「确认登录」的目标）。</summary>
+        private Account? CurrentLoginAccount()
+        {
+            if (_currentLoginAccountIndex >= 0 && _currentLoginAccountIndex < _currentLoginAccountList.Count)
+                return _currentLoginAccountList[_currentLoginAccountIndex];
+
+            return null;
         }
 
         /// <summary>后台跑识别循环，结束后回到 UI 线程收尾（刷新字幕与窗口状态）。</summary>
-        private async Task RunLoginFlowAsync(string accountName, CancellationToken token)
+        private async Task RunLoginFlowAsync(Account account, CancellationToken token)
         {
             bool succeeded = false;
 
             try
             {
-                succeeded = await AccountLoginFlow.RunAsync(accountName, token);
+                // 账密从 Account 现取（Username / Password 的 getter 会自动解密）
+                succeeded = await AccountLoginFlow.RunAsync(
+                    account.Nickname, account.Username, account.Password, account.Uid, token);
             }
             catch (OperationCanceledException)
             {
@@ -1947,7 +1958,7 @@ namespace LvchaxsBS_UID.Views
                     // 第二行换成「登录成功-TAB关闭」，窗口停在「登录完成」
                     AccountLoginFlow.ShowSucceededSubtitle();
                     _loginConfirmWindow?.SetLoginCompletedState(true);
-                    _toastManager.Show("登录成功", "已进入派蒙菜单界面");
+                    _toastManager.Show("登录成功", "已进入游戏");
                 }
                 else
                 {
@@ -1977,10 +1988,7 @@ namespace LvchaxsBS_UID.Views
         /// <summary>取当前登录窗口里展示的账号名，仅用于提示文案。</summary>
         private string CurrentLoginAccountNameForToast()
         {
-            if (_currentLoginAccountIndex >= 0 && _currentLoginAccountIndex < _currentLoginAccountList.Count)
-                return _currentLoginAccountList[_currentLoginAccountIndex].Nickname;
-
-            return string.Empty;
+            return CurrentLoginAccount()?.Nickname ?? string.Empty;
         }
 
         private void LoginConfirmWindow_CloseRequested(object sender, EventArgs e)

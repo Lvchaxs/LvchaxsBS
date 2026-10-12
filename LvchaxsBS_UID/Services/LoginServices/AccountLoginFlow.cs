@@ -13,7 +13,10 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///
     /// <para>
     /// 从「确认登录」开始：游戏窗口已被激活（见 <c>Utils.GameWindow.GameWindowActivator</c>），
-    /// 然后每轮同时识别五个区域：
+    /// 然后每轮同时识别八个区域。整个流程分两大段：
+    /// </para>
+    /// <para>
+    /// <b>第一段 · 退出当前账号</b>（前五个区域）：
     /// </para>
     /// <list type="bullet">
     ///   <item><b>主界面</b>：左上角派蒙头像（<c>主界面区域</c> + 模板 <c>其他模版_主界面</c>）</item>
@@ -24,7 +27,18 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///     （<c>用户中心刷新按钮区域</c> + 模板 <c>其他模版_退出游戏_用户中心刷新</c>）</item>
     /// </list>
     /// <para>
-    /// 整个流程就是「退出登录」那条链，按顺序分五步走：
+    /// <b>第二段 · 登录新账号</b>（后三个区域，退出到登录界面之后才开始）：
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><b>登录其他账号</b>：退出后若停在带登录记录的界面，点它打开账密输入页
+    ///     （<c>登录其他账号区域</c> + 模板 <c>其他模版_登录账号_登录其他账号</c>）</item>
+    ///   <item><b>进入游戏</b>：账密输入页的登录按钮（<c>进入游戏区域</c> + 模板 <c>其他模版_登录账号_进入游戏</c>）；
+    ///     名字叫"进入游戏"，实际是"用这套账密登录"的意思</item>
+    ///   <item><b>点击进入</b>：登录完成、加载完毕后登录界面上的进入按钮
+    ///     （<c>点击进入区域</c> + 模板 <c>其他模版_点击进入</c>），点它即全部完成</item>
+    /// </list>
+    /// <para>
+    /// 按顺序分八步走：
     /// </para>
     /// <list type="number">
     ///   <item><b>主界面</b>：按一次 ESC 打开派蒙菜单；</item>
@@ -33,24 +47,28 @@ namespace LvchaxsBS_UID.Services.LoginServices
     ///     （只命中设置界面时；跳转按钮本来就看得见时这步会自动跳过）；</item>
     ///   <item><b>账户跳转</b>：点一次跳转，等用户中心页面加载；</item>
     ///   <item><b>用户中心</b>：看到刷新按钮 → 等 <c>UserCenterDelayMs</c> 原地点一下
-    ///     （借 <c>账户跳转区域</c> 的位置）→ 等 <c>ClickDelayMs</c> 按 TAB →
-    ///     再等 <c>ClickDelayMs</c> 按 ENTER → 再等 <c>ClickDelayMs</c> 按第二次 ENTER，
-    ///     <b>登录到此完成</b>。</item>
+    ///     （借 <c>账户跳转区域</c> 的位置）→ 按 TAB → ENTER → ENTER，把当前账号退出去
+    ///     （<b>第一段到此结束，不返回</b>，继续检测等登录界面）；</item>
+    ///   <item><b>登录其他账号</b>：点击此处打开账密输入页；</item>
+    ///   <item><b>进入游戏</b>：点 <c>确输入账号点击坐标</c> → 粘账号 → 等
+    ///     <c>AfterAccountPasteMs</c> → 点 <c>输入密码点击坐标</c> 切到密码框（不用 TAB，
+    ///     TAB 偶尔会把密码粘到账号框里）→ 粘密码 → 点「进入游戏」提交；</item>
+    ///   <item><b>点击进入</b>：点一下，<b>全部步骤完成</b>。</item>
     /// </list>
     /// <para>
-    /// ★ <b>自适应接续</b>：每轮都重新检测五个区域来判定「当前处于哪个阶段」，只做该阶段的动作，
+    /// ★ <b>自适应接续</b>：每轮都重新检测八个区域来判定「当前处于哪个阶段」，只做该阶段的动作，
     /// 不记历史状态。所以从任何一步中断之后都能接着跑 —— 已经在设置界面就直接走第三步，
     /// 不会按一路 ESC 回主界面重来。一轮里同时命中多个区域时（界面切换动画中可能出现），
     /// <b>越靠后的阶段越优先</b>：既然已经能看到用户中心，就没有必要退回菜单再点一次设置。
     /// </para>
     /// <para>
-    /// 五个区域都没命中时的处理分两档：
+    /// 八个区域都没命中时的处理分两档：
     /// </para>
     /// <list type="bullet">
     ///   <item><b>初始档</b>（还从没命中过）：刚激活窗口，不知道当前停在哪个画面，
     ///     每轮按一次 ESC 把挡在前面的其他界面关掉，再重新找；</item>
     ///   <item><b>已知档</b>（命中过一次）：说明已经在某个阶段里了，给
-    ///     <see cref="LostGraceMs"/> 毫秒宽限期，期间只安静等下一轮
+    ///     <see cref="LostGraceMs"/> 毫秒宽限期，期间只安静地等下一轮
     ///     （界面切换动画 / 加载中都表现为全线未命中），超过宽限期仍无命中才恢复每轮按 ESC。</item>
     /// </list>
     /// <para>
@@ -59,7 +77,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
     /// 不等的话第一轮很可能全线未命中，白白按一次 ESC。
     /// </para>
     /// <para>
-    /// 节拍：每轮之内五个区域连续检测、彼此无间隔；一轮结束后等
+    /// 节拍：每轮之内八个区域连续检测、彼此无间隔；一轮结束后等
     /// <see cref="RoundIntervalMs"/> 毫秒进下一轮；命中之后、执行点击之前额外等
     /// <see cref="ClickDelayMs"/> 毫秒，让刚切换出来的画面稳定下来再点。
     /// 唯一例外是「按 ESC 找画面」那一轮（初始档 / 已知档超过宽限期）——
@@ -93,10 +111,34 @@ namespace LvchaxsBS_UID.Services.LoginServices
 
         /// <summary>
         /// 用户中心刷新按钮：点过「账户跳转」之后加载出来的用户中心页面里才有，
-        /// 看到它就说明页面加载完了，是整个流程的最后一个阶段。
+        /// 看到它就说明页面加载完了，是退出流程的最后一个阶段。
         /// </summary>
         public const string UserCenterRegionKey = "用户中心刷新按钮区域";
         public const string UserCenterTemplateKey = "其他模版_退出游戏_用户中心刷新";
+
+        /// <summary>
+        /// 「登录其他账号」按钮：从用户中心退出到登录界面后，如果游戏存有登录记录，
+        /// 会停在没有账密输入框的界面，点它才打开账密登录页。
+        /// </summary>
+        public const string LoginOtherRegionKey = "登录其他账号区域";
+        public const string LoginOtherTemplateKey = "其他模版_登录账号_登录其他账号";
+
+        /// <summary>
+        /// 「进入游戏」按钮区域：账密输入页的登录按钮。
+        /// （名字叫进入游戏，实际是"用这套账密登录"的意思，不是直接进游戏。）
+        /// </summary>
+        public const string EnterGameRegionKey = "进入游戏区域";
+        public const string EnterGameTemplateKey = "其他模版_登录账号_进入游戏";
+
+        /// <summary>「点击进入」：登录完成、加载完毕后登录界面上的进入按钮，点它即全部完成。</summary>
+        public const string ClickEnterRegionKey = "点击进入区域";
+        public const string ClickEnterTemplateKey = "其他模版_点击进入";
+
+        /// <summary>账号输入框。</summary>
+        public const string AccountInputClickKey = "确输入账号点击坐标";
+
+        /// <summary>密码输入框。点一下把焦点切过去 —— 比按 TAB 稳（TAB 偶尔会把内容粘错框）。</summary>
+        public const string PasswordInputClickKey = "输入密码点击坐标";
 
         /// <summary>派蒙菜单左下角「设置」按钮。</summary>
         public const string SettingsClickKey = "设置点击坐标";
@@ -127,6 +169,9 @@ namespace LvchaxsBS_UID.Services.LoginServices
         /// 用户中心页面刚加载完，比普通界面多等一会儿（1000ms）让它彻底稳定。
         /// </summary>
         private const int UserCenterDelayMs = 1000;
+
+        /// <summary>粘贴账号之后、切到密码框之前的等待。</summary>
+        private const int AfterAccountPasteMs = 500;
 
         /// <summary>
         /// 曾命中过任意目标之后，允许连续多久一个都检测不到。
@@ -192,12 +237,16 @@ namespace LvchaxsBS_UID.Services.LoginServices
             => !everHitAny || lostMs >= LostGraceMs;
 
         /// <summary>
-        /// 跑登录流程，返回是否达成目标（点击了「账户跳转区域」）。
+        /// 跑登录流程，返回是否达成目标（点掉了登录界面的「点击进入」）。
         /// 被取消时抛 <see cref="OperationCanceledException"/>。
         /// </summary>
         /// <param name="accountName">要登录的账号名（已显示在字幕第一行）。</param>
+        /// <param name="username">登录用的账号（粘到账号输入框）。</param>
+        /// <param name="password">登录用的密码（粘到密码输入框）。</param>
+        /// <param name="uid">账号 UID。密码粘完立刻用它顶替剪贴板，别把密码留在剪贴板里。</param>
         /// <param name="token">取消令牌（用户点「停止登录」时触发）。</param>
-        public static async Task<bool> RunAsync(string accountName, CancellationToken token)
+        public static async Task<bool> RunAsync(
+            string accountName, string username, string password, string uid, CancellationToken token)
         {
             ShowRunningSubtitles(accountName);
 
@@ -219,14 +268,18 @@ namespace LvchaxsBS_UID.Services.LoginServices
             {
                 token.ThrowIfCancellationRequested();
 
-                // 每轮识别一次，五个区域一起（区域之间没有间隔，连着测完再统一决策）
+                // 每轮识别一次，八个区域一起（区域之间没有间隔，连着测完再统一决策）
                 var main = Detect(MainRegionKey, MainTemplateKey);
                 var paimon = Detect(PaimonRegionKey, PaimonTemplateKey);
                 var settings = Detect(SettingsRegionKey, SettingsTemplateKey);
                 var jump = Detect(JumpRegionKey, JumpTemplateKey);
                 var userCenter = Detect(UserCenterRegionKey, UserCenterTemplateKey);
+                var loginOther = Detect(LoginOtherRegionKey, LoginOtherTemplateKey);
+                var enterGame = Detect(EnterGameRegionKey, EnterGameTemplateKey);
+                var clickEnter = Detect(ClickEnterRegionKey, ClickEnterTemplateKey);
 
-                if (main.detected || paimon.detected || settings.detected || jump.detected || userCenter.detected)
+                if (main.detected || paimon.detected || settings.detected || jump.detected ||
+                    userCenter.detected || loginOther.detected || enterGame.detected || clickEnter.detected)
                 {
                     everHitAny = true;
                     lastHitTicks = Environment.TickCount64;
@@ -238,14 +291,66 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     $"派蒙菜单 {paimon.similarity * 100:F1}%({(paimon.detected ? "中" : "-")}) " +
                     $"设置界面 {settings.similarity * 100:F1}%({(settings.detected ? "中" : "-")}) " +
                     $"账户跳转 {jump.similarity * 100:F1}%({(jump.detected ? "中" : "-")}) " +
-                    $"用户中心 {userCenter.similarity * 100:F1}%({(userCenter.detected ? "中" : "-")})" +
+                    $"用户中心 {userCenter.similarity * 100:F1}%({(userCenter.detected ? "中" : "-")}) " +
+                    $"登录其他账号 {loginOther.similarity * 100:F1}%({(loginOther.detected ? "中" : "-")}) " +
+                    $"进入游戏 {enterGame.similarity * 100:F1}%({(enterGame.detected ? "中" : "-")}) " +
+                    $"点击进入 {clickEnter.similarity * 100:F1}%({(clickEnter.detected ? "中" : "-")})" +
                     (everHitAny ? "" : "  [初始档]"));
 
-                // ① 用户中心（第五步，终点）—— 点过跳转后加载出来的页面，
-                //    看到刷新按钮就说明页面好了：原地点一下 → TAB → ENTER → ENTER，登录到此完成
+                // ① 点击进入（终点）—— 登录页加载完毕后的「点击进入」，点它就全部完成
+                if (clickEnter.detected)
+                {
+                    Debug.WriteLine("[UID/登录] → 阶段8：检测到「点击进入」，点击，全部步骤完成");
+                    await Task.Delay(ClickDelayMs, token);
+                    ClickRegionCenter(ClickEnterRegionKey);
+                    return true;
+                }
+
+                // ② 进入游戏（第七步）—— 账密输入页：填账号 → 填密码 → 点「进入游戏」
+                if (enterGame.detected)
+                {
+                    Debug.WriteLine("[UID/登录] → 阶段7：进入游戏（账密页），输入账号密码并点击进入游戏");
+                    await Task.Delay(ClickDelayMs, token);
+
+                    // 账号
+                    ClickPoint(AccountInputClickKey);
+                    await Task.Delay(ClickDelayMs, token);
+                    SimulationService.PasteText(username);
+                    await Task.Delay(AfterAccountPasteMs, token);
+
+                    // 密码：点一下密码输入框把焦点切过去（不用 TAB，TAB 偶尔会把密码粘错框）
+                    ClickPoint(PasswordInputClickKey);
+                    await Task.Delay(ClickDelayMs, token);
+                    SimulationService.PasteText(password);
+
+                    // 密码已经粘进输入框，剪贴板里那份立刻用 UID 顶掉 ——
+                    // UID 是公开信息，留在剪贴板里无所谓；密码不行，万一粘到别处就漏了。
+                    SimulationService.SetClipboardText(uid ?? string.Empty);
+
+                    await Task.Delay(ClickDelayMs, token);
+
+                    // 点「进入游戏」提交
+                    ClickRegionCenter(EnterGameRegionKey);
+                    await Task.Delay(RoundIntervalMs, token);
+                    continue;
+                }
+
+                // ③ 登录其他账号（第六步）—— 退出后停在带登录记录的界面，点它打开账密页
+                if (loginOther.detected)
+                {
+                    Debug.WriteLine("[UID/登录] → 阶段6：检测到「登录其他账号」，点击打开账密登录页");
+                    await Task.Delay(ClickDelayMs, token);
+                    ClickRegionCenter(LoginOtherRegionKey);
+                    await Task.Delay(RoundIntervalMs, token);
+                    continue;
+                }
+
+                // ④ 用户中心（第五步，退出流程的终点）—— 点过跳转后加载出来的页面，
+                //    看到刷新按钮就说明页面好了：原地点一下 → TAB → ENTER → ENTER，
+                //    把当前账号退出去，之后进入登录流程（不结束，继续检测）
                 if (userCenter.detected)
                 {
-                    Debug.WriteLine("[UID/登录] → 阶段5：用户中心已加载，原地点击 → TAB → ENTER → ENTER，登录完成");
+                    Debug.WriteLine("[UID/登录] → 阶段5：用户中心已加载，原地点击 → TAB → ENTER → ENTER，退出当前账号");
 
                     // 页面刚加载完，多等一会儿让它彻底稳定，再点
                     await Task.Delay(UserCenterDelayMs, token);
@@ -256,10 +361,11 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     SimulationService.PressEnter();
                     await Task.Delay(ClickDelayMs, token);
                     SimulationService.PressEnter();
-                    return true;
+                    await Task.Delay(RoundIntervalMs, token);
+                    continue;
                 }
 
-                // ② 账户跳转（第四步）—— 点一下进用户中心，然后继续检测（还没完）
+                // ⑤ 账户跳转（第四步）—— 点一下进用户中心，然后继续检测（还没完）
                 if (jump.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段4：检测到账户跳转，点击跳转");
@@ -269,7 +375,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ③ 设置界面（第三步的前半）—— 只看到设置界面：说明还没选中「账户」选项，
+                // ⑥ 设置界面（第三步的前半）—— 只看到设置界面：说明还没选中「账户」选项，
                 //    跳转按钮在账户选项里所以看不到。点一次「账户」，下一轮就能看到跳转了
                 if (settings.detected)
                 {
@@ -280,7 +386,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ④ 派蒙菜单（第二步）—— 点左下角「设置」，进入设置界面后再继续检测
+                // ⑦ 派蒙菜单（第二步）—— 点左下角「设置」，进入设置界面后再继续检测
                 if (paimon.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段2：派蒙菜单，点击「设置」");
@@ -290,7 +396,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ⑤ 主界面（第一步）—— 这一下 ESC 正好打开派蒙菜单
+                // ⑧ 主界面（第一步）—— 这一下 ESC 正好打开派蒙菜单
                 if (main.detected)
                 {
                     Debug.WriteLine("[UID/登录] → 阶段1：主界面，按 ESC 打开派蒙菜单");
@@ -299,7 +405,7 @@ namespace LvchaxsBS_UID.Services.LoginServices
                     continue;
                 }
 
-                // ⑥ 五个都没检测到
+                // ⑨ 八个都没检测到
                 if (ShouldPressEscape(everHitAny, Environment.TickCount64 - lastHitTicks))
                 {
                     Debug.WriteLine(everHitAny

@@ -20,6 +20,34 @@ namespace LvchaxsBS.Core
         [DllImport("user32.dll")]
         private static extern bool SetCursorPos(int X, int Y);
 
+        [DllImport("user32.dll")]
+        private static extern bool OpenClipboard(IntPtr hWndNewOwner);
+
+        [DllImport("user32.dll")]
+        private static extern bool CloseClipboard();
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+
+        [DllImport("user32.dll")]
+        private static extern bool EmptyClipboard();
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GlobalLock(IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GlobalUnlock(IntPtr hMem);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GlobalFree(IntPtr hMem);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr lstrcpy(IntPtr dest, string src);
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
         {
@@ -38,6 +66,11 @@ namespace LvchaxsBS.Core
         private const byte VK_T = 0x54;          // T键
         private const byte VK_TAB = 0x09;        // Tab键
         private const byte VK_RETURN = 0x0D;     // Enter（回车）键
+        private const byte VK_CONTROL = 0x11;    // Ctrl键
+        private const byte VK_V = 0x56;          // V键
+        private const uint CF_UNICODETEXT = 13;  // 剪贴板 Unicode 文本格式
+        private const uint GMEM_MOVEABLE = 0x0002;
+        private const uint GMEM_ZEROINIT = 0x0040;
 
         // 鼠标按键
         private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;    // 鼠标左键按下
@@ -184,6 +217,102 @@ namespace LvchaxsBS.Core
             finally
             {
                 EndSimulation();
+            }
+        }
+
+        /// <summary>
+        /// 把文本设进剪贴板，再发一次 Ctrl+V 粘贴到当前焦点控件里。
+        /// 登录流程输账号 / 密码用（逐键打字太慢，且中文输入法会插足）。
+        /// </summary>
+        public static void PasteText(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            if (!SetClipboardText(text))
+            {
+                // 剪贴板偶尔会被别的进程占着（刚复制过东西），缓一下再试一次
+                Thread.Sleep(50);
+                if (!SetClipboardText(text)) return;
+            }
+
+            Thread.Sleep(50);
+
+            BeginSimulation();
+            try
+            {
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                keybd_event(VK_V, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                Thread.Sleep(10);
+                keybd_event(VK_V, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+
+            Thread.Sleep(50);
+        }
+
+        /// <summary>
+        /// Win32 方式设置剪贴板文本（不依赖 STA 线程，调用方在后台线程也能用）。
+        /// 打开剪贴板失败会重试几次 —— 那是剪贴板正被其他进程占用。
+        /// </summary>
+        /// <remarks>
+        /// 公开出来是为了「粘完密码后立刻覆盖掉」：密码不该在剪贴板里过夜，
+        /// 用账号 UID（玩家公开 ID，非秘密）顶替即可。
+        /// </remarks>
+        public static bool SetClipboardText(string text)
+        {
+            IntPtr hGlobal = IntPtr.Zero;
+
+            try
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    if (!OpenClipboard(IntPtr.Zero))
+                    {
+                        Thread.Sleep(10);
+                        continue;
+                    }
+
+                    try
+                    {
+                        EmptyClipboard();
+                        uint sizeInBytes = (uint)((text.Length + 1) * 2);
+                        hGlobal = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, (UIntPtr)sizeInBytes);
+                        if (hGlobal == IntPtr.Zero) return false;
+
+                        IntPtr lockedPtr = GlobalLock(hGlobal);
+                        if (lockedPtr == IntPtr.Zero) return false;
+
+                        lstrcpy(lockedPtr, text);
+                        GlobalUnlock(lockedPtr);
+
+                        if (SetClipboardData(CF_UNICODETEXT, hGlobal) != IntPtr.Zero)
+                        {
+                            // 系统接管了这块内存的所有权，不能再释放
+                            hGlobal = IntPtr.Zero;
+                            return true;
+                        }
+
+                        return false;
+                    }
+                    finally
+                    {
+                        CloseClipboard();
+                    }
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (hGlobal != IntPtr.Zero) GlobalFree(hGlobal);
             }
         }
 
