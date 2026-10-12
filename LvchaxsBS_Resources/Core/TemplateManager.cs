@@ -276,11 +276,15 @@ namespace LvchaxsBS.Core
                 AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/白灵果派.png"));
                 AddTemplateFromPath(ResourcePaths.Pack("Template/自动清药/肉末酿豆腐.png"));
 
-                // 通用模版：多个功能共用（这三张原先放在 自动伐木/ 下，2026-10-12 移入）
-                AddTemplateFromPath(ResourcePaths.Pack("Template/通用模版/主界面.png"));
-                AddTemplateFromPath(ResourcePaths.Pack("Template/通用模版/点击进入.png"));
-                AddTemplateFromPath(ResourcePaths.Pack("Template/通用模版/退出至登录界面.png"));
-                AddTemplateFromPath(ResourcePaths.Pack("Template/通用模版/ESC菜单.png"));
+                // 其他模版：多个功能共用（原先放在 自动伐木/ 下，2026-10-12 移入；同日由 通用模版/ 改名为 其他模版/）
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/主界面.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/点击进入.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/ESC菜单.png"));
+
+                // 退出游戏流程：模板放在子目录里，key 会带上子目录名 —— 其他模版_退出游戏_xxx
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/退出至登录界面.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/设置.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/切换账号.png"));
 
                 System.Diagnostics.Debug.WriteLine($"模板加载成功: {_templates.Count} 个");
             }

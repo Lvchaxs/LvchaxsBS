@@ -25,11 +25,12 @@ Resources/
     ├── 自动清药/
     ├── 自动烹饪/
     ├── 钓鱼辅助/
-    ├── 通用模版/
+    ├── 其他模版/             各功能共用（主界面 / 点击进入 / ESC菜单）
+    │   └── 退出游戏/           退出流程（退出至登录界面 / 设置 / 切换账号）
     └── 角色头像/150x150/
 
 Core/                           ← 代码（目录与命名空间一一对应）
-├── TemplateManager.cs           模板加载（按路径注册，key = 文件夹_文件名）
+├── TemplateManager.cs           模板加载（按路径注册，key = 路径各段用 _ 连起来）
 └── SimulationService.cs         模拟输入（按键 / 点击）
 
 Services/
@@ -42,6 +43,11 @@ Services/
 
 > `AssetLocator` / `ResourceImageHelper` / `WindowFocusService` 仍留在宿主，
 > 原因见下面「可选性是怎么保证的」。
+>
+> ⚠️ **模板 key 由路径现推**：`其他模版/退出游戏/设置.png` → key `其他模版_退出游戏_设置`
+> （斜杠换下划线、去掉 `.png`）。所以**改文件名、改所在文件夹都会改 key** ——
+> 必须同步 `TemplateManager.LoadTemplates` 的注册路径 + 各功能里的 `GetCachedTemplate("…")`，
+> 否则 `GetCachedTemplate` 返回 null，检测会**静默失效**（不报错、只是认不出来）。
 
 新增图片**直接放进对应目录即可**——`.csproj` 用的是通配符
 （`Resources\**\*.png|ico|jpg|jpeg|bmp|gif`），不需要改工程文件。

@@ -75,10 +75,7 @@
 			<PluginArtifacts Include="$(TargetPath)" />
 			<PluginArtifacts Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
 		</ItemGroup>
-		<Copy SourceFiles="@(PluginArtifacts)"
-		      DestinationFolder="$(HostBinDir)"
-		      SkipUnchangedFiles="true"
-		      Condition="Exists('$(HostBinDir)')" />
+		<Copy SourceFiles="@(PluginArtifacts)" DestinationFolder="$(HostBinDir)" SkipUnchangedFiles="true" Condition="Exists('$(HostBinDir)')" />
 	</Target>
 
 </Project>
