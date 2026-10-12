@@ -102,6 +102,13 @@ namespace LvchaxsBS.Core
         /// <summary>第二行字幕的待显示正文，作用同 <see cref="_pendingSubtitleText"/>。</summary>
         private static string _pendingSubtitleText2 = "";
 
+        /// <summary>
+        /// 第二行字幕是否显示头像。默认显示（主程序自己的用法）。
+        /// UID 的登录流程只要文字（第二行不带头像），会把它关掉。
+        /// 窗口可能还没建，所以这个标志先存着，建窗时按它决定 Visibility。
+        /// </summary>
+        private static bool _avatarVisible2 = true;
+
         #endregion
 
         #region 初始化
@@ -768,6 +775,22 @@ namespace LvchaxsBS.Core
             _avatarImage2.Source = ResourceImageHelper.Load(_currentAvatarPath2);
         }
 
+        /// <summary>
+        /// 设置第二行字幕是否显示头像。UID 的登录流程只要文字，会传 false。
+        /// 窗口可能还没建，标志先存着，<see cref="CreateWindowIfNeeded2"/> 建窗时按它设 Visibility。
+        /// 隐藏时用 <see cref="Visibility.Hidden"/>（保留布局宽度占位），两行字幕才能左对齐。
+        /// </summary>
+        public static void SetAvatarVisible2(bool visible)
+        {
+            _avatarVisible2 = visible;
+
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                if (_avatarImage2 != null)
+                    _avatarImage2.Visibility = visible ? Visibility.Visible : Visibility.Hidden;
+            });
+        }
+
         #endregion
 
         #region 创建窗口
@@ -903,7 +926,9 @@ namespace LvchaxsBS.Core
                 StretchDirection = StretchDirection.Both,
                 Margin = new Thickness(0, 0, DpiService.PhysicalToDipX(AVATAR_MARGIN_RIGHT), 0),
                 Source = ResourceImageHelper.Load(_currentAvatarPath2),
-                Visibility = Visibility.Visible
+                // UID 的登录字幕不要头像（见 SetAvatarVisible2）。
+                // 用 Hidden 而不是 Collapsed：保留布局宽度做占位，两行气泡才能左对齐。
+                Visibility = _avatarVisible2 ? Visibility.Visible : Visibility.Hidden
             };
             RenderOptions.SetBitmapScalingMode(_avatarImage2, BitmapScalingMode.HighQuality);
             _container2.Children.Add(_avatarImage2);
