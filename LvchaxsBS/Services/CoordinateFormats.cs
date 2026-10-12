@@ -730,10 +730,10 @@ namespace LvchaxsBS.Services
 
         #endregion
 
-        #region 自动化
+        #region 通用坐标
 
 
-        public static MatchRect 自动化_小地图区域 = new MatchRect(211, 124, 461, 374, 0.9,
+        public static MatchRect 通用_小地图区域 = new MatchRect(211, 124, 461, 374, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (0, 0, 0, 0),
@@ -742,7 +742,7 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static MatchRect 自动化_主界面区域 = new MatchRect(72, 100, 106, 134, 0.9,
+        public static MatchRect 通用_主界面区域 = new MatchRect(72, 100, 106, 134, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (122, 0, 112, 0),
@@ -751,7 +751,7 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static MatchRect 自动化_冒险之证区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9,
+        public static MatchRect 通用_冒险之证区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9,
 
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
@@ -761,7 +761,7 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static MatchRect 自动化_冒险之证讨伐区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9,
+        public static MatchRect 通用_冒险之证讨伐区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9,
 
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
@@ -771,7 +771,7 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static MatchRect 自动化_冒险之证首领材料区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9, 
+        public static MatchRect 通用_冒险之证首领材料区域 = new MatchRect(2440, 1289, 2512, 1361, 0.9, 
 
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
