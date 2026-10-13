@@ -1180,7 +1180,7 @@
                                                        普通卡片完全不受影响（相当于「同一个卡片、一个有背景」）。 -->
                                                 <Grid HorizontalAlignment="Left" VerticalAlignment="Stretch"
                                                       Width="218"
-                                                      Margin="34,-2,0,-2"
+                                                      Margin="34,0,0,0"
                                                       Opacity="0.06"
                                                       Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}"
                                                       x:Name="pinnedMarkArcLayer">
@@ -1195,12 +1195,17 @@
                                                           Fill="{DynamicResource TextPrimaryBrush}"
                                                           Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 Z"/>
 
-                                                    <!-- 向左多占 0.5px：和左边的弧轻微叠一点，
-                                                         即使列宽被布局取整、边界落在半像素上也不会露缝。 -->
-                                                    <Rectangle x:Name="pinnedMarkFill"
-                                                               Grid.Column="1"
-                                                               Margin="-0.5,0,0,0"
-                                                               Fill="{DynamicResource TextPrimaryBrush}"/>
+                                                    <!-- 右侧那块用**带右圆角的 Border**，不再用直角 Rectangle：
+                                                         卡片行是 CornerRadius=8 + 边框 1px，内容区圆角就是 7；
+                                                         这里给右上/右下 7 的圆角，两条圆弧同心 →
+                                                         灰区的右边缘与卡片边缘严格平行，右上/右下不会再露出灰色的直角尖。
+                                                         ★ 纵向边距必须是 0（不能留负边距），否则圆角起点对不上卡片圆角，又会冒尖。
+                                                         向左多占 0.5px：和左边的弧轻微叠一点，防止半像素接缝。 -->
+                                                    <Border x:Name="pinnedMarkFill"
+                                                            Grid.Column="1"
+                                                            Margin="-0.5,0,0,0"
+                                                            CornerRadius="0,7,7,0"
+                                                            Background="{DynamicResource TextPrimaryBrush}"/>
                                                 </Grid>
 
                                                 <!-- 置顶 / 置底的标识：四角星 —— 上下左右四个尖角，
