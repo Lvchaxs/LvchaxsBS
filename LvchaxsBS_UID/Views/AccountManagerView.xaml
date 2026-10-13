@@ -1262,16 +1262,10 @@
                                         </Grid>
 
                                         <DataTemplate.Triggers>
-                                            <!-- ★ 右侧「四角星 + 灰区」的动画。
-                                                 为什么要三个触发器：列表每次刷新都会重建行容器，
-                                                 若动画只由 ShowStar 驱动，开页面/刷新时所有带星的卡片都会跟着播一遍。
-                                                 所以：
-                                                   · T0 只负责「该不该显示」（瞬时，给没有动画的场合用）；
-                                                   · T1/T2 才带动画，且额外要求 StarAnimPending=True ——
-                                                     这个标记只由被点击的那张卡在切换瞬间置位（播完清除），
-                                                     于是**只有被点的那张卡会划入/滑出**。
-                                                 位移：X=260（比这一列 252 还宽一点）时整块在卡片右边外面，
-                                                 被行卡片 RowCard 的 ClipToBounds 裁掉；滑到 0 就位。 -->
+                                            <!-- 注：「四角星 + 灰区」的划入/划出动画不在触发器里 ——
+                                                 列表刷新会重建行容器，触发器驱动的动画在新容器上不可靠
+                                                 （取消时新容器一建出来就是不显示，滑出动画没机会播，看着是瞬失）。
+                                                 改由 AccountManagerView.PlayStarSlide 在代码里播。 -->
                                             <DataTrigger Binding="{Binding Path=IsInGroupMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:AccountManagerView}}}" Value="False">
                                                 <Setter TargetName="deleteAccountButton" Property="Visibility" Value="Visible"/>
                                                 <Setter TargetName="removeFromGroupButton" Property="Visibility" Value="Collapsed"/>
