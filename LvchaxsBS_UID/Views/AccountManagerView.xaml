@@ -573,14 +573,13 @@
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
-                <!-- ★ 悬停不变色、点卡片也不选中（用户要求去掉这两种反馈）。
-                     列表逻辑不依赖 DataGrid 的选中状态（代码里没人读 SelectedItem），
-                     所以这里干脆把选中直接撤销掉：一被选中就置回 false，等于没有选中行为。
-                     注意：移入模式的「勾选」用的是 Account.IsSelectedForMove（下面那个触发器），
-                     和 DataGrid 的选中是两回事，不受影响。 -->
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="IsSelected" Value="False"/>
-                </Trigger>
+                <!-- ★ 这里**只**去掉「悬停/选中的视觉反馈」，绝不要在触发器里改 IsSelected 本身：
+                     曾经写过「IsSelected=True 时把 IsSelected 置回 False」，结果属性系统与
+                     DataGrid 的选中逻辑互相触发 → 无限递归 → StackOverflowException
+                     （栈溢出无法被 try/catch 捕获）→ 点卡片里任何按钮整个程序直接崩。
+                     现在：行样式不给选中画任何底色/边框（下面查询确认过，单元格样式也没有），
+                     所以「点了之后变灰、一直灰着」的观感没有了；
+                     内部那个 SelectedItem 没人读（代码里无引用），留着无害。 -->
                 <!-- ★ 置底不再给整卡灰底 + 0.8 透明（原来点头像置底后整张卡会变灰、一直灰着）。
                      置顶/置底的标识现在只靠右侧那颗四角星 + 灰区，卡片本身不再变色，
                      和字幕设置的列表一样：悬停、点击都不改变卡片背景。 -->
