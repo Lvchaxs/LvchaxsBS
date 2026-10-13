@@ -1918,15 +1918,16 @@ namespace LvchaxsBS_UID.Views
 
         /// <summary>
         /// 从 <paramref name="from"/> 沿 <paramref name="direction"/>（+1 / -1）找第一个「可登录」
-        /// （分组内未置底）的账号，返回下标；找不到返回 -1。主列表不过滤。
+        /// （分组内未置底）的账号，返回下标；找不到返回 -1。主列表不过滤置底，但仍做边界检查。
         /// </summary>
         private int FindLoginableAccountIndex(int from, int direction)
         {
-            if (_selectedGroupId <= 0) return from;
+            // direction 必须是 ±1：0 会让下面的循环原地打转
+            if (direction != 1 && direction != -1) return -1;
 
             for (int i = from; i >= 0 && i < _currentLoginAccountList.Count; i += direction)
             {
-                if (!IsAccountMarkedInCurrentGroup(_currentLoginAccountList[i].Id))
+                if (_selectedGroupId <= 0 || !IsAccountMarkedInCurrentGroup(_currentLoginAccountList[i].Id))
                     return i;
             }
             return -1;
@@ -1959,8 +1960,8 @@ namespace LvchaxsBS_UID.Views
             _toastManager.Show("已置底", $"账号「{account.Nickname}」登录完成，已在分组「{group.Name}」中置底");
         }
 
-        private void OnLoginPrevRequested(object sender, EventArgs e) => SwitchLoginAccount(_currentLoginAccountIndex - 1);
-        private void OnLoginNextRequested(object sender, EventArgs e) => SwitchLoginAccount(_currentLoginAccountIndex + 1);
+        private void OnLoginPrevRequested(object sender, EventArgs e) => SwitchLoginAccount(-1);
+        private void OnLoginNextRequested(object sender, EventArgs e) => SwitchLoginAccount(1);
 
         private void OnUidCopyRequested(object sender, string uid)
         {
