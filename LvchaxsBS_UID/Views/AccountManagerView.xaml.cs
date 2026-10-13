@@ -305,9 +305,10 @@ namespace LvchaxsBS_UID.Views
 
             if (showing)
             {
-                PresetStarOffscreen(accountId);
-                commitOnce();
-                PlayStarSlideIn(accountId);
+                PresetStarOffscreen(accountId);   // 此刻元素还不可见，先悄悄摆到卡片外
+                commitOnce();                     // 切数据 + 刷新列表（元素出现在卡片外，不会先闪）
+                ForceLayout();                    // ★ 催出布局，行容器与动画元素才存在
+                TryPlayStarSlide(accountId, StarOffX, 0, 220, EasingMode.EaseOut, null);
             }
             else if (TryPlayStarSlide(accountId, 0, StarOffX, 180, EasingMode.EaseIn, commitOnce))
             {
@@ -346,17 +347,25 @@ namespace LvchaxsBS_UID.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("[UID/星动画] 预置位移失败：" + ex.Message);
+                LogStarAnimError("预置位移", ex);
             }
         }
 
-        /// <summary>数据已经切成「显示」之后播划入：等布局走完拿到新容器，从卡片外滑到原位。</summary>
-        private void PlayStarSlideIn(int accountId)
+        /// <summary>
+        /// 强制跑一次布局。列表刚刷新完时行容器还没生成（要等下一次布局），
+        /// 而动画必须马上在容器上动手 —— 先把这一步催出来；顺带也让动画在第一帧渲染前就开始，
+        /// 不会出现「先在原位闪一下再滑」。
+        /// </summary>
+        private void ForceLayout()
         {
-            Dispatcher.BeginInvoke(new Action(() =>
+            try
             {
-                TryPlayStarSlide(accountId, StarOffX, 0, 220, EasingMode.EaseOut, null);
-            }), DispatcherPriority.Loaded);
+                accountsDataGrid.UpdateLayout();
+            }
+            catch (Exception ex)
+            {
+                LogStarAnimError("UpdateLayout", ex);
+            }
         }
 
         /// <summary>对指定账号的行播「星 + 灰区」位移；返回是否真的播了（没播就让调用方立刻落地数据）。</summary>
@@ -365,7 +374,11 @@ namespace LvchaxsBS_UID.Views
             try
             {
                 var row = FindRowForAccount(accountId);
-                if (row == null) return false;
+                if (row == null)
+                {
+                    LogStarAnimNote("找不到行容器（账号可能不在可视区）");
+                    return false;
+                }
 
                 bool handled = false;
                 foreach (var name in StarElementNames)
@@ -375,11 +388,14 @@ namespace LvchaxsBS_UID.Views
                     if (AnimateStarX(element, fromX, toX, milliseconds, easing, handled ? null : onCompleted))
                         handled = true;
                 }
+
+                if (!handled)
+                    LogStarAnimNote("行容器里没找到「星/灰区」元素或它没有 TranslateTransform");
                 return handled;
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("[UID/星动画] 播位移失败：" + ex.Message);
+                LogStarAnimError("播位移", ex);
                 return false;
             }
         }
@@ -404,8 +420,48 @@ namespace LvchaxsBS_UID.Views
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("[UID/星动画] 位移动画异常：" + ex.Message);
+                LogStarAnimError("位移动画", ex);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 动画相关异常只记日志、不向外抛 —— 宿主没有全局异常处理，抛出来会直接崩掉整个程序；
+        /// 但静默吞掉又没法定位"为什么没动画"，所以只把**失败**写进 UID/Config/star_anim.log（正常不留痕）。
+        /// </summary>
+        private static void LogStarAnimError(string where, Exception ex)
+        {
+            Debug.WriteLine("[UID/星动画] " + where + "：" + ex);
+
+            try
+            {
+                // 全限定名：本文件同时引了 System.IO 和 System.Windows.Shapes，Path 会二义
+                string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UID", "Config");
+                System.IO.Directory.CreateDirectory(dir);
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "star_anim.log"),
+                    string.Format("{0:yyyy-MM-dd HH:mm:ss}  {1}  {2}: {3}{4}",
+                        DateTime.Now, where, ex.GetType().Name, ex.Message, Environment.NewLine));
+            }
+            catch
+            {
+                // 连日志都写不了就算了，不能因为记日志再出问题
+            }
+        }
+
+        /// <summary>记录一次「动画没能播」的原因（没有异常的情况），正常不留痕。</summary>
+        private static void LogStarAnimNote(string note)
+        {
+            Debug.WriteLine("[UID/星动画] " + note);
+
+            try
+            {
+                string dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "UID", "Config");
+                System.IO.Directory.CreateDirectory(dir);
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "star_anim.log"),
+                    string.Format("{0:yyyy-MM-dd HH:mm:ss}  {1}{2}", DateTime.Now, note, Environment.NewLine));
+            }
+            catch
+            {
             }
         }
 
