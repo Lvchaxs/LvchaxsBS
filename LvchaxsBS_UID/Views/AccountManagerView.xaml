@@ -1160,7 +1160,7 @@
                                                 <!-- 底层：从四角星右尖开始铺到卡片最右边的灰色区。
                                                      左端是一段弧（上下两端向右收、中间向左凸出，凸出点与星尖相接），
                                                      弧右侧是一块矩形，两块拼起来把卡片右侧整片铺满（上下也铺满卡片高度）。
-                                                     它不占布局空间 —— 按钮们叠在它上面。 -->
+                                                     按钮们叠在它上面。 -->
                                                 <!-- ★ 透明度（0.06）写在**这个父 Grid** 上、不写在子元素上：
                                                      两个各自带 Opacity 的相邻元素会被各自渲染成独立图层，
                                                      交界处抗锯齿的 alpha 叠不到 1 → 看得见一条缝。
@@ -1169,11 +1169,16 @@
                                                      原来主列表操作区窄（只有登录）、分组内宽（登录+移出），
                                                      灰区就跟着时短时长；218 是分组内那一版（观感合适）的长度 ——
                                                      星 32 + 100 + 登录 55 + 移出 55 + 右边距 10 = 252，减去左边让给星的 34。
-                                                     因为宽度写死，主列表的操作列也会被撑到同一宽，两处观感就一致了。 -->
+                                                     因为宽度写死，置顶/置底的卡片操作列会被撑到 252。
+                                                     ★ 整块跟着 ShowStar 折叠（Visibility 绑 ShowStar）：
+                                                       没有星的普通卡片这块**直接 Collapsed**，不占宽度 ——
+                                                       所以只有置顶/置底的卡片才会让描述区窄 55px，
+                                                       普通卡片完全不受影响（相当于「同一个卡片、一个有背景」）。 -->
                                                 <Grid HorizontalAlignment="Left" VerticalAlignment="Stretch"
                                                       Width="218"
                                                       Margin="34,-10,0,-10"
                                                       Opacity="0.06"
+                                                      Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}"
                                                       x:Name="pinnedMarkArcLayer">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="19.3"/>
@@ -1184,36 +1189,14 @@
                                                           Grid.Column="0"
                                                           Stretch="Fill"
                                                           Fill="{DynamicResource TextPrimaryBrush}"
-                                                          Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 Z">
-                                                        <Path.Style>
-                                                            <Style TargetType="Path">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding ShowStar}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Path.Style>
-                                                    </Path>
+                                                          Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 Z"/>
 
                                                     <!-- 向左多占 0.5px：和左边的弧轻微叠一点，
                                                          即使列宽被布局取整、边界落在半像素上也不会露缝。 -->
                                                     <Rectangle x:Name="pinnedMarkFill"
                                                                Grid.Column="1"
                                                                Margin="-0.5,0,0,0"
-                                                               Fill="{DynamicResource TextPrimaryBrush}">
-                                                        <Rectangle.Style>
-                                                            <Style TargetType="Rectangle">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding ShowStar}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Rectangle.Style>
-                                                    </Rectangle>
+                                                               Fill="{DynamicResource TextPrimaryBrush}"/>
                                                 </Grid>
 
                                                 <!-- 置顶 / 置底的标识：四角星 —— 上下左右四个尖角，
