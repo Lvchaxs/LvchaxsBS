@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -333,10 +332,11 @@ namespace LvchaxsBS_UID.Views
             }
         }
 
+        // 状态提示那一行已按用户要求从界面上删除（左侧只留两行）。
+        // DP 保留着是为了宿主那边的赋值调用不报错，值不再影响界面。
         public static readonly DependencyProperty StatusHintTextProperty =
             DependencyProperty.Register(nameof(StatusHintText), typeof(string), typeof(LoginConfirmWindow),
-                // 默认空串：打开窗口时那一行什么都不显示，只有登录中 / 成功 / 置底等状态才出现
-                new PropertyMetadata(string.Empty, OnStatusHintTextChanged));
+                new PropertyMetadata(string.Empty));
 
         public string StatusHintText
         {
@@ -344,64 +344,41 @@ namespace LvchaxsBS_UID.Views
             set => SetValue(StatusHintTextProperty, value);
         }
 
-        private static void OnStatusHintTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+
+
+        public static readonly DependencyProperty IsMarkedProperty =
+            DependencyProperty.Register(nameof(IsMarked), typeof(bool), typeof(LoginConfirmWindow),
+                new PropertyMetadata(false, OnIsMarkedChanged));
+
+        /// <summary>
+        /// 当前账号在分组里是否已置底。
+        /// ★ 属性名必须是 <c>IsMarked</c> —— 宿主样式 <c>IconMarkButtonStyle</c> 里的
+        ///   橙色激活态是 <c>DataTrigger Binding="{Binding IsMarked}"</c>，改名就不亮了。
+        /// </summary>
+        public bool IsMarked
+        {
+            get => (bool)GetValue(IsMarkedProperty);
+            set => SetValue(IsMarkedProperty, value);
+        }
+
+        private static void OnIsMarkedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is LoginConfirmWindow control)
             {
-                string text = e.NewValue?.ToString() ?? string.Empty;
-                control.LoginStatusHint.Text = text;
-                // 没状态可显示时整行藏起来，不占地方
-                control.LoginStatusHint.Visibility = string.IsNullOrEmpty(text)
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
-            }
-        }
-
-        public static readonly DependencyProperty IsAccountMarkedProperty =
-            DependencyProperty.Register(nameof(IsAccountMarked), typeof(bool), typeof(LoginConfirmWindow),
-                new PropertyMetadata(false, OnIsAccountMarkedChanged));
-
-        /// <summary>当前账号在分组里是否已置底（驱动置底控件的文字与提示）。</summary>
-        public bool IsAccountMarked
-        {
-            get => (bool)GetValue(IsAccountMarkedProperty);
-            set => SetValue(IsAccountMarkedProperty, value);
-        }
-
-        private static void OnIsAccountMarkedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is LoginConfirmWindow control)
-            {
-                bool marked = (bool)e.NewValue;
-                control.UpdateMarkToggleVisual(marked);
+                control.UpdateMarkToggleVisual((bool)e.NewValue);
             }
         }
 
         /// <summary>
-        /// 按置底状态刷新置底控件：勾态 + 右侧一行文案
-        /// （未置底「点击置底后，代表已登录」；已置底「已置底，取消置底后恢复登录」）。
+        /// 按置底状态刷新置底控件的右侧文案（图标颜色由样式的绑定自动处理）：
+        /// 未置底「点击置底后，代表已登录」；已置底「已置底，取消置底后恢复登录」。
         /// </summary>
         private void UpdateMarkToggleVisual(bool marked)
         {
-            // 同步勾态。设置 IsChecked 会再次触发 Click，用标志位抑制，
-            // 否则「外部改置底状态 → 回调设 IsChecked → 又当用户点了一次」会绕回去。
-            _suppressMarkToggleEvent = true;
-            try
-            {
-                MarkToggleCheckBox.IsChecked = marked;
-            }
-            finally
-            {
-                _suppressMarkToggleEvent = false;
-            }
-
             MarkToggleText.Text = marked
                 ? "已置底，取消置底后恢复登录"
                 : "点击置底后，代表已登录";
         }
-
-        /// <summary>抑制标志：回调里设 IsChecked 时不要当成用户又点了一次。</summary>
-        private bool _suppressMarkToggleEvent;
 
         public static readonly DependencyProperty ShowMarkToggleProperty =
             DependencyProperty.Register(nameof(ShowMarkToggle), typeof(bool), typeof(LoginConfirmWindow),
@@ -418,7 +395,7 @@ namespace LvchaxsBS_UID.Views
         {
             if (d is LoginConfirmWindow control)
             {
-                control.MarkToggleCheckBox.Visibility = (bool)e.NewValue ? Visibility.Visible : Visibility.Collapsed;
+                control.MarkToggleRow.Visibility = (bool)e.NewValue ? Visibility.Visible : Visibility.Collapsed;
             }
         }
         #endregion
@@ -442,13 +419,8 @@ namespace LvchaxsBS_UID.Views
             // 初始化复选框联动状态
             UpdateCheckBoxesState();
 
-            // 置底控件按当前账号状态刷新一次（打开前宿主可能已设过 IsAccountMarked）
-            UpdateMarkToggleVisual(IsAccountMarked);
-
-            // 状态提示按当前值刷新一次可见性（空串 → 隐藏）
-            LoginStatusHint.Visibility = string.IsNullOrEmpty(StatusHintText)
-                ? Visibility.Collapsed
-                : Visibility.Visible;
+            // 置底控件按当前账号状态刷新一次（打开前宿主可能已设过 IsMarked）
+            UpdateMarkToggleVisual(IsMarked);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -1039,12 +1011,9 @@ namespace LvchaxsBS_UID.Views
             LoginNextRequested?.Invoke(this, EventArgs.Empty);
         }
 
-        /// <summary>置底控件（复选框）：在分组内置底 / 取消置底之间切换（实际动作由宿主做）。</summary>
-        private void MarkToggleCheckBox_Click(object sender, RoutedEventArgs e)
+        /// <summary>置底图标按钮：在分组内置底 / 取消置底之间切换（实际动作由宿主做）。</summary>
+        private void MarkToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            // 回调里同步勾态时也会走到这里，那不是用户点的，直接忽略
-            if (_suppressMarkToggleEvent) return;
-
             MarkToggleRequested?.Invoke(this, EventArgs.Empty);
         }
 

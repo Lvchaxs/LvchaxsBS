@@ -1780,7 +1780,7 @@ namespace LvchaxsBS_UID.Views
 
             // 置底控件：仅分组内显示，初始状态跟着账号的置底状态
             _loginConfirmWindow.ShowMarkToggle = _selectedGroupId > 0;
-            _loginConfirmWindow.IsAccountMarked = marked;
+            _loginConfirmWindow.IsMarked = marked;
 
             _selectedAccountIds = new List<int> { account.Id };
             SetCurrentLoginAccountList(account);
@@ -1905,7 +1905,7 @@ namespace LvchaxsBS_UID.Views
             _loginConfirmWindow.ConfirmButtonText = marked ? "无法登录" : "确认登录";
             _loginConfirmWindow.IsConfirmEnabled = !marked;
             _loginConfirmWindow.StatusHintText = marked ? "账号已置底，无法登录" : string.Empty;
-            _loginConfirmWindow.IsAccountMarked = marked;
+            _loginConfirmWindow.IsMarked = marked;
 
             SetPrevAccountInfo();
             SetNextAccountInfo();
@@ -1931,7 +1931,7 @@ namespace LvchaxsBS_UID.Views
 
             if (_loginConfirmWindow != null)
             {
-                _loginConfirmWindow.IsAccountMarked = nowMarked;
+                _loginConfirmWindow.IsMarked = nowMarked;
                 _loginConfirmWindow.ConfirmButtonText = nowMarked ? "无法登录" : "确认登录";
                 _loginConfirmWindow.IsConfirmEnabled = !nowMarked;
                 _loginConfirmWindow.StatusHintText = nowMarked ? "账号已置底，无法登录" : string.Empty;
@@ -1979,7 +1979,7 @@ namespace LvchaxsBS_UID.Views
                 _loginConfirmWindow.ConfirmButtonText = "无法登录";
                 _loginConfirmWindow.IsConfirmEnabled = false;
                 _loginConfirmWindow.StatusHintText = "账号已置底，无法登录";
-                _loginConfirmWindow.IsAccountMarked = true;
+                _loginConfirmWindow.IsMarked = true;
             }
 
             SetPrevAccountInfo();
