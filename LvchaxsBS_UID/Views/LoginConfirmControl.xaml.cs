@@ -348,7 +348,12 @@ namespace LvchaxsBS_UID.Views
         {
             if (d is LoginConfirmWindow control)
             {
-                control.LoginStatusHint.Text = e.NewValue?.ToString() ?? string.Empty;
+                string text = e.NewValue?.ToString() ?? string.Empty;
+                control.LoginStatusHint.Text = text;
+                // 没状态可显示时整行藏起来，不占地方
+                control.LoginStatusHint.Visibility = string.IsNullOrEmpty(text)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
             }
         }
 
@@ -373,8 +378,8 @@ namespace LvchaxsBS_UID.Views
         }
 
         /// <summary>
-        /// 按置底状态刷新置底控件：勾态 + 右侧两行文案
-        /// （未置底「置底后/代表已登录」；已置底「已置底/取消置底后恢复登录」）。
+        /// 按置底状态刷新置底控件：勾态 + 右侧一行文案
+        /// （未置底「点击置底后，代表已登录」；已置底「已置底，取消置底后恢复登录」）。
         /// </summary>
         private void UpdateMarkToggleVisual(bool marked)
         {
@@ -390,10 +395,9 @@ namespace LvchaxsBS_UID.Views
                 _suppressMarkToggleEvent = false;
             }
 
-            MarkToggleText.Inlines.Clear();
-            MarkToggleText.Inlines.Add(new Run(marked ? "已置底" : "置底后"));
-            MarkToggleText.Inlines.Add(new LineBreak());
-            MarkToggleText.Inlines.Add(new Run(marked ? "取消置底后恢复登录" : "代表已登录"));
+            MarkToggleText.Text = marked
+                ? "已置底，取消置底后恢复登录"
+                : "点击置底后，代表已登录";
         }
 
         /// <summary>抑制标志：回调里设 IsChecked 时不要当成用户又点了一次。</summary>
@@ -440,6 +444,11 @@ namespace LvchaxsBS_UID.Views
 
             // 置底控件按当前账号状态刷新一次（打开前宿主可能已设过 IsAccountMarked）
             UpdateMarkToggleVisual(IsAccountMarked);
+
+            // 状态提示按当前值刷新一次可见性（空串 → 隐藏）
+            LoginStatusHint.Visibility = string.IsNullOrEmpty(StatusHintText)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
