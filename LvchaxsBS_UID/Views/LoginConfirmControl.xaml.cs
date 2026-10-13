@@ -745,6 +745,7 @@ namespace LvchaxsBS_UID.Views
             IsCloseEnabled = false;
             IsMarkCheckBoxEnabled = false;
             IsConfirmEnabled = true;
+            StatusHintText = "正在登录中...";
         }
 
         public void SetLoginCompletedState(bool success)
@@ -753,7 +754,9 @@ namespace LvchaxsBS_UID.Views
             {
                 TitleText = "登录完成";
                 TitleColor = SuccessTextBrush;
-                ConfirmButtonText = "登录完成";
+                // ★ 完成后按钮恢复成「确认登录」而不是「登录完成」：
+                //   留着"登录完成"会让用户以为这是个新状态，点下去又重新跑一遍登录。
+                ConfirmButtonText = "确认登录";
                 IsConfirmEnabled = true;
                 IsCloseEnabled = true;
                 IsMarkCheckBoxEnabled = true;
