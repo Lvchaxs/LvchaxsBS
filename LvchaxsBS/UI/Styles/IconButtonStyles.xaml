@@ -287,8 +287,9 @@
                              WPF 依赖属性优先级里「本地值」高于「ControlTemplate 的 Trigger」，
                              本地写死之后下面的 DataTrigger 改不动它（静默失效）。
                              2026-10-13：方块缩到 14×14（与复选框一致）后，箭头随之从 13×13 收到 8×8（方块内部才 10px，再大就贴边框了），
-                             描边从 1.2 加粗到 4.2 —— Path 是 Stretch="Uniform"，几何 18×18 缩到 8 的系数
-                             是 0.444，4.2 × 0.444 ≈ 1.87px，视觉粗细与复选框的勾（约 2px）对齐。
+                             描边 2.2 —— Path 是 Stretch="Uniform"，几何 18×18 缩到 8 的系数是 0.444，
+                             2.2 × 0.444 ≈ 0.98px。★ 这里**别再加粗**：8px 的几何本来就小，
+                             描边一粗笔画就糊成一坨、看着不像箭头了（激活态是实心填充，反而不受影响）。
                              激活时 StrokeThickness 归零：实心橙的外轮廓正好落在原描边中线上，
                              比未激活略小，用来抵消"实心看着胀一圈"的错觉。 -->
                         <Path x:Name="pinIcon"
@@ -302,7 +303,7 @@
                                     <Setter Property="Width" Value="8"/>
                                     <Setter Property="Height" Value="8"/>
                                     <Setter Property="Stroke" Value="{DynamicResource TextDisabledBrush}"/>
-                                    <Setter Property="StrokeThickness" Value="4.2"/>
+                                    <Setter Property="StrokeThickness" Value="2.2"/>
                                     <Setter Property="Fill" Value="Transparent"/>
                                 </Style>
                             </Path.Style>
@@ -454,7 +455,7 @@
                                                     <Setter Property="Width" Value="8"/>
                                                     <Setter Property="Height" Value="8"/>
                                                     <Setter Property="Stroke" Value="{DynamicResource TextDisabledBrush}"/>
-                                                    <Setter Property="StrokeThickness" Value="4.2"/>
+                                                    <Setter Property="StrokeThickness" Value="2.2"/>
                                                     <Setter Property="Fill" Value="Transparent"/>
                                                 </Style>
                                             </Path.Style>
