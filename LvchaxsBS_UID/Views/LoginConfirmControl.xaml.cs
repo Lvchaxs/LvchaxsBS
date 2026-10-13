@@ -33,7 +33,10 @@ namespace LvchaxsBS_UID.Views
         #region 依赖属性
         public static readonly DependencyProperty IsConfirmEnabledProperty =
             DependencyProperty.Register(nameof(IsConfirmEnabled), typeof(bool), typeof(LoginConfirmWindow),
-                new PropertyMetadata(false, OnIsConfirmEnabledChanged));
+                // ★ 默认值必须是 true：WPF 的依赖属性"设成和当前值相同"时不触发回调，
+                //   若默认 false，新建窗口时设 false（置底账号禁登）就不会走 OnIsConfirmEnabledChanged，
+                //   按钮将保持 XAML 默认的可点状态。默认 true 时，设 false 一定有变化、一定置灰。
+                new PropertyMetadata(true, OnIsConfirmEnabledChanged));
 
         public bool IsConfirmEnabled
         {
