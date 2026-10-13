@@ -9,13 +9,6 @@
              mc:Ignorable="d">
 
     <UserControl.Resources>
-        <!-- 置顶 / 置底的账号卡片背景：资源包里的「熄星」。
-             UniformToFill = 保持比例铺满、多出来的边缘裁掉（不拉伸变形）。
-             资源包缺失时 ImageSource 为 null → 背景空白，不抛异常。 -->
-        <ImageBrush x:Key="MarkedCardBackgroundBrush"
-                    Stretch="UniformToFill"
-                    ImageSource="{ui:Asset Images/Pictures/熄星.png}"/>
-
         <!-- 头像：把账号的 Avatar（角色名）转成资源包里的图片，取不到时回落到「空」 -->
         <converters:AvatarConverter x:Key="AvatarConverter"/>
 
@@ -584,13 +577,9 @@
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource RowHighlightBrush}"/>
                 </Trigger>
-                <!-- 置底 / 置顶的卡片换成「熄星」背景图（不再用灰底 + 0.8 透明，
-                     否则整张卡片连文字一起变淡、图片也看不清） -->
                 <DataTrigger Binding="{Binding IsMarked}" Value="True">
-                    <Setter Property="Background" Value="{StaticResource MarkedCardBackgroundBrush}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                    <Setter Property="Background" Value="{StaticResource MarkedCardBackgroundBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource Gray100Brush}"/>
+                    <Setter Property="Opacity" Value="0.8"/>
                 </DataTrigger>
                 <!-- 移入模式：鼠标变成手型（提示「点卡片任意处即选中」） -->
                 <DataTrigger Binding="{Binding Path=IsMoveMode, RelativeSource={RelativeSource AncestorType={x:Type local:AccountManagerView}}}" Value="True">
@@ -1189,6 +1178,31 @@
 
                                             <!-- ⑤ 操作按钮 -->
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                <!-- 置顶 / 置底的标识：四角星 —— 上下左右四个尖角，
+                                                     尖角之间是往内凹的弧线（不是直线连接）。
+                                                     只在置顶或置底时显示；位置在登录按钮左侧、距它 100px。 -->
+                                                <Path x:Name="pinnedMarkStar"
+                                                      Width="16" Height="16"
+                                                      Stretch="Uniform"
+                                                      Fill="{DynamicResource WarningBrush}"
+                                                      VerticalAlignment="Center"
+                                                      Margin="0,0,100,0"
+                                                      Data="M12 2 C12.5 7 17 11.5 22 12 C17 12.5 12.5 17 12 22 C11.5 17 7 12.5 2 12 C7 11.5 11.5 7 12 2 Z">
+                                                    <Path.Style>
+                                                        <Style TargetType="Path">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsMarked}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Path.Style>
+                                                </Path>
+
                                                 <Button x:Name="loginAccountButton" Style="{DynamicResource IconLoginButtonStyle}"
                                                         Margin="5,0,0,0" Tag="{Binding Id}" Click="LoginAccountButton_Click"/>
                                                 <Button x:Name="removeFromGroupButton" Content="移出"
