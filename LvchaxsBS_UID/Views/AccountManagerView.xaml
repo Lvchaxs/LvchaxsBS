@@ -9,6 +9,13 @@
              mc:Ignorable="d">
 
     <UserControl.Resources>
+        <!-- 置顶 / 置底的账号卡片背景：资源包里的「熄星」。
+             UniformToFill = 保持比例铺满、多出来的边缘裁掉（不拉伸变形）。
+             资源包缺失时 ImageSource 为 null → 背景空白，不抛异常。 -->
+        <ImageBrush x:Key="MarkedCardBackgroundBrush"
+                    Stretch="UniformToFill"
+                    ImageSource="{ui:Asset Images/Pictures/熄星.png}"/>
+
         <!-- 头像：把账号的 Avatar（角色名）转成资源包里的图片，取不到时回落到「空」 -->
         <converters:AvatarConverter x:Key="AvatarConverter"/>
 
@@ -577,9 +584,13 @@
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource RowHighlightBrush}"/>
                 </Trigger>
+                <!-- 置底 / 置顶的卡片换成「熄星」背景图（不再用灰底 + 0.8 透明，
+                     否则整张卡片连文字一起变淡、图片也看不清） -->
                 <DataTrigger Binding="{Binding IsMarked}" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource Gray100Brush}"/>
-                    <Setter Property="Opacity" Value="0.8"/>
+                    <Setter Property="Background" Value="{StaticResource MarkedCardBackgroundBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource MarkedCardBackgroundBrush}"/>
                 </DataTrigger>
                 <!-- 移入模式：鼠标变成手型（提示「点卡片任意处即选中」） -->
                 <DataTrigger Binding="{Binding Path=IsMoveMode, RelativeSource={RelativeSource AncestorType={x:Type local:AccountManagerView}}}" Value="True">
