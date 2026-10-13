@@ -286,9 +286,9 @@
                         <!-- 箭头尺寸/颜色全部写在 Path.Style 里 —— **不能写成元素上的本地值**：
                              WPF 依赖属性优先级里「本地值」高于「ControlTemplate 的 Trigger」，
                              本地写死之后下面的 DataTrigger 改不动它（静默失效）。
-                             2026-10-13：方块缩到 14×14（与复选框一致）后，箭头随之从 13×13 收到 10×10，
-                             描边从 1.2 加粗到 3.4 —— Path 是 Stretch="Uniform"，几何 18×18 缩到 10 的系数
-                             是 0.556，3.4 × 0.556 ≈ 1.9px，视觉粗细与复选框的勾（约 2px）对齐。
+                             2026-10-13：方块缩到 14×14（与复选框一致）后，箭头随之从 13×13 收到 8×8（方块内部才 10px，再大就贴边框了），
+                             描边从 1.2 加粗到 4.2 —— Path 是 Stretch="Uniform"，几何 18×18 缩到 8 的系数
+                             是 0.444，4.2 × 0.444 ≈ 1.87px，视觉粗细与复选框的勾（约 2px）对齐。
                              激活时 StrokeThickness 归零：实心橙的外轮廓正好落在原描边中线上，
                              比未激活略小，用来抵消"实心看着胀一圈"的错觉。 -->
                         <Path x:Name="pinIcon"
@@ -299,10 +299,10 @@
                               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
                             <Path.Style>
                                 <Style TargetType="Path">
-                                    <Setter Property="Width" Value="10"/>
-                                    <Setter Property="Height" Value="10"/>
+                                    <Setter Property="Width" Value="8"/>
+                                    <Setter Property="Height" Value="8"/>
                                     <Setter Property="Stroke" Value="{DynamicResource TextDisabledBrush}"/>
-                                    <Setter Property="StrokeThickness" Value="3.4"/>
+                                    <Setter Property="StrokeThickness" Value="4.2"/>
                                     <Setter Property="Fill" Value="Transparent"/>
                                 </Style>
                             </Path.Style>
@@ -442,7 +442,7 @@
                             helpers:InteractionScale.PressScale="0.95"
                             helpers:InteractionScale.Target="{Binding ElementName=markIcon}">
                                         <!-- 向下箭头 = 置底（把置顶那个箭头上下翻转）。
-                                             与置顶同一套处理：两态都是 10x10，只换颜色与空心/实心 -->
+                                             与置顶同一套处理：两态都是 8x8，只换颜色与空心/实心 -->
                                         <Path x:Name="markIcon"
                                               HorizontalAlignment="Center" VerticalAlignment="Center"
                                               RenderTransformOrigin="0.5,0.5"
@@ -451,10 +451,10 @@
                                               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
                                             <Path.Style>
                                                 <Style TargetType="Path">
-                                                    <Setter Property="Width" Value="10"/>
-                                                    <Setter Property="Height" Value="10"/>
+                                                    <Setter Property="Width" Value="8"/>
+                                                    <Setter Property="Height" Value="8"/>
                                                     <Setter Property="Stroke" Value="{DynamicResource TextDisabledBrush}"/>
-                                                    <Setter Property="StrokeThickness" Value="3.4"/>
+                                                    <Setter Property="StrokeThickness" Value="4.2"/>
                                                     <Setter Property="Fill" Value="Transparent"/>
                                                 </Style>
                                             </Path.Style>
