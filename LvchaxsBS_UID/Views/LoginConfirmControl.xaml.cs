@@ -66,11 +66,15 @@ namespace LvchaxsBS_UID.Views
 
         private static void OnIsConfirmEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            // 只管可用状态，不要再改 Background —— 按钮现在是宿主默认的
-            // SettingsButtonStyleRound6（中性底色），改这里会把那套配色顶掉。
+            // 背景色不要动 —— 按钮用的是宿主默认的 SettingsButtonStyleRound6（中性底色），
+            // 改 Background 会把那套配色顶掉。
+            // 但宿主样式没有定义「禁用」时的外观，只设 IsEnabled 视觉上没变化，
+            // 所以用透明度表达禁用态：任何主题下都一致，也不引入固定颜色。
             if (d is LoginConfirmWindow control)
             {
-                control.ConfirmLoginButton.IsEnabled = (bool)e.NewValue;
+                bool enabled = (bool)e.NewValue;
+                control.ConfirmLoginButton.IsEnabled = enabled;
+                control.ConfirmLoginButton.Opacity = enabled ? 1.0 : 0.45;
             }
         }
 
