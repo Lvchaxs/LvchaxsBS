@@ -573,13 +573,13 @@
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
-                <!-- 悬停与选中用同一个中性底色（RowHighlightBrush，宿主主题里定义）：
-                     浅色 #F2F2F2 / 深色 #313336，不要主题蓝 -->
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource RowHighlightBrush}"/>
-                </Trigger>
+                <!-- ★ 悬停不变色、点卡片也不选中（用户要求去掉这两种反馈）。
+                     列表逻辑不依赖 DataGrid 的选中状态（代码里没人读 SelectedItem），
+                     所以这里干脆把选中直接撤销掉：一被选中就置回 false，等于没有选中行为。
+                     注意：移入模式的「勾选」用的是 Account.IsSelectedForMove（下面那个触发器），
+                     和 DataGrid 的选中是两回事，不受影响。 -->
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource RowHighlightBrush}"/>
+                    <Setter Property="IsSelected" Value="False"/>
                 </Trigger>
                 <DataTrigger Binding="{Binding IsMarked}" Value="True">
                     <Setter Property="Background" Value="{DynamicResource Gray100Brush}"/>
@@ -985,7 +985,7 @@
                               Style="{StaticResource ModernDataGridStyle}"
                               RowStyle="{StaticResource DataGridRowStyle}" CellStyle="{StaticResource DataGridCellStyle}"
                               ItemsSource="{Binding}" AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"
-                              SelectionChanged="DataGrid_SelectionChanged" AutoGenerateColumns="False"
+                              AutoGenerateColumns="False"
                               HeadersVisibility="None"
                               HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="0">
                         <!-- 账号列表已改成「每行一张卡片」，布局照主程序的功能卡片：

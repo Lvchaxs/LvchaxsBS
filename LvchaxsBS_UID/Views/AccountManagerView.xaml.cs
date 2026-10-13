@@ -1179,11 +1179,6 @@ namespace LvchaxsBS_UID.Views
             e.Cancel = true;
         }
 
-        private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // 处理选择改变的逻辑
-        }
-
         private void DataGrid_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             e.Handled = true;
