@@ -1010,8 +1010,9 @@
                                             <!-- ③ 头像（图标位，可点击）：显示账号自己选的 Avatar（角色名），
                                                  在「添加/编辑账号」窗口里选，图片来自共用资源包。
                                                  账号没设头像、或资源包里没有这张图时回落到「空」。
-                                                 点它：主列表 = 置顶/取消置顶；分组内 = 标记/取消标记；
-                                                 移入模式 = 选中/取消选中。头像上不弹悬停提示。 -->
+                                                 ★ 点它（卡片上已不再单独放置顶、置底按钮）= 主列表 置顶/取消置顶、分组内 置底/取消置底；
+                                                 移入模式 = 选中/取消选中。头像上不弹悬停提示。
+                                                     是否置顶/置底，看卡片有没有四角星。 -->
                                             <Button Grid.Column="0" Style="{DynamicResource AccountAvatarButtonStyle}"
                                                     Tag="{Binding Id}" Click="AccountAvatarButton_Click">
                                                 <Border Style="{StaticResource AccountIconBorderStyle}">
@@ -1042,35 +1043,13 @@
                                                     </Border>
 
                                                     <!-- 服务器标签：非官服才显示（官服返回空串，见 Account.ServerTag）。
-                                                         位置在世界等级右侧、置顶按钮左侧。 -->
+                                                         位置在世界等级右侧。 -->
                                                     <Border x:Name="serverTagBorder" Style="{StaticResource AccountTagServerStyle}">
                                                         <TextBlock Text="{Binding ServerTag, Mode=OneWay}" FontSize="10" FontWeight="SemiBold"
                                                                    Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                                     </Border>
 
-                                                    <!-- 置顶：世界等级右侧、编辑左侧；只在主列表显示。
-                                                         用 AccountPinButtonStyle（宿主提供的变体）：
-                                                         外观同 IconPinButtonStyle，提示是「置顶/可点头像」。
-                                                         这里**不能**再写 ui:ButtonTip.Text —— 那是插件自己的 ButtonTip，
-                                                         和样式里用的宿主 ButtonTip 是两个不同的附加属性，
-                                                         两处都设会同时弹出两个气泡。分组卡片那边仍用 IconPinButtonStyle。 -->
-                                                    <Button Style="{DynamicResource AccountPinButtonStyle}" Margin="6,0,0,0"
-                                                            VerticalAlignment="Center"
-                                                            Tag="{Binding Id}" Click="PinButton_Click"
-                                                            Visibility="{Binding ShowPinButton,
-                                                                RelativeSource={RelativeSource AncestorType={x:Type local:AccountManagerView}},
-                                                                Converter={StaticResource BoolToVisibilityConverter}}"/>
-
-                                                    <!-- 置底（分组内的「标记」）：向下箭头，紧跟在置顶右侧、编辑左侧；
-                                                         只在分组内显示（主列表里这一位留给置顶）。 -->
-                                                    <Button x:Name="markButton" Style="{DynamicResource IconMarkButtonStyle}" Margin="6,0,0,0"
-                                                            VerticalAlignment="Center"
-                                                            Tag="{Binding Id}" Click="MarkButton_Click"
-                                                            Visibility="{Binding ShowMarkButton,
-                                                                RelativeSource={RelativeSource AncestorType={x:Type local:AccountManagerView}},
-                                                                Converter={StaticResource BoolToVisibilityConverter}}"/>
-
-                                                    <!-- 编辑 / 删除：紧跟在置顶/置底右侧，
+                                                    <!-- 编辑 / 删除：跟在等级标签右侧，
                                                          大小与字幕设置的编辑按钮一致（16x16） -->
                                                     <Button x:Name="editAccountButton" Style="{DynamicResource IconEditButtonStyle}" Margin="6,0,0,0"
                                                             VerticalAlignment="Center"
@@ -1200,10 +1179,7 @@
                                                             <Style TargetType="Path">
                                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                                                 <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsMarked}" Value="True">
+                                                                    <DataTrigger Binding="{Binding ShowStar}" Value="True">
                                                                         <Setter Property="Visibility" Value="Visible"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
@@ -1219,10 +1195,7 @@
                                                             <Style TargetType="Rectangle">
                                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                                                 <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsMarked}" Value="True">
+                                                                    <DataTrigger Binding="{Binding ShowStar}" Value="True">
                                                                         <Setter Property="Visibility" Value="Visible"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
@@ -1236,7 +1209,8 @@
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                                                 <!-- 置顶 / 置底的标识：四角星 —— 上下左右四个尖角，
                                                      尖角之间是往内凹的弧线（不是直线连接）。
-                                                     只在置顶或置底时显示；位置在登录按钮左侧、距它 100px。 -->
+                                                     ★ 它已取代卡片上原来的置顶/置底按钮 —— 是否置顶/置底，就看卡片有没有这颗星（两者外观不区分）。
+                                                     显示与否绑 ShowStar（模式感知，见 Account.ShowStar）；位置在登录按钮左侧、距它 100px。 -->
                                                 <Path x:Name="pinnedMarkStar"
                                                       Width="32" Height="32"
                                                       Stretch="Uniform"
@@ -1249,10 +1223,7 @@
                                                         <Style TargetType="Path">
                                                             <Setter Property="Visibility" Value="Collapsed"/>
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding IsMarked}" Value="True">
+                                                                <DataTrigger Binding="{Binding ShowStar}" Value="True">
                                                                     <Setter Property="Visibility" Value="Visible"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>

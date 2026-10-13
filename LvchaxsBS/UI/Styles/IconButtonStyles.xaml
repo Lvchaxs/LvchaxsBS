@@ -262,15 +262,6 @@
         </Setter>
     </Style>
 
-    <!-- 账号卡片专用的置顶按钮：外观完全复用 IconPinButtonStyle，
-         只是提示多一句「可点头像」（账号卡片点头像 = 置顶/取消置顶）。
-         分组卡片没有头像，仍用 IconPinButtonStyle（提示只写「置顶」）。
-         分两个键的原因：UID 的 XAML 引用不了宿主的 ButtonTip 附加属性（编译期类型引用会循环依赖），
-         所以只能在宿主这边把带不同文案的变体备好，让 UID 用 DynamicResource 直接选。 -->
-    <Style x:Key="AccountPinButtonStyle" TargetType="Button" BasedOn="{StaticResource IconPinButtonStyle}">
-        <Setter Property="ui:ButtonTip.Text" Value="置顶/可点头像"/>
-    </Style>
-
     <!--
         账号卡片的头像按钮：把头像（48x48 圆形）包成可点的按钮 ——
         主账号列表里点它 = 置顶/取消置顶；分组内点它 = 置底/取消置底；

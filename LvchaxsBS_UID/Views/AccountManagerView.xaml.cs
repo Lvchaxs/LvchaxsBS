@@ -94,18 +94,6 @@ namespace LvchaxsBS_UID.Views
         /// <summary>是否处于「移入账号」模式（卡片模板据此切换按钮/选择框）。</summary>
         public bool IsMoveMode => _isMoveMode;
 
-        /// <summary>
-        /// 卡片里的「标记」方块是否显示：只在分组内的账号列表里出现。
-        /// </summary>
-        /// <remarks>
-        /// 账号列表已经从「多列」合并成「一张卡片」，
-        /// 原来靠隐藏整列来做这件事的做法不再适用，改成卡片模板绑定这两个属性。
-        /// </remarks>
-        public bool ShowMarkButton => !_isMoveMode && _selectedGroupId > 0 && _currentDisplayMode == DisplayMode.AccountList;
-
-        /// <summary>卡片里的「置顶」方块是否显示：只在主列表（未选分组）里出现。</summary>
-        public bool ShowPinButton => !_isMoveMode && _selectedGroupId == 0 && _currentDisplayMode == DisplayMode.AccountList;
-
         public event PropertyChangedEventHandler PropertyChanged;
         #endregion
 
@@ -244,8 +232,6 @@ namespace LvchaxsBS_UID.Views
                 SwitchToDisplayMode(DisplayMode.AccountList);
                 Dispatcher.BeginInvoke(() =>
                 {
-                    UpdateMarkColumnVisibility();
-                    UpdatePinColumnVisibility();
                 }, DispatcherPriority.Render);
             }
         }
@@ -337,6 +323,7 @@ namespace LvchaxsBS_UID.Views
             foreach (var account in filteredAccounts)
             {
                 account.IsMarked = false;   // 移入模式下不显示分组标记
+                account.ShowStar = false;   // 移入模式不显示四角星
                 account.IsMoveable = !inGroupIds.Contains(account.Id);
             }
 
@@ -354,6 +341,10 @@ namespace LvchaxsBS_UID.Views
                 account.IsMarked = group.IsAccountMarked(account.Id);
                 account.IsMoveable = true;
                 account.IsSelectedForMove = false;
+                // 分组内的四角星 = **本分组**的置底。
+                // ★ 不能用 account.IsPinned：那是主列表的全局置顶、分组内不重置，
+                //   会害得"主列表置顶过的账号在分组里也亮星"。
+                account.ShowStar = account.IsMarked;
             }
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -373,6 +364,7 @@ namespace LvchaxsBS_UID.Views
                 account.IsMarked = false;
                 account.IsMoveable = true;
                 account.IsSelectedForMove = false;
+                account.ShowStar = account.IsPinned;      // 主列表的四角星 = 置顶
             }
 
             return _sortingService.GetMainDisplayOrder(filteredAccounts);
@@ -385,23 +377,7 @@ namespace LvchaxsBS_UID.Views
             UpdateUIState();
             UpdateGroupInfoDisplay();
             UpdateWatermarkVisibility();
-            UpdateColumnVisibility();
         }
-
-        private void UpdateColumnVisibility()
-        {
-            UpdateMarkColumnVisibility();
-            UpdatePinColumnVisibility();
-        }
-
-        // 账号列表已合并成「一张卡片」，标记/置顶不再是独立列。
-        // 它们的显示与否改由卡片模板绑定到 ShowMarkButton / ShowPinButton，
-        // 这里只需要通知一次属性变化。
-        private void UpdateMarkColumnVisibility()
-            => OnPropertyChanged(nameof(ShowMarkButton));
-
-        private void UpdatePinColumnVisibility()
-            => OnPropertyChanged(nameof(ShowPinButton));
 
         private void UpdateUIState()
         {
@@ -456,7 +432,6 @@ namespace LvchaxsBS_UID.Views
             }
 
             UpdateGroupInfoDisplay();
-            UpdateColumnVisibility();
         }
 
         /// <summary>
@@ -964,7 +939,6 @@ namespace LvchaxsBS_UID.Views
                     UpdateAccountsList();
                     SwitchToDisplayMode(DisplayMode.AccountList);
                     UpdateGroupInfoDisplay();
-                    UpdateMarkColumnVisibility();
                     _viewStateManager.SwitchToView(ViewStateManager.AppView.GroupDetail, group);
                 }
             }
@@ -1026,8 +1000,6 @@ namespace LvchaxsBS_UID.Views
 
             // 通知卡片模板切换按钮/选择框
             OnPropertyChanged(nameof(IsMoveMode));
-            UpdateMarkColumnVisibility();
-            UpdatePinColumnVisibility();
 
             // 按钮区只留「移入 / 取消」
             _viewStateManager.SwitchToView(ViewStateManager.AppView.MoveMode);
@@ -1059,8 +1031,6 @@ namespace LvchaxsBS_UID.Views
             UpdateAccountsList(searchTextBox.Text);
             SwitchToDisplayMode(DisplayMode.AccountList);
             UpdateGroupInfoDisplay();
-            UpdateMarkColumnVisibility();
-            UpdatePinColumnVisibility();
         }
 
         private void MoveConfirmButton_Click(object sender, RoutedEventArgs e)
@@ -1195,7 +1165,6 @@ namespace LvchaxsBS_UID.Views
 
             SwitchToDisplayMode(DisplayMode.AccountList);
             UpdateWatermarkVisibility();
-            UpdateMarkColumnVisibility();
         }
 
         private void ReturnToGroupList_Click(object sender, RoutedEventArgs e)

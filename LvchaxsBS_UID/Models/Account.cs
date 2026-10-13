@@ -21,6 +21,7 @@ namespace LvchaxsBS_UID.Models
         private bool _isMoveable = true;
         private bool _isMarked = false;
         private bool _isPinned = false;
+        private bool _showStar = false;
         private DateTime _createdTime;
         private DateTime? _pinnedTime;
 
@@ -58,6 +59,29 @@ namespace LvchaxsBS_UID.Models
                 if (_isPinned != value)
                 {
                     _isPinned = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 卡片是否显示「置顶 / 置底」的四角星标识。
+        /// ★ 纯界面状态、不落盘：由列表构建逻辑按**当前模式**算好写进来 ——
+        ///   主列表 = 该账号自己的置顶（<see cref="IsPinned"/>）；
+        ///   分组内 = 该账号在**这个分组**里的置底（<c>AccountGroup.IsAccountMarked</c>）；
+        ///   移入模式 = 不显示。
+        /// ★ 不能直接绑 <see cref="IsPinned"/> —— 它是全局字段、分组内不会重置，
+        ///   否则主列表里置顶过的账号一进分组也会亮星。
+        /// </summary>
+        [JsonIgnore]
+        public bool ShowStar
+        {
+            get => _showStar;
+            set
+            {
+                if (_showStar != value)
+                {
+                    _showStar = value;
                     OnPropertyChanged();
                 }
             }
