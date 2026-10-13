@@ -1182,7 +1182,7 @@
                                                      尖角之间是往内凹的弧线（不是直线连接）。
                                                      只在置顶或置底时显示；位置在登录按钮左侧、距它 100px。 -->
                                                 <Path x:Name="pinnedMarkStar"
-                                                      Width="16" Height="16"
+                                                      Width="32" Height="32"
                                                       Stretch="Uniform"
                                                       Fill="{DynamicResource WarningBrush}"
                                                       VerticalAlignment="Center"
