@@ -1176,8 +1176,62 @@
                                                 </StackPanel>
                                             </StackPanel>
 
-                                            <!-- ⑤ 操作按钮 -->
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                            <!-- ⑤ 操作按钮（外层 Grid 用来叠「右侧灰色区」这张底图） -->
+                                            <Grid Grid.Column="2" Margin="0,0,10,0">
+                                                <!-- 底层：从四角星右尖开始铺到卡片最右边的灰色区。
+                                                     左端是一段弧（上下两端向右收、中间向左凸出，凸出点与星尖相接），
+                                                     弧右侧是一块矩形，两块拼起来把卡片右侧整片铺满（上下也铺满卡片高度）。
+                                                     它不占布局空间 —— 按钮们叠在它上面。 -->
+                                                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                      Margin="34,0,0,0"
+                                                      x:Name="pinnedMarkArcLayer">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="19.3"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Path x:Name="pinnedMarkArc"
+                                                          Grid.Column="0"
+                                                          Stretch="Fill"
+                                                          Fill="{DynamicResource TextPrimaryBrush}"
+                                                          Opacity="0.06"
+                                                          Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 Z">
+                                                        <Path.Style>
+                                                            <Style TargetType="Path">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsMarked}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Path.Style>
+                                                    </Path>
+
+                                                    <Rectangle x:Name="pinnedMarkFill"
+                                                               Grid.Column="1"
+                                                               Fill="{DynamicResource TextPrimaryBrush}"
+                                                               Opacity="0.06">
+                                                        <Rectangle.Style>
+                                                            <Style TargetType="Rectangle">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsMarked}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Rectangle.Style>
+                                                    </Rectangle>
+                                                </Grid>
+
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 <!-- 置顶 / 置底的标识：四角星 —— 上下左右四个尖角，
                                                      尖角之间是往内凹的弧线（不是直线连接）。
                                                      只在置顶或置底时显示；位置在登录按钮左侧、距它 100px。 -->
@@ -1202,35 +1256,6 @@
                                                         </Style>
                                                     </Path.Style>
                                                 </Path>
-
-                                                <!-- 四角星右侧连接的弧形装饰：一块左边界向左凸的色块，
-                                                     弧线从上下两端收拢、在中间向左凸出并与星尖相接
-                                                     （比例照参考图：星尖到尖 54、弧高 96、向左凸 32，
-                                                       这里按星 32px 等比缩放 → 弧高 57、凸出 19）。
-                                                     填充用主题文字色的低透明度，深浅主题下都是一层淡淡的压色。 -->
-                                                <Path x:Name="pinnedMarkArc"
-                                                      Width="59" Height="57"
-                                                      Stretch="Fill"
-                                                      VerticalAlignment="Center"
-                                                      Margin="2,0,0,0"
-                                                      Fill="{DynamicResource TextPrimaryBrush}"
-                                                      Opacity="0.06"
-                                                      Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 L 59,56.9 L 59,0 Z">
-                                                    <Path.Style>
-                                                        <Style TargetType="Path">
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding IsMarked}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Path.Style>
-                                                </Path>
-
                                                 <Button x:Name="loginAccountButton" Style="{DynamicResource IconLoginButtonStyle}"
                                                         Margin="5,0,0,0" Tag="{Binding Id}" Click="LoginAccountButton_Click"/>
                                                 <Button x:Name="removeFromGroupButton" Content="移出"
@@ -1247,6 +1272,7 @@
                                                            VerticalAlignment="Center" Margin="5,0,0,0"
                                                            Visibility="Collapsed"/>
                                             </StackPanel>
+                                            </Grid>
                                         </Grid>
 
                                         <DataTemplate.Triggers>
