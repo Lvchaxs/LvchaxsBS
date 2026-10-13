@@ -107,7 +107,7 @@
 
 
     <!--
-        ============ 图标按钮：编辑(铅笔) / 删除(垃圾桶) / 登录 / 置顶(↑) / 置底(↓) ============
+        ============ 图标按钮：编辑(铅笔) / 删除(垃圾桶) / 置顶(↑) / 置底(↓) ============
         这一组原先是 UID 插件里自带的副本，现在搬到宿主，**主程序与插件共用同一份**：
         UID 侧改成 Style="{DynamicResource IconXxxButtonStyle}" 引用，本地不再各存一份，
         以后改这里一处两边同时生效。
@@ -197,73 +197,6 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource DangerHoverBrush}"/>
                         </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- 登录：绿色「门 + 箭头指向门内」（通用进入图标）。
-         用矢量 Path 手绘（Material 风格的 login 图标，24x24 坐标），
-         不依赖字体，任何机器上形状都一致。 -->
-    <Style x:Key="IconLoginButtonStyle" TargetType="Button" BasedOn="{StaticResource IconEditButtonStyle}">
-        <Setter Property="Width" Value="20"/>
-        <Setter Property="Height" Value="20"/>
-        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
-        <Setter Property="ui:ButtonTip.Text" Value="登录"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border Background="{TemplateBinding Background}" BorderThickness="0">
-                        <Viewbox x:Name="icon" Width="18" Height="18"
-                                 RenderTransformOrigin="0.5,0.5">
-                            <Viewbox.RenderTransform>
-                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
-                            </Viewbox.RenderTransform>
-                            <Path Fill="{DynamicResource SuccessBrush}"
-                                  Data="M11 7L9.6 8.4l2.6 2.6H5v2h7.2l-2.6 2.6L11 17l5-5z M20 19h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8z"/>
-                        </Viewbox>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="icon" Property="Opacity" Value="1"/>
-                        </Trigger>
-                        <EventTrigger RoutedEvent="Button.MouseEnter">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1.15" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                        <EventTrigger RoutedEvent="Button.MouseLeave">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                    <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                     To="1" Duration="0:0:0.15">
-                                        <DoubleAnimation.EasingFunction>
-                                            <QuadraticEase EasingMode="EaseOut"/>
-                                        </DoubleAnimation.EasingFunction>
-                                    </DoubleAnimation>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

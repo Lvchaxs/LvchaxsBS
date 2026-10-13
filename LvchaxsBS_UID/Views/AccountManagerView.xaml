@@ -1259,7 +1259,10 @@
                                                         </Style>
                                                     </Path.Style>
                                                 </Path>
-                                                <Button x:Name="loginAccountButton" Style="{DynamicResource IconLoginButtonStyle}"
+                                                <!-- 登录：文字按钮（和「移出」同一尺寸规格，中性配色），
+                                                     不再用图标样式 -->
+                                                <Button x:Name="loginAccountButton" Content="登录"
+                                                        Style="{StaticResource CompactActionButtonStyle}"
                                                         Margin="5,0,0,0" Tag="{Binding Id}" Click="LoginAccountButton_Click"/>
                                                 <Button x:Name="removeFromGroupButton" Content="移出"
                                                         Style="{StaticResource CompactDangerButtonStyle}"
