@@ -270,56 +270,151 @@ namespace LvchaxsBS_UID.Views
         #endregion
 
         #region 账号列表管理
+        #region 置顶/置底的滑动动画
+        /// <summary>「星 + 灰区」停在卡片外时的位移（比这一列 252 宽一点，配合 RowCard 的裁剪整套看不见）。</summary>
+        private const double StarOffX = 260;
+
+        private static readonly string[] StarElementNames = { "pinnedMarkArcLayer", "pinnedMarkStar" };
+
+        /// <summary>上一次滑出动画还没落地时忽略再次点击，避免连点把置顶/置底切错。</summary>
+        private bool _starToggleAnimating;
+
         /// <summary>
-        /// 播「右侧四角星 + 灰区」的划入（X 260→0）/ 划出（X 0→260）动画。
-        ///
-        /// ★ 为什么放在代码里而不是 XAML 触发器：列表每次刷新都会重建行容器，
-        ///   而取消置顶/置底时新容器一建出来 ShowStar 就是 false —— 触发器驱动的
-        ///   ExitActions 没有「从 true 变 false」这个过渡可依赖，滑出动画根本没机会播，
-        ///   元素直接被基础值 Collapsed 收掉，看上去就是「瞬失」。
-        ///   这里等布局走完（Loaded 优先级）拿到容器后直接动画，行为确定。
-        ///   容器找不到（账号被滚出可视区）就安静跳过，不报错、不影响功能。
+        /// 置顶/置底切换的「表演 + 落地」（只作用于用户点的那一张卡）。
+        /// ★ 动画必须围绕数据切换来安排：
+        ///   · 生效（showing=true）：先把元素摆到卡片外（此刻它还不显示），再切数据 + 刷新 ——
+        ///     数据一切它就在卡片外出现，不会先在原位闪一下；布局完成后从卡片外滑进来。
+        ///   · 取消（showing=false）：先播滑出（此时数据还没变、元素还看得见），滑完再切数据 ——
+        ///     全程不动 Visibility，也就不会和可见性绑定打架、不会被基础值提前收起（那正是「瞬失」的原因）。
+        /// ★ 为什么不用 XAML 触发器：列表刷新会重建行容器，取消时新容器一建出来就是不显示，
+        ///   触发器的 ExitActions 没有「true→false」这个过渡可依赖，滑出动画根本没机会播。
+        /// ★ 所有动画路径都包了 try/catch：宿主没有全局异常处理，这里抛异常会直接崩掉整个程序。
         /// </summary>
-        private void PlayStarSlide(int accountId, bool slideIn)
+        private void ApplyStarToggle(int accountId, bool showing, Action commit)
         {
-            Dispatcher.BeginInvoke(new Action(() =>
+            if (_starToggleAnimating) return;
+
+            bool committed = false;
+            Action commitOnce = () =>
             {
-                var item = _accounts.FirstOrDefault(a => a.Id == accountId);
-                if (item == null) return;
-                if (accountsDataGrid.ItemContainerGenerator.ContainerFromItem(item) is not DataGridRow row) return;
+                if (committed) return;      // 幂等：兜底与 Completed 都调它也只会落地一次
+                committed = true;
+                _starToggleAnimating = false;
+                commit?.Invoke();
+            };
 
-                AnimateStarElement(FindVisualChild<FrameworkElement>(row, "pinnedMarkArcLayer"), slideIn);
-                AnimateStarElement(FindVisualChild<FrameworkElement>(row, "pinnedMarkStar"), slideIn);
-            }), DispatcherPriority.Loaded);
-        }
-
-        /// <summary>位移 + 可见性的动画本体（两个元素用同一套参数，看起来是一整块在动）。</summary>
-        private static void AnimateStarElement(FrameworkElement element, bool slideIn)
-        {
-            if (element?.RenderTransform is not TranslateTransform translate) return;
-
-            const double offX = 260;   // 比这一列(252)宽一点：起步/收尾时整块都在卡片外，被 RowCard 裁掉
-            TimeSpan duration = TimeSpan.FromMilliseconds(slideIn ? 220 : 180);
-            var ease = new CubicEase { EasingMode = slideIn ? EasingMode.EaseOut : EasingMode.EaseIn };
-
-            if (slideIn)
+            if (showing)
             {
-                // 清掉上一次「滑出」留在 Visibility 上的动画终值，否则绑定说 Visible 也显示不出来
-                element.BeginAnimation(UIElement.VisibilityProperty, null);
+                PresetStarOffscreen(accountId);
+                commitOnce();
+                PlayStarSlideIn(accountId);
+            }
+            else if (TryPlayStarSlide(accountId, 0, StarOffX, 180, EasingMode.EaseIn, commitOnce))
+            {
+                _starToggleAnimating = true;                    // 落地被延后到动画结束
+                _ = CommitAfterDelayAsync(commitOnce);           // 兜底：Completed 没触发也要落地（否则点击会被永久忽略）
             }
             else
             {
-                // 数据侧此时已经是「不显示」（可见性绑定给出 Collapsed）——
-                // 用动画把它临时按住 Visible，滑完那一刻才真正收起，滑出才看得见
-                var visibility = new ObjectAnimationUsingKeyFrames();
-                visibility.KeyFrames.Add(new DiscreteObjectKeyFrame(Visibility.Visible, TimeSpan.Zero));
-                visibility.KeyFrames.Add(new DiscreteObjectKeyFrame(Visibility.Collapsed, duration));
-                element.BeginAnimation(UIElement.VisibilityProperty, visibility);
+                commitOnce();                                    // 没容器/播不了，直接落地
             }
-
-            translate.BeginAnimation(TranslateTransform.XProperty,
-                new DoubleAnimation(slideIn ? offX : 0, slideIn ? 0 : offX, duration) { EasingFunction = ease });
         }
+
+        /// <summary>兜底：等一会儿再尝试落地（幂等，已落地就什么都不做）。</summary>
+        private static async Task CommitAfterDelayAsync(Action commitOnce)
+        {
+            await Task.Delay(500);
+            commitOnce();
+        }
+
+        /// <summary>把某个账号当前行里的「星 + 灰区」悄悄摆到卡片外（此刻它不可见，看不出变化）。</summary>
+        private void PresetStarOffscreen(int accountId)
+        {
+            try
+            {
+                var row = FindRowForAccount(accountId);
+                if (row == null) return;
+
+                foreach (var name in StarElementNames)
+                {
+                    if (FindVisualChild<FrameworkElement>(row, name) is { RenderTransform: TranslateTransform translate })
+                    {
+                        translate.BeginAnimation(TranslateTransform.XProperty, null);   // 清掉上一轮留下的终值
+                        translate.X = StarOffX;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("[UID/星动画] 预置位移失败：" + ex.Message);
+            }
+        }
+
+        /// <summary>数据已经切成「显示」之后播划入：等布局走完拿到新容器，从卡片外滑到原位。</summary>
+        private void PlayStarSlideIn(int accountId)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                TryPlayStarSlide(accountId, StarOffX, 0, 220, EasingMode.EaseOut, null);
+            }), DispatcherPriority.Loaded);
+        }
+
+        /// <summary>对指定账号的行播「星 + 灰区」位移；返回是否真的播了（没播就让调用方立刻落地数据）。</summary>
+        private bool TryPlayStarSlide(int accountId, double fromX, double toX, int milliseconds, EasingMode easing, Action onCompleted)
+        {
+            try
+            {
+                var row = FindRowForAccount(accountId);
+                if (row == null) return false;
+
+                bool handled = false;
+                foreach (var name in StarElementNames)
+                {
+                    var element = FindVisualChild<FrameworkElement>(row, name);
+                    // 完成回调只挂给第一个真正播起来的元素，避免被调用多次
+                    if (AnimateStarX(element, fromX, toX, milliseconds, easing, handled ? null : onCompleted))
+                        handled = true;
+                }
+                return handled;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("[UID/星动画] 播位移失败：" + ex.Message);
+                return false;
+            }
+        }
+
+        private static bool AnimateStarX(FrameworkElement element, double fromX, double toX, int milliseconds, EasingMode easing, Action onCompleted)
+        {
+            if (element?.RenderTransform is not TranslateTransform translate) return false;
+
+            try
+            {
+                translate.BeginAnimation(TranslateTransform.XProperty, null);   // 清掉上一次的终值
+
+                var animation = new DoubleAnimation(fromX, toX, TimeSpan.FromMilliseconds(milliseconds))
+                {
+                    EasingFunction = new CubicEase { EasingMode = easing }
+                };
+                if (onCompleted != null)
+                    animation.Completed += (_, __) => onCompleted();
+
+                translate.BeginAnimation(TranslateTransform.XProperty, animation);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("[UID/星动画] 位移动画异常：" + ex.Message);
+                return false;
+            }
+        }
+
+        private DataGridRow FindRowForAccount(int accountId)
+        {
+            var item = _accounts.FirstOrDefault(a => a.Id == accountId);
+            return item == null ? null : accountsDataGrid.ItemContainerGenerator.ContainerFromItem(item) as DataGridRow;
+        }
+        #endregion
 
         private void UpdateAccountsList(string searchTerm = "")
         {
@@ -778,28 +873,28 @@ namespace LvchaxsBS_UID.Views
             if (sender is Button button && button.Tag is int accountId && _selectedGroupId > 0)
             {
                 var group = _allGroups.FirstOrDefault(g => g.Id == _selectedGroupId);
-                if (group != null)
-                {
-                    var account = _allAccounts.FirstOrDefault(a => a.Id == accountId);
-                    if (account != null)
-                    {
-                        ToggleAccountMarkInGroup(accountId, _selectedGroupId);
-                        bool isNowMarked = group.IsAccountMarked(accountId);
-                        string action = isNowMarked ? "已置底" : "已取消置底";
-                        _toastManager.Show($"{action}·账号「{account.Nickname}」在分组「{group.Name}」中", true);
+                var account = _allAccounts.FirstOrDefault(a => a.Id == accountId);
+                if (group == null || account == null) return;
 
-                        UpdateAccountsList(searchTextBox.Text);
-                        UpdateGroupInfoDisplay();
-
-                        // 同上：只让这一张卡播划入/划出动画
-                        PlayStarSlide(accountId, isNowMarked);
-                    }
-                }
+                bool willMark = !group.IsAccountMarked(accountId);
+                ApplyStarToggle(accountId, willMark, () => CommitMarkToggle(account, group, accountId));
             }
             else if (_selectedGroupId == 0)
             {
                 _toastManager.Show("提示", "标记功能仅在分组内可用", false);
             }
+        }
+
+        /// <summary>真正落地一次置底切换（改数据 + 提示 + 刷新列表与分组信息）。</summary>
+        private void CommitMarkToggle(Account account, AccountGroup group, int accountId)
+        {
+            ToggleAccountMarkInGroup(accountId, _selectedGroupId);
+            bool isNowMarked = group.IsAccountMarked(accountId);
+            string action = isNowMarked ? "已置底" : "已取消置底";
+            _toastManager.Show($"{action}·账号「{account.Nickname}」在分组「{group.Name}」中", true);
+
+            UpdateAccountsList(searchTextBox.Text);
+            UpdateGroupInfoDisplay();
         }
         #endregion
 
@@ -834,40 +929,42 @@ namespace LvchaxsBS_UID.Views
             if (sender is Button button && button.Tag is int accountId && _selectedGroupId == 0)
             {
                 var account = _allAccounts.FirstOrDefault(a => a.Id == accountId);
-                if (account != null)
-                {
-                    account.SetPinned(!account.IsPinned);
+                if (account == null) return;
 
-                    if (account.IsPinned)
-                    {
-                        if (!_pinnedAccountOrder.Contains(accountId))
-                            _pinnedAccountOrder.Add(accountId);
-                    }
-                    else
-                    {
-                        _pinnedAccountOrder.Remove(accountId);
-                    }
-
-                    SavePinnedOrders();
-                    bool success = AccountDataService.SaveAccount(account);
-
-                    string message = account.IsPinned
-                        ? $"账号「{account.Nickname}」已置顶"
-                        : $"账号「{account.Nickname}」已取消置顶";
-
-                    _toastManager.Show(account.IsPinned ? "已置顶" : "已取消置顶", message);
-
-                    _allAccounts = AccountDataService.LoadAccounts();
-                    UpdateAccountsList(searchTextBox.Text);
-
-                    // 只有被点的这张卡播划入/划出动画
-                    PlayStarSlide(accountId, account.IsPinned);
-                }
+                bool willPin = !account.IsPinned;
+                ApplyStarToggle(accountId, willPin, () => CommitPinToggle(account, accountId));
             }
             else if (_selectedGroupId > 0)
             {
                 _toastManager.Show("提示", "置顶功能仅在主账号列表可用", false);
             }
+        }
+
+        /// <summary>真正落地一次置顶切换（改数据 + 存盘 + 提示 + 重载并刷新列表）。</summary>
+        private void CommitPinToggle(Account account, int accountId)
+        {
+            account.SetPinned(!account.IsPinned);
+
+            if (account.IsPinned)
+            {
+                if (!_pinnedAccountOrder.Contains(accountId))
+                    _pinnedAccountOrder.Add(accountId);
+            }
+            else
+            {
+                _pinnedAccountOrder.Remove(accountId);
+            }
+
+            SavePinnedOrders();
+            AccountDataService.SaveAccount(account);
+
+            string message = account.IsPinned
+                ? $"账号「{account.Nickname}」已置顶"
+                : $"账号「{account.Nickname}」已取消置顶";
+            _toastManager.Show(account.IsPinned ? "已置顶" : "已取消置顶", message);
+
+            _allAccounts = AccountDataService.LoadAccounts();
+            UpdateAccountsList(searchTextBox.Text);
         }
 
         private void GroupPinButton_Click(object sender, RoutedEventArgs e)
