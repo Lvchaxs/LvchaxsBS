@@ -271,14 +271,54 @@ namespace LvchaxsBS_UID.Views
 
         #region 账号列表管理
         /// <summary>
-        /// 等动画播完（0.5s 足够）把「刚切换」标记清掉 —— 不清的话容器回收/重建时又会重播一次。
-        /// 清掉只会让动画触发器退出（没有 ExitActions），已经播完的终值由动画 HoldEnd 保持，画面不变。
+        /// 播「右侧四角星 + 灰区」的划入（X 260→0）/ 划出（X 0→260）动画。
+        ///
+        /// ★ 为什么放在代码里而不是 XAML 触发器：列表每次刷新都会重建行容器，
+        ///   而取消置顶/置底时新容器一建出来 ShowStar 就是 false —— 触发器驱动的
+        ///   ExitActions 没有「从 true 变 false」这个过渡可依赖，滑出动画根本没机会播，
+        ///   元素直接被基础值 Collapsed 收掉，看上去就是「瞬失」。
+        ///   这里等布局走完（Loaded 优先级）拿到容器后直接动画，行为确定。
+        ///   容器找不到（账号被滚出可视区）就安静跳过，不报错、不影响功能。
         /// </summary>
-        private static async Task ClearStarAnimPendingAsync(Account account)
+        private void PlayStarSlide(int accountId, bool slideIn)
         {
-            await Task.Delay(500);
-            if (account != null)
-                account.StarAnimPending = false;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var item = _accounts.FirstOrDefault(a => a.Id == accountId);
+                if (item == null) return;
+                if (accountsDataGrid.ItemContainerGenerator.ContainerFromItem(item) is not DataGridRow row) return;
+
+                AnimateStarElement(FindVisualChild<FrameworkElement>(row, "pinnedMarkArcLayer"), slideIn);
+                AnimateStarElement(FindVisualChild<FrameworkElement>(row, "pinnedMarkStar"), slideIn);
+            }), DispatcherPriority.Loaded);
+        }
+
+        /// <summary>位移 + 可见性的动画本体（两个元素用同一套参数，看起来是一整块在动）。</summary>
+        private static void AnimateStarElement(FrameworkElement element, bool slideIn)
+        {
+            if (element?.RenderTransform is not TranslateTransform translate) return;
+
+            const double offX = 260;   // 比这一列(252)宽一点：起步/收尾时整块都在卡片外，被 RowCard 裁掉
+            TimeSpan duration = TimeSpan.FromMilliseconds(slideIn ? 220 : 180);
+            var ease = new CubicEase { EasingMode = slideIn ? EasingMode.EaseOut : EasingMode.EaseIn };
+
+            if (slideIn)
+            {
+                // 清掉上一次「滑出」留在 Visibility 上的动画终值，否则绑定说 Visible 也显示不出来
+                element.BeginAnimation(UIElement.VisibilityProperty, null);
+            }
+            else
+            {
+                // 数据侧此时已经是「不显示」（可见性绑定给出 Collapsed）——
+                // 用动画把它临时按住 Visible，滑完那一刻才真正收起，滑出才看得见
+                var visibility = new ObjectAnimationUsingKeyFrames();
+                visibility.KeyFrames.Add(new DiscreteObjectKeyFrame(Visibility.Visible, TimeSpan.Zero));
+                visibility.KeyFrames.Add(new DiscreteObjectKeyFrame(Visibility.Collapsed, duration));
+                element.BeginAnimation(UIElement.VisibilityProperty, visibility);
+            }
+
+            translate.BeginAnimation(TranslateTransform.XProperty,
+                new DoubleAnimation(slideIn ? offX : 0, slideIn ? 0 : offX, duration) { EasingFunction = ease });
         }
 
         private void UpdateAccountsList(string searchTerm = "")
@@ -748,12 +788,11 @@ namespace LvchaxsBS_UID.Views
                         string action = isNowMarked ? "已置底" : "已取消置底";
                         _toastManager.Show($"{action}·账号「{account.Nickname}」在分组「{group.Name}」中", true);
 
-                        // 同上：只让这一张卡播划入/滑出动画
-                        account.StarAnimPending = true;
-                        _ = ClearStarAnimPendingAsync(account);
-
                         UpdateAccountsList(searchTextBox.Text);
                         UpdateGroupInfoDisplay();
+
+                        // 同上：只让这一张卡播划入/划出动画
+                        PlayStarSlide(accountId, isNowMarked);
                     }
                 }
             }
@@ -819,16 +858,10 @@ namespace LvchaxsBS_UID.Views
                     _toastManager.Show(account.IsPinned ? "已置顶" : "已取消置顶", message);
 
                     _allAccounts = AccountDataService.LoadAccounts();
-
-                    // 让「刚切换」标记只落在这一张卡上，动画只播这一张
-                    var reloaded = _allAccounts.FirstOrDefault(a => a.Id == accountId);
-                    if (reloaded != null)
-                    {
-                        reloaded.StarAnimPending = true;
-                        _ = ClearStarAnimPendingAsync(reloaded);
-                    }
-
                     UpdateAccountsList(searchTextBox.Text);
+
+                    // 只有被点的这张卡播划入/划出动画
+                    PlayStarSlide(accountId, account.IsPinned);
                 }
             }
             else if (_selectedGroupId > 0)

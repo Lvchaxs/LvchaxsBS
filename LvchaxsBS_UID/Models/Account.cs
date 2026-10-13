@@ -22,7 +22,6 @@ namespace LvchaxsBS_UID.Models
         private bool _isMarked = false;
         private bool _isPinned = false;
         private bool _showStar = false;
-        private bool _starAnimPending = false;
         private DateTime _createdTime;
         private DateTime? _pinnedTime;
 
@@ -83,26 +82,6 @@ namespace LvchaxsBS_UID.Models
                 if (_showStar != value)
                 {
                     _showStar = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        /// <summary>
-        /// 「这张卡的置顶/置底刚刚被用户切换过」—— 只用来驱动右侧星 + 灰区的划入/滑出动画。
-        /// ★ 纯界面状态、不落盘。为什么要它：列表每次刷新都会重建行容器，
-        ///   如果动画只由 <see cref="ShowStar"/> 驱动，开页面 / 刷新时所有带星的卡片都会跟着播一遍。
-        ///   处理器在切换后把它置 true（播完再清掉），动画就只发生在真正被点的那张卡上。
-        /// </summary>
-        [JsonIgnore]
-        public bool StarAnimPending
-        {
-            get => _starAnimPending;
-            set
-            {
-                if (_starAnimPending != value)
-                {
-                    _starAnimPending = value;
                     OnPropertyChanged();
                 }
             }

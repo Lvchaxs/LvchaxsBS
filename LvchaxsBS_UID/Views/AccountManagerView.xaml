@@ -1176,16 +1176,16 @@
                                                        没有星的普通卡片这块**直接 Collapsed**，不占宽度 ——
                                                        所以只有置顶/置底的卡片才会让描述区窄 55px，
                                                        普通卡片完全不受影响（相当于「同一个卡片、一个有背景」）。 -->
-                                                <!-- 显示/隐藏不再瞬时切换，改由 DataTemplate.Triggers 里
-                                                     ShowStar 的 Enter/ExitActions 播滑动动画控制：
-                                                     X=260 时整块停在卡片右侧外面（被 RowCard 的 ClipToBounds 裁掉）。
-                                                     Visibility 也由动画里的离散关键帧在结尾置 Collapsed，
-                                                     这样没有星的卡片不占布局宽度。 -->
+                                                <!-- 显隐仍由 ShowStar 绑定（瞬时、可靠，开页面/容器回收时状态一定正确）。
+                                                     划入/滑出动画**在代码里播**（AccountManagerView.PlayStarSlide）：
+                                                     列表刷新会重建行容器，触发器驱动的动画在新容器上不可靠
+                                                     （取消时新容器一建出来就是不显示，滑出动画根本没机会播）。
+                                                     X=260 时整块停在卡片右侧外面，被 RowCard 的 ClipToBounds 裁掉。 -->
                                                 <Grid HorizontalAlignment="Left" VerticalAlignment="Stretch"
                                                       Width="218"
                                                       Margin="34,0,0,0"
                                                       Opacity="0.06"
-                                                      Visibility="Collapsed"
+                                                      Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}"
                                                       x:Name="pinnedMarkArcLayer">
                                                     <Grid.RenderTransform>
                                                         <TranslateTransform X="0"/>
@@ -1228,7 +1228,7 @@
                                                       Opacity="0.06"
                                                       HorizontalAlignment="Left"
                                                       VerticalAlignment="Center"
-                                                      Visibility="Collapsed"
+                                                      Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}"
                                                       Data="M12 2 C12.5 7 17 11.5 22 12 C17 12.5 12.5 17 12 22 C11.5 17 7 12.5 2 12 C7 11.5 11.5 7 12 2 Z">
                                                     <Path.RenderTransform>
                                                         <TranslateTransform X="0"/>
@@ -1272,84 +1272,6 @@
                                                      于是**只有被点的那张卡会划入/滑出**。
                                                  位移：X=260（比这一列 252 还宽一点）时整块在卡片右边外面，
                                                  被行卡片 RowCard 的 ClipToBounds 裁掉；滑到 0 就位。 -->
-                                            <DataTrigger Binding="{Binding ShowStar}" Value="True">
-                                                <Setter TargetName="pinnedMarkArcLayer" Property="Visibility" Value="Visible"/>
-                                                <Setter TargetName="pinnedMarkStar" Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-
-                                            <!-- T1：置顶/置底「生效」→ 从卡片右边划入 -->
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ShowStar}" Value="True"/>
-                                                    <Condition Binding="{Binding StarAnimPending}" Value="True"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <MultiDataTrigger.EnterActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <!-- 可见性：0 时刻置 Visible（动画优先级最高，能盖掉 T0 的 Setter 与上一次滑出的残留终值） -->
-                                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="pinnedMarkArcLayer"
-                                                                                           Storyboard.TargetProperty="Visibility">
-                                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}"/>
-                                                            </ObjectAnimationUsingKeyFrames>
-                                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="pinnedMarkStar"
-                                                                                           Storyboard.TargetProperty="Visibility">
-                                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}"/>
-                                                            </ObjectAnimationUsingKeyFrames>
-                                                            <DoubleAnimation Storyboard.TargetName="pinnedMarkArcLayer"
-                                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
-                                                                             From="260" To="0" Duration="0:0:0.22">
-                                                                <DoubleAnimation.EasingFunction>
-                                                                    <CubicEase EasingMode="EaseOut"/>
-                                                                </DoubleAnimation.EasingFunction>
-                                                            </DoubleAnimation>
-                                                            <DoubleAnimation Storyboard.TargetName="pinnedMarkStar"
-                                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
-                                                                             From="260" To="0" Duration="0:0:0.22">
-                                                                <DoubleAnimation.EasingFunction>
-                                                                    <CubicEase EasingMode="EaseOut"/>
-                                                                </DoubleAnimation.EasingFunction>
-                                                            </DoubleAnimation>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </MultiDataTrigger.EnterActions>
-                                            </MultiDataTrigger>
-
-                                            <!-- T2：取消置顶/置底 → 向右滑出，滑完那一刻才收起（离散关键帧） -->
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ShowStar}" Value="False"/>
-                                                    <Condition Binding="{Binding StarAnimPending}" Value="True"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <MultiDataTrigger.EnterActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <DoubleAnimation Storyboard.TargetName="pinnedMarkArcLayer"
-                                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
-                                                                             From="0" To="260" Duration="0:0:0.18">
-                                                                <DoubleAnimation.EasingFunction>
-                                                                    <CubicEase EasingMode="EaseIn"/>
-                                                                </DoubleAnimation.EasingFunction>
-                                                            </DoubleAnimation>
-                                                            <DoubleAnimation Storyboard.TargetName="pinnedMarkStar"
-                                                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
-                                                                             From="0" To="260" Duration="0:0:0.18">
-                                                                <DoubleAnimation.EasingFunction>
-                                                                    <CubicEase EasingMode="EaseIn"/>
-                                                                </DoubleAnimation.EasingFunction>
-                                                            </DoubleAnimation>
-                                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="pinnedMarkArcLayer"
-                                                                                           Storyboard.TargetProperty="Visibility">
-                                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.18" Value="{x:Static Visibility.Collapsed}"/>
-                                                            </ObjectAnimationUsingKeyFrames>
-                                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="pinnedMarkStar"
-                                                                                           Storyboard.TargetProperty="Visibility">
-                                                                <DiscreteObjectKeyFrame KeyTime="0:0:0.18" Value="{x:Static Visibility.Collapsed}"/>
-                                                            </ObjectAnimationUsingKeyFrames>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </MultiDataTrigger.EnterActions>
-                                            </MultiDataTrigger>
-
                                             <DataTrigger Binding="{Binding Path=IsInGroupMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:AccountManagerView}}}" Value="False">
                                                 <Setter TargetName="deleteAccountButton" Property="Visibility" Value="Visible"/>
                                                 <Setter TargetName="removeFromGroupButton" Property="Visibility" Value="Collapsed"/>
