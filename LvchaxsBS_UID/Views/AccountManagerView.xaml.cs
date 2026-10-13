@@ -1771,6 +1771,11 @@ namespace LvchaxsBS_UID.Views
             _loginConfirmWindow.AccountUid = account.Uid ?? string.Empty;
             _loginConfirmWindow.TitleText = "确认登录";
 
+            // 分组内已置底的账号不能登录（登录成功后会自动置底，所以这套规则只在分组内出现）
+            bool marked = IsAccountMarkedInCurrentGroup(account.Id);
+            _loginConfirmWindow.IsConfirmEnabled = !marked;
+            _loginConfirmWindow.StatusHintText = marked ? "账号已置底，无法登录" : "测试阶段";
+
             _selectedAccountIds = new List<int> { account.Id };
             SetCurrentLoginAccountList(account);
             UpdateMarkCheckBoxState();
@@ -1801,11 +1806,13 @@ namespace LvchaxsBS_UID.Views
         {
             if (_loginConfirmWindow == null) return;
 
-            if (_currentLoginAccountIndex > 0)
+            // 上一个「可登录」的账号（分组内跳过已置底的）
+            int prev = FindLoginableAccountIndex(_currentLoginAccountIndex - 1, -1);
+            if (prev >= 0)
             {
-                var prev = _currentLoginAccountList[_currentLoginAccountIndex - 1];
-                _loginConfirmWindow.PrevAccountName = prev.Nickname;
-                _loginConfirmWindow.PrevAccountUid = prev.Uid ?? string.Empty;
+                var account = _currentLoginAccountList[prev];
+                _loginConfirmWindow.PrevAccountName = account.Nickname;
+                _loginConfirmWindow.PrevAccountUid = account.Uid ?? string.Empty;
             }
             else
             {
@@ -1818,11 +1825,13 @@ namespace LvchaxsBS_UID.Views
         {
             if (_loginConfirmWindow == null) return;
 
-            if (_currentLoginAccountIndex >= 0 && _currentLoginAccountIndex < _currentLoginAccountList.Count - 1)
+            // 下一个「可登录」的账号（分组内跳过已置底的）
+            int next = FindLoginableAccountIndex(_currentLoginAccountIndex + 1, 1);
+            if (next >= 0)
             {
-                var next = _currentLoginAccountList[_currentLoginAccountIndex + 1];
-                _loginConfirmWindow.NextAccountName = next.Nickname;
-                _loginConfirmWindow.NextAccountUid = next.Uid ?? string.Empty;
+                var account = _currentLoginAccountList[next];
+                _loginConfirmWindow.NextAccountName = account.Nickname;
+                _loginConfirmWindow.NextAccountUid = account.Uid ?? string.Empty;
             }
             else
             {
@@ -1857,21 +1866,97 @@ namespace LvchaxsBS_UID.Views
         }
 
         /// <summary>在登录窗口里切换当前展示的账号（只切换显示，不触发任何登录）。</summary>
-        private void SwitchLoginAccount(int newIndex)
+        private void SwitchLoginAccount(int direction)
         {
             if (_loginConfirmWindow == null) return;
-            if (newIndex < 0 || newIndex >= _currentLoginAccountList.Count) return;
+            if (_currentLoginAccountList.Count == 0) return;
 
-            _currentLoginAccountIndex = newIndex;
-            var account = _currentLoginAccountList[newIndex];
+            // 分组内跳过已置底的账号（置底的不能登录）；主列表不过滤，一切如旧
+            int target = FindLoginableAccountIndex(_currentLoginAccountIndex + direction, direction);
+            if (target < 0)
+            {
+                _toastManager.Show("提示",
+                    direction > 0 ? "没有下一个可登录的账号了" : "没有上一个可登录的账号了", false);
+                return;
+            }
+
+            ApplyLoginAccount(target);
+        }
+
+        /// <summary>把登录窗口切到 <see cref="_currentLoginAccountList"/> 里的第 <paramref name="index"/> 个账号。</summary>
+        private void ApplyLoginAccount(int index)
+        {
+            if (_loginConfirmWindow == null) return;
+            if (index < 0 || index >= _currentLoginAccountList.Count) return;
+
+            _currentLoginAccountIndex = index;
+            var account = _currentLoginAccountList[index];
 
             _loginConfirmWindow.CurrentAccountName = account.Nickname;
             _loginConfirmWindow.AccountUid = account.Uid ?? string.Empty;
             _selectedAccountIds = new List<int> { account.Id };
 
+            // 切过来的账号一定是未置底的，确认按钮恢复可用、提示复位
+            _loginConfirmWindow.IsConfirmEnabled = true;
+            _loginConfirmWindow.StatusHintText = "测试阶段";
+
             SetPrevAccountInfo();
             SetNextAccountInfo();
             UpdateMarkCheckBoxState();
+        }
+
+        /// <summary>
+        /// 账号在当前分组里是否已置底。仅分组内有意义，主列表（未选分组）恒为 false。
+        /// </summary>
+        private bool IsAccountMarkedInCurrentGroup(int accountId)
+        {
+            if (_selectedGroupId <= 0) return false;
+
+            var group = _allGroups.FirstOrDefault(g => g.Id == _selectedGroupId);
+            return group != null && group.IsAccountMarked(accountId);
+        }
+
+        /// <summary>
+        /// 从 <paramref name="from"/> 沿 <paramref name="direction"/>（+1 / -1）找第一个「可登录」
+        /// （分组内未置底）的账号，返回下标；找不到返回 -1。主列表不过滤。
+        /// </summary>
+        private int FindLoginableAccountIndex(int from, int direction)
+        {
+            if (_selectedGroupId <= 0) return from;
+
+            for (int i = from; i >= 0 && i < _currentLoginAccountList.Count; i += direction)
+            {
+                if (!IsAccountMarkedInCurrentGroup(_currentLoginAccountList[i].Id))
+                    return i;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// 登录完成后把当前账号在分组里置底（仅分组内、仅未置底时）。
+        /// 顺带刷新列表与登录窗口：置底后该账号不能再登录，确认按钮置灰。
+        /// </summary>
+        private void MarkCurrentAccountAfterLogin()
+        {
+            var account = CurrentLoginAccount();
+            if (account == null || _selectedGroupId <= 0) return;
+
+            var group = _allGroups.FirstOrDefault(g => g.Id == _selectedGroupId);
+            if (group == null || group.IsAccountMarked(account.Id)) return;
+
+            ToggleAccountMarkInGroup(account.Id, _selectedGroupId);
+            UpdateAccountsList(searchTextBox.Text);
+            UpdateGroupInfoDisplay();
+
+            if (_loginConfirmWindow != null)
+            {
+                _loginConfirmWindow.IsConfirmEnabled = false;
+                _loginConfirmWindow.StatusHintText = "账号已置底，无法登录";
+            }
+
+            SetPrevAccountInfo();
+            SetNextAccountInfo();
+            _toastManager.Show("已置底", $"账号「{account.Nickname}」登录完成，已在分组「{group.Name}」中置底");
         }
 
         private void OnLoginPrevRequested(object sender, EventArgs e) => SwitchLoginAccount(_currentLoginAccountIndex - 1);
@@ -1959,6 +2044,10 @@ namespace LvchaxsBS_UID.Views
                     AccountLoginFlow.ShowSucceededSubtitle();
                     _loginConfirmWindow?.SetLoginCompletedState(true);
                     _toastManager.Show("登录成功", "已进入游戏");
+
+                    // 登录完成 → 分组内自动置底。置底后这个账号就不能再登录了，
+                    // 所以确认按钮随之置灰，用「上一个 / 下一个」切到还没置底的账号继续。
+                    MarkCurrentAccountAfterLogin();
                 }
                 else
                 {
