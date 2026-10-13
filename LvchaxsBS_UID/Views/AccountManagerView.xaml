@@ -1164,9 +1164,15 @@
                                                 <!-- ★ 透明度（0.06）写在**这个父 Grid** 上、不写在子元素上：
                                                      两个各自带 Opacity 的相邻元素会被各自渲染成独立图层，
                                                      交界处抗锯齿的 alpha 叠不到 1 → 看得见一条缝。
-                                                     合成到一层里画（下面两个子元素都不写 Opacity）就没有接缝。 -->
-                                                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                                      Margin="34,-10,-10,-10"
+                                                     合成到一层里画（下面两个子元素都不写 Opacity）就没有接缝。
+                                                     ★ 长度**固定 218**（不再是 Stretch 自适应铺到卡片右边）：
+                                                     原来主列表操作区窄（只有登录）、分组内宽（登录+移出），
+                                                     灰区就跟着时短时长；218 是分组内那一版（观感合适）的长度 ——
+                                                     星 32 + 100 + 登录 55 + 移出 55 + 右边距 10 = 252，减去左边让给星的 34。
+                                                     因为宽度写死，主列表的操作列也会被撑到同一宽，两处观感就一致了。 -->
+                                                <Grid HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                                                      Width="218"
+                                                      Margin="34,-10,0,-10"
                                                       Opacity="0.06"
                                                       x:Name="pinnedMarkArcLayer">
                                                     <Grid.ColumnDefinitions>
