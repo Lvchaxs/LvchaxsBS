@@ -630,52 +630,42 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 左侧：复选框 / 状态提示 / 置底控件（置底控件在复选框下面一行） -->
+                    <!-- 左侧：状态提示 / 登录完成并标记 / 置底控件（三者各占一行，
+                         复选框那一行只有复选框本身，不掺状态文字） -->
                     <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <CheckBox x:Name="MarkAfterLoginCheckBox"
-                                      Content="登录完成并标记"
-                                      Style="{StaticResource BaseCheckBoxStyle}"
-                                      VerticalAlignment="Center"
-                                      Margin="0,0,10,0"
-                                      Visibility="Collapsed"
-                                      Checked="MarkAfterLoginCheckBox_Checked"
-                                      Unchecked="MarkAfterLoginCheckBox_Unchecked"/>
+                        <!-- 状态提示：单独一行 -->
+                        <TextBlock x:Name="LoginStatusHint"
+                                   Text=""
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,0,4"/>
 
-                            <TextBlock x:Name="LoginStatusHint"
-                                       Text="测试阶段"
+                        <!-- 第一行复选框：登录完成并标记 -->
+                        <CheckBox x:Name="MarkAfterLoginCheckBox"
+                                  Content="登录完成并标记账号"
+                                  Style="{StaticResource BaseCheckBoxStyle}"
+                                  VerticalAlignment="Center"
+                                  Visibility="Collapsed"
+                                  Checked="MarkAfterLoginCheckBox_Checked"
+                                  Unchecked="MarkAfterLoginCheckBox_Unchecked"/>
+
+                        <!-- 置底控件：和上面的复选框同款（方形选框 + 右侧两行文本），
+                             登录界面里手动置底 / 取消置底（仅分组内显示）。
+                             未置底：置底后/代表已登录；已置底：已置底/取消置底后恢复登录。 -->
+                        <CheckBox x:Name="MarkToggleCheckBox"
+                                  Style="{StaticResource BaseCheckBoxStyle}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,6,0,0"
+                                  Visibility="Collapsed"
+                                  Click="MarkToggleCheckBox_Click">
+                            <TextBlock x:Name="MarkToggleText"
                                        FontSize="13"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-
-                        <!-- 置底控件：登录界面里手动置底 / 取消置底（仅分组内显示）。
-                             账号已置底无法登录，取消置底可恢复。 -->
-                        <Button x:Name="MarkToggleButton"
-                                Style="{DynamicResource ImageButtonStyleRound6}"
-                                Click="MarkToggleButton_Click"
-                                Margin="0,6,0,0"
-                                HorizontalAlignment="Left"
-                                Height="26" Padding="8,0"
-                                Visibility="Collapsed"
-                                ToolTip="账号已置底无法登录，取消置底可恢复">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Data="M 3,2 L 8,7 L 13,2"
-                                      Stroke="{DynamicResource TextSecondaryBrush}"
-                                      StrokeThickness="2.5"
-                                      StrokeLineJoin="Round"
-                                      StrokeStartLineCap="Round"
-                                      StrokeEndLineCap="Round"
-                                      Fill="Transparent"
-                                      Width="14" Height="14"
-                                      Stretch="Uniform"
-                                      Margin="0,0,6,0"/>
-                                <TextBlock x:Name="MarkToggleText" Text="取消置底"
-                                           FontSize="12"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
+                                       VerticalAlignment="Center">
+                                <Run Text="置底后"/><LineBreak/><Run Text="代表已登录"/>
+                            </TextBlock>
+                        </CheckBox>
                     </StackPanel>
 
                     <!-- 右侧：操作按钮 -->
