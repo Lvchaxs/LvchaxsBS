@@ -556,11 +556,15 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridRow">
+                        <!-- ★ ClipToBounds：卡片内的装饰（置顶/置底那块灰区）用负边距去贴卡片边缘，
+                             窗口缩放重排的那一瞬间会短暂超出卡片 → 没裁剪就会看到卡片上下外面
+                             也有灰色在闪。开裁剪后一切裁在卡片矩形内。 -->
                         <Border x:Name="RowCard"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="8"
+                                ClipToBounds="True"
                                 SnapsToDevicePixels="True">
                             <DataGridCellsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"
                                                     SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
@@ -1176,7 +1180,7 @@
                                                        普通卡片完全不受影响（相当于「同一个卡片、一个有背景」）。 -->
                                                 <Grid HorizontalAlignment="Left" VerticalAlignment="Stretch"
                                                       Width="218"
-                                                      Margin="34,-10,0,-10"
+                                                      Margin="34,-2,0,-2"
                                                       Opacity="0.06"
                                                       Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}"
                                                       x:Name="pinnedMarkArcLayer">
