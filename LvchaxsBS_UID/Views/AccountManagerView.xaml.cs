@@ -1766,6 +1766,7 @@ namespace LvchaxsBS_UID.Views
             _loginConfirmWindow.LoginNextRequested += OnLoginNextRequested;
             _loginConfirmWindow.LoginPrevRequested += OnLoginPrevRequested;
             _loginConfirmWindow.UidCopyRequested += OnUidCopyRequested;
+            _loginConfirmWindow.MarkToggleRequested += OnMarkToggleRequested;
 
             _loginConfirmWindow.CurrentAccountName = account.Nickname;
             _loginConfirmWindow.AccountUid = account.Uid ?? string.Empty;
@@ -1776,6 +1777,10 @@ namespace LvchaxsBS_UID.Views
             _loginConfirmWindow.ConfirmButtonText = marked ? "无法登录" : "确认登录";
             _loginConfirmWindow.IsConfirmEnabled = !marked;
             _loginConfirmWindow.StatusHintText = marked ? "账号已置底，无法登录" : "测试阶段";
+
+            // 置底控件：仅分组内显示，初始状态跟着账号的置底状态
+            _loginConfirmWindow.ShowMarkToggle = _selectedGroupId > 0;
+            _loginConfirmWindow.IsAccountMarked = marked;
 
             _selectedAccountIds = new List<int> { account.Id };
             SetCurrentLoginAccountList(account);
@@ -1900,10 +1905,46 @@ namespace LvchaxsBS_UID.Views
             _loginConfirmWindow.ConfirmButtonText = marked ? "无法登录" : "确认登录";
             _loginConfirmWindow.IsConfirmEnabled = !marked;
             _loginConfirmWindow.StatusHintText = marked ? "账号已置底，无法登录" : "测试阶段";
+            _loginConfirmWindow.IsAccountMarked = marked;
 
             SetPrevAccountInfo();
             SetNextAccountInfo();
             UpdateMarkCheckBoxState();
+        }
+
+        /// <summary>
+        /// 登录窗口里点了置底控件：在分组内给当前账号置底 / 取消置底。
+        /// 置底后该账号不能登录（确认按钮变「无法登录」并置灰），取消置底即恢复。
+        /// </summary>
+        private void OnMarkToggleRequested(object sender, EventArgs e)
+        {
+            var account = CurrentLoginAccount();
+            if (account == null || _selectedGroupId <= 0) return;
+
+            var group = _allGroups.FirstOrDefault(g => g.Id == _selectedGroupId);
+            if (group == null) return;
+
+            bool nowMarked = !group.IsAccountMarked(account.Id);
+            ToggleAccountMarkInGroup(account.Id, _selectedGroupId);
+            UpdateAccountsList(searchTextBox.Text);
+            UpdateGroupInfoDisplay();
+
+            if (_loginConfirmWindow != null)
+            {
+                _loginConfirmWindow.IsAccountMarked = nowMarked;
+                _loginConfirmWindow.ConfirmButtonText = nowMarked ? "无法登录" : "确认登录";
+                _loginConfirmWindow.IsConfirmEnabled = !nowMarked;
+                _loginConfirmWindow.StatusHintText = nowMarked ? "账号已置底，无法登录" : "测试阶段";
+            }
+
+            SetPrevAccountInfo();
+            SetNextAccountInfo();
+            UpdateMarkCheckBoxState();
+
+            _toastManager.Show(nowMarked ? "已置底" : "已取消置底",
+                nowMarked
+                    ? $"账号「{account.Nickname}」已置底，置底后无法登录"
+                    : $"账号「{account.Nickname}」已取消置底，可恢复登录");
         }
 
         /// <summary>
@@ -1938,6 +1979,7 @@ namespace LvchaxsBS_UID.Views
                 _loginConfirmWindow.ConfirmButtonText = "无法登录";
                 _loginConfirmWindow.IsConfirmEnabled = false;
                 _loginConfirmWindow.StatusHintText = "账号已置底，无法登录";
+                _loginConfirmWindow.IsAccountMarked = true;
             }
 
             SetPrevAccountInfo();

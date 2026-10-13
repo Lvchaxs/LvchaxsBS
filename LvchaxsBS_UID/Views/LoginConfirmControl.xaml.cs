@@ -28,6 +28,9 @@ namespace LvchaxsBS_UID.Views
         public event EventHandler<string> UidCopyRequested;
         public event EventHandler LoginNextRequested;
         public event EventHandler LoginPrevRequested;
+
+        /// <summary>点了置底控件（在分组内置底 / 取消置底之间切换）。</summary>
+        public event EventHandler MarkToggleRequested;
         #endregion
 
         #region 依赖属性
@@ -344,6 +347,48 @@ namespace LvchaxsBS_UID.Views
             if (d is LoginConfirmWindow control)
             {
                 control.LoginStatusHint.Text = e.NewValue?.ToString() ?? "测试阶段";
+            }
+        }
+
+        public static readonly DependencyProperty IsAccountMarkedProperty =
+            DependencyProperty.Register(nameof(IsAccountMarked), typeof(bool), typeof(LoginConfirmWindow),
+                new PropertyMetadata(false, OnIsAccountMarkedChanged));
+
+        /// <summary>当前账号在分组里是否已置底（驱动置底控件的文字与提示）。</summary>
+        public bool IsAccountMarked
+        {
+            get => (bool)GetValue(IsAccountMarkedProperty);
+            set => SetValue(IsAccountMarkedProperty, value);
+        }
+
+        private static void OnIsAccountMarkedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is LoginConfirmWindow control)
+            {
+                bool marked = (bool)e.NewValue;
+                control.MarkToggleText.Text = marked ? "取消置底" : "置底账号";
+                control.MarkToggleButton.ToolTip = marked
+                    ? "账号已置底无法登录，取消置底可恢复"
+                    : "置底后该账号在分组内无法登录，取消置底可恢复";
+            }
+        }
+
+        public static readonly DependencyProperty ShowMarkToggleProperty =
+            DependencyProperty.Register(nameof(ShowMarkToggle), typeof(bool), typeof(LoginConfirmWindow),
+                new PropertyMetadata(false, OnShowMarkToggleChanged));
+
+        /// <summary>是否显示置底控件（仅分组内显示，主列表没有"置底"这个概念）。</summary>
+        public bool ShowMarkToggle
+        {
+            get => (bool)GetValue(ShowMarkToggleProperty);
+            set => SetValue(ShowMarkToggleProperty, value);
+        }
+
+        private static void OnShowMarkToggleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is LoginConfirmWindow control)
+            {
+                control.MarkToggleButton.Visibility = (bool)e.NewValue ? Visibility.Visible : Visibility.Collapsed;
             }
         }
         #endregion
@@ -954,6 +999,12 @@ namespace LvchaxsBS_UID.Views
         private void LoginNextButton_Click(object sender, RoutedEventArgs e)
         {
             LoginNextRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>置底控件：在分组内置底 / 取消置底之间切换（实际动作由宿主做）。</summary>
+        private void MarkToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            MarkToggleRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private void PrevAccountUidText_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
