@@ -1161,8 +1161,13 @@
                                                      左端是一段弧（上下两端向右收、中间向左凸出，凸出点与星尖相接），
                                                      弧右侧是一块矩形，两块拼起来把卡片右侧整片铺满（上下也铺满卡片高度）。
                                                      它不占布局空间 —— 按钮们叠在它上面。 -->
+                                                <!-- ★ 透明度（0.06）写在**这个父 Grid** 上、不写在子元素上：
+                                                     两个各自带 Opacity 的相邻元素会被各自渲染成独立图层，
+                                                     交界处抗锯齿的 alpha 叠不到 1 → 看得见一条缝。
+                                                     合成到一层里画（下面两个子元素都不写 Opacity）就没有接缝。 -->
                                                 <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                                       Margin="34,-10,-10,-10"
+                                                      Opacity="0.06"
                                                       x:Name="pinnedMarkArcLayer">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="19.3"/>
@@ -1173,7 +1178,6 @@
                                                           Grid.Column="0"
                                                           Stretch="Fill"
                                                           Fill="{DynamicResource TextPrimaryBrush}"
-                                                          Opacity="0.06"
                                                           Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 Z">
                                                         <Path.Style>
                                                             <Style TargetType="Path">
@@ -1187,10 +1191,12 @@
                                                         </Path.Style>
                                                     </Path>
 
+                                                    <!-- 向左多占 0.5px：和左边的弧轻微叠一点，
+                                                         即使列宽被布局取整、边界落在半像素上也不会露缝。 -->
                                                     <Rectangle x:Name="pinnedMarkFill"
                                                                Grid.Column="1"
-                                                               Fill="{DynamicResource TextPrimaryBrush}"
-                                                               Opacity="0.06">
+                                                               Margin="-0.5,0,0,0"
+                                                               Fill="{DynamicResource TextPrimaryBrush}">
                                                         <Rectangle.Style>
                                                             <Style TargetType="Rectangle">
                                                                 <Setter Property="Visibility" Value="Collapsed"/>
