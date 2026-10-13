@@ -270,6 +270,17 @@ namespace LvchaxsBS_UID.Views
         #endregion
 
         #region 账号列表管理
+        /// <summary>
+        /// 等动画播完（0.5s 足够）把「刚切换」标记清掉 —— 不清的话容器回收/重建时又会重播一次。
+        /// 清掉只会让动画触发器退出（没有 ExitActions），已经播完的终值由动画 HoldEnd 保持，画面不变。
+        /// </summary>
+        private static async Task ClearStarAnimPendingAsync(Account account)
+        {
+            await Task.Delay(500);
+            if (account != null)
+                account.StarAnimPending = false;
+        }
+
         private void UpdateAccountsList(string searchTerm = "")
         {
             _accounts.Clear();
@@ -737,6 +748,10 @@ namespace LvchaxsBS_UID.Views
                         string action = isNowMarked ? "已置底" : "已取消置底";
                         _toastManager.Show($"{action}·账号「{account.Nickname}」在分组「{group.Name}」中", true);
 
+                        // 同上：只让这一张卡播划入/滑出动画
+                        account.StarAnimPending = true;
+                        _ = ClearStarAnimPendingAsync(account);
+
                         UpdateAccountsList(searchTextBox.Text);
                         UpdateGroupInfoDisplay();
                     }
@@ -804,6 +819,15 @@ namespace LvchaxsBS_UID.Views
                     _toastManager.Show(account.IsPinned ? "已置顶" : "已取消置顶", message);
 
                     _allAccounts = AccountDataService.LoadAccounts();
+
+                    // 让「刚切换」标记只落在这一张卡上，动画只播这一张
+                    var reloaded = _allAccounts.FirstOrDefault(a => a.Id == accountId);
+                    if (reloaded != null)
+                    {
+                        reloaded.StarAnimPending = true;
+                        _ = ClearStarAnimPendingAsync(reloaded);
+                    }
+
                     UpdateAccountsList(searchTextBox.Text);
                 }
             }
