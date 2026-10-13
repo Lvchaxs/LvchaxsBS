@@ -581,10 +581,9 @@
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="IsSelected" Value="False"/>
                 </Trigger>
-                <DataTrigger Binding="{Binding IsMarked}" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource Gray100Brush}"/>
-                    <Setter Property="Opacity" Value="0.8"/>
-                </DataTrigger>
+                <!-- ★ 置底不再给整卡灰底 + 0.8 透明（原来点头像置底后整张卡会变灰、一直灰着）。
+                     置顶/置底的标识现在只靠右侧那颗四角星 + 灰区，卡片本身不再变色，
+                     和字幕设置的列表一样：悬停、点击都不改变卡片背景。 -->
                 <!-- 移入模式：鼠标变成手型（提示「点卡片任意处即选中」） -->
                 <DataTrigger Binding="{Binding Path=IsMoveMode, RelativeSource={RelativeSource AncestorType={x:Type local:AccountManagerView}}}" Value="True">
                     <Setter Property="Cursor" Value="Hand"/>
