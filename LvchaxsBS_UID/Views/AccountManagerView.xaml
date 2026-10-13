@@ -1177,13 +1177,13 @@
                                             </StackPanel>
 
                                             <!-- ⑤ 操作按钮（外层 Grid 用来叠「右侧灰色区」这张底图） -->
-                                            <Grid Grid.Column="2" Margin="0,0,10,0">
+                                            <Grid Grid.Column="2">
                                                 <!-- 底层：从四角星右尖开始铺到卡片最右边的灰色区。
                                                      左端是一段弧（上下两端向右收、中间向左凸出，凸出点与星尖相接），
                                                      弧右侧是一块矩形，两块拼起来把卡片右侧整片铺满（上下也铺满卡片高度）。
                                                      它不占布局空间 —— 按钮们叠在它上面。 -->
                                                 <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                                      Margin="34,0,0,0"
+                                                      Margin="34,-10,-10,-10"
                                                       x:Name="pinnedMarkArcLayer">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="19.3"/>
@@ -1231,14 +1231,17 @@
                                                     </Rectangle>
                                                 </Grid>
 
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <!-- 按钮层：自己带 10px 右边距（原来在外层 Grid 上，
+                                                     现在让给灰区撑到卡片边） -->
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                                                 <!-- 置顶 / 置底的标识：四角星 —— 上下左右四个尖角，
                                                      尖角之间是往内凹的弧线（不是直线连接）。
                                                      只在置顶或置底时显示；位置在登录按钮左侧、距它 100px。 -->
                                                 <Path x:Name="pinnedMarkStar"
                                                       Width="32" Height="32"
                                                       Stretch="Uniform"
-                                                      Fill="{DynamicResource WarningBrush}"
+                                                      Fill="{DynamicResource TextPrimaryBrush}"
+                                                      Opacity="0.06"
                                                       VerticalAlignment="Center"
                                                       Margin="0,0,100,0"
                                                       Data="M12 2 C12.5 7 17 11.5 22 12 C17 12.5 12.5 17 12 22 C11.5 17 7 12.5 2 12 C7 11.5 11.5 7 12 2 Z">
