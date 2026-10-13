@@ -277,23 +277,20 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="border" Width="18" Height="18" CornerRadius="2"
-                            BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                    <Border x:Name="border" Width="14" Height="14" CornerRadius="3"
+                            BorderThickness="2" BorderBrush="{DynamicResource BorderStrongBrush}"
                             Background="Transparent"
-                            helpers:InteractionScale.HoverScale="1.15"
-                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.HoverScale="1.08"
+                            helpers:InteractionScale.PressScale="0.95"
                             helpers:InteractionScale.Target="{Binding ElementName=pinIcon}">
                         <!-- 箭头尺寸/颜色全部写在 Path.Style 里 —— **不能写成元素上的本地值**：
                              WPF 依赖属性优先级里「本地值」高于「ControlTemplate 的 Trigger」，
                              本地写死之后下面的 DataTrigger 改不动它（静默失效）。
-                             描边 1.2（缩放后约 0.87px）—— 1.6 太粗，未激活看着"糊成一坨"。
-                             想更细就改 1.0，但别低于 0.8，否则深色主题下灰色几乎看不见。
-                             两态都用 13x13 —— 这个数值是**照着最早那版 `Viewbox Width=14` 定的**：
-                             Viewbox 会把 1.6 的描边算进子元素自然尺寸（18+1.6=19.6），缩放系数 14/19.6=0.714，
-                             几何实际渲染高约 12.9；改成固定 13x13 + Stretch="Uniform"（缩放 13/18=0.722）
-                             渲染高 13 —— 视觉上就是当年"刚好"的那个大小。
+                             2026-10-13：方块缩到 14×14（与复选框一致）后，箭头随之从 13×13 收到 10×10，
+                             描边从 1.2 加粗到 3.4 —— Path 是 Stretch="Uniform"，几何 18×18 缩到 10 的系数
+                             是 0.556，3.4 × 0.556 ≈ 1.9px，视觉粗细与复选框的勾（约 2px）对齐。
                              激活时 StrokeThickness 归零：实心橙的外轮廓正好落在原描边中线上，
-                             比未激活小约 1.2px（-8%），用来抵消"实心看着胀一圈"的错觉。 -->
+                             比未激活略小，用来抵消"实心看着胀一圈"的错觉。 -->
                         <Path x:Name="pinIcon"
                               HorizontalAlignment="Center" VerticalAlignment="Center"
                               RenderTransformOrigin="0.5,0.5"
@@ -302,10 +299,10 @@
                               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
                             <Path.Style>
                                 <Style TargetType="Path">
-                                    <Setter Property="Width" Value="13"/>
-                                    <Setter Property="Height" Value="13"/>
+                                    <Setter Property="Width" Value="10"/>
+                                    <Setter Property="Height" Value="10"/>
                                     <Setter Property="Stroke" Value="{DynamicResource TextDisabledBrush}"/>
-                                    <Setter Property="StrokeThickness" Value="1.2"/>
+                                    <Setter Property="StrokeThickness" Value="3.4"/>
                                     <Setter Property="Fill" Value="Transparent"/>
                                 </Style>
                             </Path.Style>
@@ -438,14 +435,14 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="border" Width="18" Height="18" CornerRadius="2"
-                            BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                    <Border x:Name="border" Width="14" Height="14" CornerRadius="3"
+                            BorderThickness="2" BorderBrush="{DynamicResource BorderStrongBrush}"
                             Background="Transparent"
-                            helpers:InteractionScale.HoverScale="1.15"
-                            helpers:InteractionScale.PressScale="1"
+                            helpers:InteractionScale.HoverScale="1.08"
+                            helpers:InteractionScale.PressScale="0.95"
                             helpers:InteractionScale.Target="{Binding ElementName=markIcon}">
                                         <!-- 向下箭头 = 置底（把置顶那个箭头上下翻转）。
-                                             与置顶同一套处理：两态都是 13x13，只换颜色与空心/实心 -->
+                                             与置顶同一套处理：两态都是 10x10，只换颜色与空心/实心 -->
                                         <Path x:Name="markIcon"
                                               HorizontalAlignment="Center" VerticalAlignment="Center"
                                               RenderTransformOrigin="0.5,0.5"
@@ -454,10 +451,10 @@
                                               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
                                             <Path.Style>
                                                 <Style TargetType="Path">
-                                                    <Setter Property="Width" Value="13"/>
-                                                    <Setter Property="Height" Value="13"/>
+                                                    <Setter Property="Width" Value="10"/>
+                                                    <Setter Property="Height" Value="10"/>
                                                     <Setter Property="Stroke" Value="{DynamicResource TextDisabledBrush}"/>
-                                                    <Setter Property="StrokeThickness" Value="1.2"/>
+                                                    <Setter Property="StrokeThickness" Value="3.4"/>
                                                     <Setter Property="Fill" Value="Transparent"/>
                                                 </Style>
                                             </Path.Style>
