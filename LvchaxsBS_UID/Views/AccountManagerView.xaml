@@ -1216,20 +1216,20 @@
                                                     </Rectangle>
                                                 </Grid>
 
-                                                <!-- 按钮层：自己带 10px 右边距（原来在外层 Grid 上，
-                                                     现在让给灰区撑到卡片边） -->
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                                                 <!-- 置顶 / 置底的标识：四角星 —— 上下左右四个尖角，
                                                      尖角之间是往内凹的弧线（不是直线连接）。
                                                      ★ 它已取代卡片上原来的置顶/置底按钮 —— 是否置顶/置底，就看卡片有没有这颗星（两者外观不区分）。
-                                                     显示与否绑 ShowStar（模式感知，见 Account.ShowStar）；位置在登录按钮左侧、距它 100px。 -->
+                                                     显示与否绑 ShowStar（模式感知，见 Account.ShowStar）。
+                                                     ★ 位置：**贴操作区最左侧**（右边那圈灰区的弧尖正好咬在星的右尖上）。
+                                                       它**不放在按钮行里** —— 按钮行改成右对齐后两者互不牵扯：
+                                                       主列表按钮少（只有「登录」）也不会把星往右带、按钮也不会被挤走。 -->
                                                 <Path x:Name="pinnedMarkStar"
                                                       Width="32" Height="32"
                                                       Stretch="Uniform"
                                                       Fill="{DynamicResource TextPrimaryBrush}"
                                                       Opacity="0.06"
+                                                      HorizontalAlignment="Left"
                                                       VerticalAlignment="Center"
-                                                      Margin="0,0,100,0"
                                                       Data="M12 2 C12.5 7 17 11.5 22 12 C17 12.5 12.5 17 12 22 C11.5 17 7 12.5 2 12 C7 11.5 11.5 7 12 2 Z">
                                                     <Path.Style>
                                                         <Style TargetType="Path">
@@ -1242,6 +1242,11 @@
                                                         </Style>
                                                     </Path.Style>
                                                 </Path>
+
+                                                <!-- 按钮层：**右对齐**，永远贴卡片右边（自带 10px 右边距）——
+                                                     左边灰区是固定长度，右侧按钮就不会被它带着移位。 -->
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                                            VerticalAlignment="Center" Margin="0,0,10,0">
                                                 <!-- 登录：文字按钮（和「移出」同一尺寸规格，中性配色），
                                                      不再用图标样式 -->
                                                 <Button x:Name="loginAccountButton" Content="登录"
