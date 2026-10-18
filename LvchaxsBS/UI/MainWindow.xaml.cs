@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using LvchaxsBS.Config;
 using LvchaxsBS.Core;
 using LvchaxsBS.Services;
@@ -41,6 +42,9 @@ namespace LvchaxsBS.UI
         /// <summary>当前窗口圆角半径，由个性化页「窗口圆角」滑块决定</summary>
         private double _windowCornerRadius = 8;
 
+        /// <summary>启动首屏用的首页实例（构造函数里就建好；Loaded 里若还没挂上就再挂一次）。</summary>
+        private Pages.HomePage? _startupHome;
+
         private const double BaseWidth = 1000;
         private const double BaseHeight = 580;
         private const double BaseMinWidth = 800;
@@ -49,6 +53,19 @@ namespace LvchaxsBS.UI
         public MainWindow()
         {
             InitializeComponent();
+
+            // ★★ 启动首屏（2026-10-16，日志实测）：
+            //   `Frame` 的导航 —— 不管 `Navigate(...)` 还是直接赋 `Content` —— **都是异步的**。
+            //   实测：赋值后 1ms 时 `MainFrame.Content` 仍是 null，要等约 125ms 才真正挂上，
+            //   于是窗口第一帧只有外壳、内容区空白，首页随后才补上（用户看到的就是这个）。
+            //
+            //   两招一起用：
+            //   ① 导航在**构造函数**里就排进去（窗口还没显示，等它排到时第一帧还没画）；
+            //   ② 窗口先 `Opacity = 0` 藏住，等首页真正 Loaded（要显示的那一帧之前）再露脸 ——
+            //      这样露出来的那一帧内容已经在了，中间的"空窗期"用户根本看不到。
+            Opacity = 0;
+            _startupHome = new Pages.HomePage();
+            MainFrame.Navigate(_startupHome);
 
             TopLeft.HomeClicked += TopLeft_HomeClicked;
             TopLeft.SettingsClicked += TopLeft_SettingsClicked;
@@ -119,17 +136,52 @@ namespace LvchaxsBS.UI
             {
                 TopRight.UpdateThemeIcon(ThemeService.Current == AppTheme.Dark);
                 ApplySavedWindowTitle();
-                MainFrame.Navigate(new Pages.HomePage());
+
+                // 顶部那一排功能图标按已保存的顺序排（和首页功能卡片同一个顺序）
+                // ★ animate:false —— 启动时直接落到保存的顺序，别播一次重排动画
+                SyncFunctionButtonOrder(animate: false);
+
+                // 构造函数里排的那次导航可能还没轮到 → 这里再挂一次（同一个实例，不会重复建页面）
+                if (_startupHome != null && !ReferenceEquals(MainFrame.Content, _startupHome))
+                    MainFrame.Content = _startupHome;
+
+                // 首页真正加载完（下一帧就带内容）→ 把窗口露出来
+                if (_startupHome != null)
+                {
+                    if (_startupHome.IsLoaded) RevealWindow();
+                    else _startupHome.Loaded += (_, _) => RevealWindow();
+                }
+
+                // 直接赋值触发的 Navigated 是异步的（见 MainFrame_Navigated 注释），
+                // 这里先把顶部那排的高亮同步设好，免得启动后慢一帧才亮。
+                TopLeft.SetHomeActive(true);
+                TopLeft.SetSettingsActive(false);
+                TopLeft.SetPersonalizationActive(false);
+                TopLeft.SetVoiceActive(false);
+                TopCenter.SetAlignment(false, animate: false);
             };
 
             // 壁纸的启动淡入要等窗口第一帧渲染完再开始，
             // 否则动画可能在窗口真正显示出来之前就跑完了，看起来像"没有过渡"。
             ContentRendered += (s, e) =>
             {
+                // 兜底：万一首页的 Loaded 没来（异常/被切走），首帧渲染完也要把窗口露出来，
+                // 免得程序起来了却看不见窗口。
+                if (MainFrame.Content != null) RevealWindow();
                 if (_initialWallpaperFadeDone) return;
                 _initialWallpaperFadeDone = true;
                 ApplyWallpaper(WallpaperTransition.Startup);
             };
+        }
+
+        /// <summary>
+        /// 把窗口露出来（启动时先 Opacity=0 藏住，等首页真的挂上再调这里）。
+        /// 只在还没露脸时生效，重复调用无害。
+        /// </summary>
+        private void RevealWindow()
+        {
+            if (Opacity >= 1) return;
+            Opacity = 1;
         }
 
         // ============ 壁纸 ============
@@ -522,6 +574,12 @@ namespace LvchaxsBS.UI
 
             TopLeft.SetUidActive(isUidPage);
             SetUidTitleMode(isUidPage);
+
+            // 兜底：直接 Navigate 到别处（不经过配置容器页）时，全屏状态必须还原 ——
+            // 否则从编辑页跳走后，窗口会一直缺着文字标题行和顶部按钮栏。
+            // ★ 只负责"还原"，不负责"开启"：开启由配置容器页在其内部导航时上抛。
+            if (!(e.Content is Page page && (page.Tag as string) == "FullScreen"))
+                SetContentFullScreen(false);
         }
 
         // ============ 顶部栏事件 ============
@@ -546,6 +604,33 @@ namespace LvchaxsBS.UI
             MainFrame.Navigate(new Pages.VoicePage());
         }
 
+        // ============ 内容页「全屏」============
+
+        /// <summary>
+        /// 让内容区占满整个窗口 —— **只留 32 高的标题栏**。
+        ///
+        /// <para>
+        /// 由内容页（经配置容器页 <c>ConfigContainerPage</c>）用 <c>Tag="FullScreen"</c> 触发，
+        /// 例如宏指令编辑页。本方法负责主窗口这一层：
+        /// 收掉「文字标题行」（才识是年岁的冠冕…）与「顶部按钮栏」，
+        /// 再把 <see cref="MainFrame"/> 从 Row3 提升为 <c>Row=1, RowSpan=3</c> 盖过这两行。
+        /// </para>
+        ///
+        /// <para>
+        /// ⚠️ Row2 是固定 40 高，只 Collapse 内容**不会**让行消失 ⇒
+        ///    必须靠 <c>RowSpan</c> 让 MainFrame 真正跨上去，否则底下空 40px。
+        /// </para>
+        /// </summary>
+        public void SetContentFullScreen(bool full)
+        {
+            TitleRow.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
+            TopButtonBar.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
+
+            MainFrame.SetValue(Grid.RowProperty, full ? 1 : 3);
+            MainFrame.SetValue(Grid.RowSpanProperty, full ? 3 : 1);
+            MainFrame.Margin = full ? new Thickness(0) : new Thickness(5, 0, 5, 10);
+        }
+
         /// <summary>
         /// 把 UID 账号管理界面显示到内容区（由外部插件 LvchaxsBS_uid.dll 提供）。
         ///
@@ -559,9 +644,19 @@ namespace LvchaxsBS.UI
         /// </summary>
         private void TopLeft_UidClicked(object? sender, EventArgs e)
         {
-            var view = UidModuleService.GetAccountManagerView();
+            // 模块内部是单例：已存在就直接切过去（保住上次浏览到的分组 / 页面位置）
+            var view = UidModuleService.CurrentView ?? UidModuleService.GetAccountManagerView();
             if (view == null) return;
 
+            ApplyUidView(view);
+        }
+
+        /// <summary>
+        /// 把 UID 界面放进内容区，并把顶部那排按钮的高亮切到「UID」。
+        /// 与 <see cref="TopLeft_UidClicked"/> 分开，是因为切换到其它模块时也要复用这套高亮。
+        /// </summary>
+        private void ApplyUidView(FrameworkElement view)
+        {
             MainFrame.Content = view;
 
             TopCenter.SetAlignment(false, animate: true);
@@ -682,6 +777,24 @@ namespace LvchaxsBS.UI
                 container.ShowConfigPage();
 
             MainFrame.Navigate(container);
+        }
+
+        /// <summary>
+        /// 让顶部那一排功能图标按 <c>HomePageSettings.ModuleOrder</c> 排。
+        /// 首页功能卡片拖动排序后也会调它 —— 两边永远是同一个顺序。
+        /// </summary>
+        /// <param name="animate">是否播滑动动画。启动时的首次同步传 <c>false</c>（见 <c>TopCenterBar.ApplyModuleOrder</c> 注释）。</param>
+        public void SyncFunctionButtonOrder(bool animate = true)
+        {
+            try
+            {
+                var s = ConfigManager.Get<HomePageSettings>();
+                TopCenter.ApplyModuleOrder(Services.ModuleRegistry.Ordered(s).Select(m => m.Id), animate);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"同步功能图标顺序失败：{ex.Message}");
+            }
         }
 
         // ============ 右侧栏事件 ============

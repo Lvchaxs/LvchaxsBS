@@ -66,6 +66,8 @@ namespace LvchaxsBS.Core
         private const byte VK_T = 0x54;          // T键
         private const byte VK_TAB = 0x09;        // Tab键
         private const byte VK_RETURN = 0x0D;     // Enter（回车）键
+        private const byte VK_BACK = 0x08;       // Backspace（退格）键
+        private const byte VK_F2 = 0x71;         // F2 键（主界面按下打开联机大厅）
         private const byte VK_CONTROL = 0x11;    // Ctrl键
         private const byte VK_V = 0x56;          // V键
         private const uint CF_UNICODETEXT = 13;  // 剪贴板 Unicode 文本格式
@@ -87,9 +89,20 @@ namespace LvchaxsBS.Core
 
         public static bool IsSimulating => _isSimulating > 0;
 
+        /// <summary>
+        /// ★ 最后一次**模拟动作**（按键 / 点击 / 滚轮）的时刻（<see cref="Environment.TickCount64"/>）。
+        /// <para>
+        /// 诊断用：拿它和宿主报的「用户空闲」时间对照 —— 如果空闲时间每次都在本程序刚按完键后归零，
+        /// 就说明模拟按键被宿主的 <c>UserInputMonitor</c> 误当成了用户真实操作
+        /// （表现：让路永远结束不了，看着像卡死）。
+        /// </para>
+        /// </summary>
+        public static long LastSimTicks { get; private set; }
+
         private static void BeginSimulation()
         {
             Interlocked.Increment(ref _isSimulating);
+            LastSimTicks = Environment.TickCount64;
         }
 
         private static void EndSimulation()
@@ -109,6 +122,24 @@ namespace LvchaxsBS.Core
             {
                 keybd_event(VK_F, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
                 keybd_event(VK_F, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>
+        /// 按下 F2 键 —— 主界面里打开「联机大厅」（多人游戏）界面的快捷键。
+        /// <para>★ 注意用 <b>虚拟键码</b> 0x71，不是 '2' 的字符码。</para>
+        /// </summary>
+        public static void PressF2()
+        {
+            BeginSimulation();
+            try
+            {
+                keybd_event(VK_F2, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                keybd_event(VK_F2, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
             }
             finally
             {
@@ -203,6 +234,50 @@ namespace LvchaxsBS.Core
             {
                 EndSimulation();
             }
+        }
+
+        /// <summary>
+        /// Ctrl+A 全选当前输入框里的内容。
+        /// ★ 给「重新输入账密」用：现在**回到输入页就无条件重输**（见 AccountLoginFlow），
+        ///   重输次数比以前多得多。粘贴前不清框的话，上一次若真粘进去了就会**首尾相接变成两份**
+        ///   （账号变成「账号账号」），所以必须先全选再删掉。
+        /// </summary>
+        public static void SelectAllText()
+        {
+            BeginSimulation();
+            try
+            {
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                keybd_event((byte)'A', 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                keybd_event((byte)'A', 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>退格删除一格（配合 <see cref="SelectAllText"/> 清空输入框）。</summary>
+        public static void PressBackspace()
+        {
+            BeginSimulation();
+            try
+            {
+                keybd_event(VK_BACK, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                keybd_event(VK_BACK, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>清空当前输入框：Ctrl+A → Backspace。</summary>
+        public static void ClearInputField()
+        {
+            SelectAllText();
+            PressBackspace();
         }
 
         // 按下Enter（回车）键
@@ -494,6 +569,295 @@ namespace LvchaxsBS.Core
                 EndSimulation();
             }
         }
+
+        #endregion
+
+        #region 通用模拟（键鼠宏脚本用）
+
+        /// <summary>
+        /// 鼠标按键 —— 宏脚本与通用模拟统一用它（下标 = 宏引擎里的参数值）。
+        /// </summary>
+        public enum MouseButtonKind
+        {
+            Left = 0,
+            Middle = 1,
+            Right = 2,
+        }
+
+        // 鼠标按键常量（左键那两个在上面「鼠标点击」区里）
+        private const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020;
+        private const uint MOUSEEVENTF_MIDDLEUP = 0x0040;
+        private const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
+        private const uint MOUSEEVENTF_RIGHTUP = 0x0010;
+        private const byte VK_SHIFT = 0x10;
+
+        /// <summary>把一个字符翻译成「虚拟键码 + 要不要按 Shift」（-1 = 这个字符敲不出来）。</summary>
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern short VkKeyScan(char ch);
+
+        /// <summary>按住一个键（不抬起）。<paramref name="vk"/> = 虚拟键码（0x57 = W）。</summary>
+        public static void KeyDown(int vk)
+        {
+            BeginSimulation();
+            try
+            {
+                keybd_event((byte)vk, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>抬起一个键。</summary>
+        public static void KeyUp(int vk)
+        {
+            BeginSimulation();
+            try
+            {
+                keybd_event((byte)vk, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>按一下：按下 →（按住 holdMs 毫秒）→ 抬起。holdMs=0 时按下即抬起。</summary>
+        public static void KeyPress(int vk, int holdMs = 0)
+        {
+            BeginSimulation();
+            try
+            {
+                keybd_event((byte)vk, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                if (holdMs > 0) Thread.Sleep(holdMs);
+                keybd_event((byte)vk, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>按名字按住一个键（名字不认识就什么都不做，不抛异常）。</summary>
+        public static void KeyDownName(string? name)
+        {
+            if (TryGetKeyCode(name, out int vk)) KeyDown(vk);
+        }
+
+        /// <summary>按名字抬起一个键。</summary>
+        public static void KeyUpName(string? name)
+        {
+            if (TryGetKeyCode(name, out int vk)) KeyUp(vk);
+        }
+
+        /// <summary>按名字按一下（可指定按住毫秒数）。</summary>
+        public static void KeyPressName(string? name, int holdMs = 0)
+        {
+            if (TryGetKeyCode(name, out int vk)) KeyPress(vk, holdMs);
+        }
+
+        /// <summary>键名 → 虚拟键码（大小写不敏感）。认识返回 true。</summary>
+        public static bool TryGetKeyCode(string? name, out int vk)
+        {
+            vk = 0;
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            return KeyMap.TryGetValue(name.Trim(), out vk);
+        }
+
+        private static System.Collections.Generic.Dictionary<string, int>? _keyMap;
+
+        private static System.Collections.Generic.Dictionary<string, int> KeyMap
+            => _keyMap ??= BuildKeyMap();
+
+        /// <summary>
+        /// 键名表（宏脚本里写什么名字都能认）。
+        /// <para>★ 用 <c>OrdinalIgnoreCase</c>：脚本里写 <c>w</c> 和 <c>W</c> 都算 W 键。</para>
+        /// </summary>
+        private static System.Collections.Generic.Dictionary<string, int> BuildKeyMap()
+        {
+            var map = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            for (char c = 'A'; c <= 'Z'; c++) map[c.ToString()] = c;
+            for (int i = 0; i <= 9; i++)
+            {
+                map[i.ToString()] = 0x30 + i;          // 主键盘数字
+                map["Num" + i] = 0x60 + i;             // 小键盘
+                map["Numpad" + i] = 0x60 + i;
+            }
+            for (int i = 1; i <= 24; i++) map["F" + i] = 0x6F + i;   // F1=0x70 … F24
+
+            map["Space"] = 0x20;
+            map["Enter"] = 0x0D;
+            map["Return"] = 0x0D;
+            map["NumpadEnter"] = 0x0D;
+            map["Esc"] = 0x1B;
+            map["Escape"] = 0x1B;
+            map["Tab"] = 0x09;
+            map["Back"] = 0x08;
+            map["Backspace"] = 0x08;
+            map["Delete"] = 0x2E;
+            map["Del"] = 0x2E;
+            map["Insert"] = 0x2D;
+            map["Ins"] = 0x2D;
+
+            map["Shift"] = 0x10;
+            map["LShift"] = 0xA0;
+            map["RShift"] = 0xA1;
+            map["Ctrl"] = 0x11;
+            map["Control"] = 0x11;
+            map["LCtrl"] = 0xA2;
+            map["RCtrl"] = 0xA3;
+            map["Alt"] = 0x12;
+            map["LAlt"] = 0xA4;
+            map["RAlt"] = 0xA5;
+            map["Win"] = 0x5B;
+            map["LWin"] = 0x5B;
+            map["RWin"] = 0x5C;
+
+            map["Up"] = 0x26;
+            map["Down"] = 0x28;
+            map["Left"] = 0x25;
+            map["Right"] = 0x27;
+            map["Home"] = 0x24;
+            map["End"] = 0x23;
+            map["PageUp"] = 0x21;
+            map["PageDown"] = 0x22;
+            map["CapsLock"] = 0x14;
+            map["NumLock"] = 0x90;
+            map["PrintScreen"] = 0x2C;
+            map["Pause"] = 0x13;
+
+            map["Minus"] = 0xBD;
+            map["Hyphen"] = 0xBD;
+            map["Plus"] = 0xBB;
+            map["Equal"] = 0xBB;
+            map["Comma"] = 0xBC;
+            map["Period"] = 0xBE;
+            map["Dot"] = 0xBE;
+            map["Slash"] = 0xBF;
+            map["Semicolon"] = 0xBA;
+            map["Quote"] = 0xDE;
+            map["LBracket"] = 0xDB;
+            map["RBracket"] = 0xDD;
+            map["Backslash"] = 0xDC;
+            map["Backtick"] = 0xC0;
+            map["Grave"] = 0xC0;
+
+            return map;
+        }
+
+        /// <summary>按住鼠标某个键（不松开）。</summary>
+        public static void MouseDown(MouseButtonKind button)
+        {
+            BeginSimulation();
+            try
+            {
+                mouse_event(DownFlag(button), 0, 0, 0, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>松开鼠标某个键。</summary>
+        public static void MouseUp(MouseButtonKind button)
+        {
+            BeginSimulation();
+            try
+            {
+                mouse_event(UpFlag(button), 0, 0, 0, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>点一下鼠标：按下 →（按住 holdMs）→ 松开。</summary>
+        public static void MouseClick(MouseButtonKind button, int holdMs = 0)
+        {
+            BeginSimulation();
+            try
+            {
+                mouse_event(DownFlag(button), 0, 0, 0, IntPtr.Zero);
+                if (holdMs > 0) Thread.Sleep(holdMs);
+                mouse_event(UpFlag(button), 0, 0, 0, IntPtr.Zero);
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>
+        /// 滚轮滚动（在当前位置，不移动鼠标）。
+        /// <para>ticks 正 = 向上滚，负 = 向下滚（一格 = WHEEL_DELTA）。</para>
+        /// </summary>
+        public static void MouseScroll(int ticks)
+        {
+            if (ticks == 0) return;
+
+            BeginSimulation();
+            try
+            {
+                for (int i = 0; i < Math.Abs(ticks); i++)
+                {
+                    uint delta = ticks > 0 ? WHEEL_DELTA : unchecked((uint)-WHEEL_DELTA);
+                    mouse_event(MOUSEEVENTF_WHEEL, 0, 0, delta, IntPtr.Zero);
+                }
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        /// <summary>
+        /// 逐字符敲入文本（用 <c>VkKeyScan</c> 翻译，需要 Shift 的自动带 Shift）。
+        /// <para>敲不出来的字符（比如中文）会跳过 —— 那种场景用现成的 <see cref="PasteText"/>（剪贴板粘贴）。</para>
+        /// </summary>
+        public static void TypeText(string? text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+
+            BeginSimulation();
+            try
+            {
+                foreach (char c in text)
+                {
+                    short v = VkKeyScan(c);
+                    if (v == -1) continue;              // 这个字符没有对应按键 → 跳过
+
+                    int vk = v & 0xFF;
+                    bool needShift = ((v >> 8) & 1) != 0;
+
+                    if (needShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                    keybd_event((byte)vk, 0, KEYEVENTF_KEYDOWN, IntPtr.Zero);
+                    keybd_event((byte)vk, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+                    if (needShift) keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, IntPtr.Zero);
+                }
+            }
+            finally
+            {
+                EndSimulation();
+            }
+        }
+
+        private static uint DownFlag(MouseButtonKind button) => button switch
+        {
+            MouseButtonKind.Left => MOUSEEVENTF_LEFTDOWN,
+            MouseButtonKind.Middle => MOUSEEVENTF_MIDDLEDOWN,
+            _ => MOUSEEVENTF_RIGHTDOWN,
+        };
+
+        private static uint UpFlag(MouseButtonKind button) => button switch
+        {
+            MouseButtonKind.Left => MOUSEEVENTF_LEFTUP,
+            MouseButtonKind.Middle => MOUSEEVENTF_MIDDLEUP,
+            _ => MOUSEEVENTF_RIGHTUP,
+        };
 
         #endregion
     }

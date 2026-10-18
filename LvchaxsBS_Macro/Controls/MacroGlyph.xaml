@@ -1,0 +1,34 @@
+<UserControl x:Class="LvchaxsBS_Macro.Controls.MacroGlyph"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="16" d:DesignWidth="24">
+
+    <UserControl.Resources>
+        <!--
+            ★ `</>` 的笔画：三根线走这一个 Style。
+            颜色固定取主题色 —— **不随置顶变色**（UID 分组卡片的图标也没有变色效果）。
+        -->
+        <Style x:Key="GlyphStroke" TargetType="Path">
+            <Setter Property="Stroke" Value="{DynamicResource PrimaryBrush}"/>
+            <Setter Property="StrokeThickness" Value="2"/>
+            <Setter Property="StrokeStartLineCap" Value="Round"/>
+            <Setter Property="StrokeEndLineCap" Value="Round"/>
+            <Setter Property="StrokeLineJoin" Value="Round"/>
+        </Style>
+    </UserControl.Resources>
+
+    <!-- 画布 24×16（`<` 尖括号 + 斜杠 + `>`） -->
+    <Viewbox Stretch="Uniform">
+        <Canvas Width="24" Height="16">
+            <!-- < -->
+            <Path Data="M7,1.5 L1,8 L7,14.5" Style="{StaticResource GlyphStroke}"/>
+            <!-- / -->
+            <Path Data="M14.5,1.5 L9.5,14.5" Style="{StaticResource GlyphStroke}"/>
+            <!-- > -->
+            <Path Data="M17,1.5 L23,8 L17,14.5" Style="{StaticResource GlyphStroke}"/>
+        </Canvas>
+    </Viewbox>
+</UserControl>

@@ -189,8 +189,10 @@
                 </Grid>
             </Border>
 
-            <!-- ============ 文字标题行 ============ -->
-            <Border Grid.Row="1"
+            <!-- ============ 文字标题行 ============
+                 ★ x:Name 是给「内容页全屏」用的：编辑类页面进来时整行收掉（见 cs 的 SetContentFullScreen）。 -->
+            <Border x:Name="TitleRow"
+                    Grid.Row="1"
                     Margin="10,2,10,2"
                     Background="Transparent"
                     FocusVisualStyle="{x:Null}">
@@ -201,8 +203,8 @@
                            Foreground="{DynamicResource TextPrimaryBrush}"/>
             </Border>
 
-            <!-- ============ 顶部按钮栏 ============ -->
-            <Grid Grid.Row="2" Margin="10,4,10,4">
+            <!-- ============ 顶部按钮栏（全屏时整行收掉） ============ -->
+            <Grid x:Name="TopButtonBar" Grid.Row="2" Margin="10,4,10,4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>

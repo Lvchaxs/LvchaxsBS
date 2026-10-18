@@ -31,6 +31,10 @@ namespace LvchaxsBS.UI.Dialogs
             TitleText.Text = title;
             MessageText.Text = message;
 
+            // ★ 按钮文案要真的生效（原来这两个参数没用上，永远显示「确认 / 取消」）
+            OkText.Text = string.IsNullOrWhiteSpace(okText) ? "确认" : okText;
+            CancelText.Text = string.IsNullOrWhiteSpace(cancelText) ? "取消" : cancelText;
+
             // 回车 = 确定，Esc = 取消
             OkBtn.IsDefault = true;
             CancelBtn.IsCancel = true;

@@ -16,6 +16,30 @@ namespace LvchaxsBS.Services
         public KeyboardEventType EventType { get; set; }
         public int VirtualKeyCode { get; set; }
         public string KeyName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 这个按键是不是**程序自己注入**的（<c>LLKHF_INJECTED</c>）——
+        /// 也就是 <c>keybd_event</c> / <c>SendInput</c> 发出来的模拟按键，不是用户真按的。
+        /// <para>★ 判断"是不是用户操作"要靠它，<b>不能只靠 <c>SimulationService.IsSimulating</c></b>：
+        /// 低级钩子回调是在消息循环里跑的，模拟事件常常在 <c>EndSimulation()</c> 之后才被回调处理，
+        /// 那时标志已经复位 —— 于是"自己按的键"被当成"用户按的键"。</para>
+        /// </summary>
+        public bool IsInjected { get; set; }
+
+        /// <summary>
+        /// 这次 KeyDown 是不是「按着不放时系统自动重复」补发出来的（★ 长按型宏必须挡掉它）。
+        /// <para>
+        /// 按住一个键大约 0.5 秒后，Windows 会以 ~30 次/秒的频率重复投递 WM_KEYDOWN ——
+        /// 如果每条都当成"新按下一次"，`MacroRunner.Start()` 里的 `Stop()` 就会把刚跑了几行的脚本掐掉重来，
+        /// 表现就是「脚本永远只执行开头那一小段」。
+        /// </para>
+        /// <para>
+        /// ★ 低级钩子的 <c>lParam</c> 是 <c>KBDLLHOOKSTRUCT*</c>，<b>不是</b>键盘消息的 lParam，
+        ///   所以 WM_KEYDOWN 那个 bit30（previous key state）在这里读不到 ——
+        ///   只能自己维护一份"当前真实按下的键"来判重。
+        /// </para>
+        /// </summary>
+        public bool IsRepeat { get; set; }
     }
 
     public static class GlobalKeyboardHookService
@@ -26,6 +50,9 @@ namespace LvchaxsBS.Services
         private const int WM_KEYUP = 0x0101;
         private const int WM_SYSKEYDOWN = 0x0104;
         private const int WM_SYSKEYUP = 0x0105;
+
+        /// <summary>KBDLLHOOKSTRUCT.flags 里的「事件是注入的（模拟按键）」标志位。</summary>
+        private const uint LLKHF_INJECTED = 0x10;
 
         private static IntPtr _hookId = IntPtr.Zero;
         private static LowLevelKeyboardProc _proc;
@@ -63,6 +90,28 @@ namespace LvchaxsBS.Services
             public uint flags;
             public uint time;
             public IntPtr dwExtraInfo;
+        }
+
+        /// <summary>现在**物理**按着的键（只记真实按键，用来判断自动重复）。</summary>
+        private static readonly HashSet<int> _physicallyDown = new HashSet<int>();
+
+        private static readonly object _downLock = new object();
+
+        /// <summary>
+        /// 维护"物理按下的键"集合；返回这次 KeyDown 是不是自动重复。
+        /// <para>
+        /// ★ 注入（模拟）事件<b>完全不参与</b>统计：既不进集合、抬起时也不移除 ——
+        ///   否则脚本里模拟按下的键会把真实按键状态带歪（比如脚本按了触发键本身）。
+        /// </para>
+        /// </summary>
+        private static bool TrackRepeat(int vkCode, bool isDown)
+        {
+            lock (_downLock)
+            {
+                if (isDown) return !_physicallyDown.Add(vkCode);   // 已在集合里 ⇒ 这次是自动重复
+                _physicallyDown.Remove(vkCode);
+                return false;
+            }
         }
 
         public static void Start()
@@ -107,10 +156,19 @@ namespace LvchaxsBS.Services
                     int wParamInt = wParam.ToInt32();
                     int vkCode = (int)hookStruct.vkCode;
 
+                    bool isDown = wParamInt == WM_KEYDOWN || wParamInt == WM_SYSKEYDOWN;
+                    bool isUp = wParamInt == WM_KEYUP || wParamInt == WM_SYSKEYUP;
+
+                    // ★ LLKHF_INJECTED = 0x10：有这一位就是程序注入的（模拟按键）
+                    bool injected = (hookStruct.flags & LLKHF_INJECTED) != 0;
+
                     var args = new KeyboardEventArgs
                     {
                         VirtualKeyCode = vkCode,
-                        KeyName = GetKeyName(vkCode, hookStruct.scanCode)
+                        KeyName = GetKeyName(vkCode, hookStruct.scanCode),
+                        IsInjected = injected,
+                        // ★ 自动重复只对"真实按键"统计（注入事件不进集合，见 TrackRepeat）
+                        IsRepeat = !injected && (isDown || isUp) && TrackRepeat(vkCode, isDown),
                     };
 
                     switch (wParamInt)

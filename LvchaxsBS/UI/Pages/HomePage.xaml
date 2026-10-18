@@ -26,11 +26,14 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
     </Page.Resources>
 
     <!-- 卡片数据来自 ModuleRegistry（ModuleCardItem），新增模块无需改本页 -->
     <ScrollViewer Style="{StaticResource CustomScrollViewer}">
-        <ItemsControl x:Name="ModuleList" Margin="5,4,0,0">
+        <StackPanel Margin="5,4,0,0">
+
+        <ItemsControl x:Name="ModuleList">
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type pages:ModuleCardItem}">
 
@@ -42,7 +45,17 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}" VerticalAlignment="Center">
+                            <!-- 功能图标：按住不放就能拖动整张卡片调顺序（与 UID 账号列表同手感），
+                                 顺序会同步到顶部那一排功能图标。
+                                 ★ Margin 不要在这里覆盖 —— IconBorderStyle 自带的 5,0,12,0
+                                   是首页卡片与配置页卡片的统一位置，改了两边就对不齐了。 -->
+                            <Border x:Name="PART_IconGrab"
+                                    Grid.Column="0"
+                                    Style="{StaticResource IconBorderStyle}"
+                                    VerticalAlignment="Center"
+                                    Cursor="SizeAll"
+                                    PreviewMouseLeftButtonDown="Icon_PreviewMouseLeftButtonDown"
+                                    ToolTip="拖动调整顺序">
                                 <Image Source="{Binding Module.IconPath}"
                                        Width="60" Height="60" Stretch="Uniform"/>
                             </Border>
@@ -73,7 +86,16 @@
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>
-                                <TextBlock Text="{Binding Module.Description}"
+                                <!-- 第二行：插件模块放自己的控件（如「自定义宏」的两个下拉），
+                                     普通模块显示描述。两者互斥，所以叠在同一个格子里也不会互相盖。 -->
+                                <ContentPresenter Grid.Row="1"
+                                                  Content="{Binding CardExtension}"
+                                                  Visibility="{Binding HasCardExtension, Converter={StaticResource BoolToVis}}"
+                                                  VerticalAlignment="Center" Margin="0,2,0,0"/>
+
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding Module.Description}"
+                                           Visibility="{Binding HasDescription, Converter={StaticResource BoolToVis}}"
                                            FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
                                            TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
                             </StackPanel>
@@ -98,5 +120,7 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        </StackPanel>
     </ScrollViewer>
 </Page>

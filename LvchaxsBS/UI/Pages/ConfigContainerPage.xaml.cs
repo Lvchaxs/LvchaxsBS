@@ -237,6 +237,23 @@ namespace LvchaxsBS.UI.Pages
 
         public void SetConfigPage(Page page) => _configPage = page;
 
+        /// <summary>
+        /// 在底部按钮条的**最前面**插一个额外按钮（插件模块用，如「自定义宏」的「添加宏」）。
+        /// <para>
+        /// ★ 插完这一排就是「添加宏 / 触发键 / 配置 / 返回 / 开关」，和普通功能完全一样的布局。
+        ///   null 时什么都不加（普通模块不受影响）。
+        /// </para>
+        /// </summary>
+        public void SetToolbarElement(FrameworkElement? element)
+        {
+            if (element == null) return;
+
+            element.Margin = new Thickness(0, 0, 10, 0);
+            element.VerticalAlignment = VerticalAlignment.Center;
+
+            PART_ButtonBar.Children.Insert(0, element);
+        }
+
         // ============ 全局禁选键 ============
 
         /// <summary>
@@ -521,6 +538,29 @@ namespace LvchaxsBS.UI.Pages
         {
             var mainWindow = Application.Current.MainWindow as UI.MainWindow;
             mainWindow?.MainFrame.Navigate(new Pages.HomePage());
+        }
+
+        // ============ 内容页「全屏」信号 ============
+
+        /// <summary>
+        /// 内容页只要写 <c>Tag="FullScreen"</c>（宏指令编辑页就这么干），
+        /// 本容器就把顶部那张 70 高的功能信息卡收掉、内容区边距归零
+        /// ⇒ 那个页面直接顶到窗口标题栏下面、占满整个内容区。
+        /// <para>
+        /// ★ 用**字符串约定**而不是类型判断：插件页不能被宿主引用（插件缺失也要能启动），
+        ///   更不能被宿主反向依赖。离开全屏页时自动恢复。
+        /// </para>
+        /// </summary>
+        private void PART_ContentFrame_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
+        {
+            bool full = e.Content is Page page && (page.Tag as string) == "FullScreen";
+
+            HeaderCard.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
+            ContentArea.Margin = full ? new Thickness(0) : new Thickness(-4, 0, -4, 0);
+            ContentAreaInner.Margin = full ? new Thickness(0) : new Thickness(4);
+
+            // 再上抛给主窗口：收掉文字标题行 + 顶部按钮栏，让内容区顶到标题栏下面
+            (Application.Current.MainWindow as UI.MainWindow)?.SetContentFullScreen(full);
         }
     }
 

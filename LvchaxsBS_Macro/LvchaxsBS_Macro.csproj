@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<!-- 作为宿主 LvchaxsBS.exe 的插件模块编译，输出 LvchaxsBS_macro.dll -->
+		<OutputType>Library</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<RootNamespace>LvchaxsBS_Macro</RootNamespace>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<AssemblyName>LvchaxsBS_macro</AssemblyName>
+		<GenerateAppHost>false</GenerateAppHost>
+
+		<!-- 插件里不再自带 App，应用级资源（主题画刷 / keyed 样式）由宿主提供 -->
+		<EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+	</PropertyGroup>
+
+	<!--
+		★ 本模块**不引用任何东西**：模拟按键从 LvchaxsBS_Resources 完整复制到 Core/，
+		  所以删掉 LvchaxsBS_macro.dll 或 LvchaxsBS_Resources.dll 都不影响它/宿主。
+		★ 界面样式一律用宿主提供的 keyed 样式 + DynamicResource（编译期拿不到宿主的资源字典）。
+		★ 图标**自带**（Assets/Images/自定义宏.png 嵌在本 dll 里）：插件自足 —— 单独拷走也能显示，
+		  删掉本 dll 时图标跟着消失，不在宿主里留孤儿图片。
+		  改图标就改**这里的**那份（宿主 UI/Assets/Images 下的同名图本插件不读）。
+	-->
+	<ItemGroup>
+		<Resource Include="Assets\Images\**\*.png" />
+	</ItemGroup>
+
+	<!-- 编译后自动放到宿主 bin 里（和 UID 插件一个套路），省得每次手动拷 -->
+	<Target Name="CopyPluginToHost" AfterTargets="Build">
+		<PropertyGroup>
+			<HostBinDir>$(MSBuildThisFileDirectory)..\LvchaxsBS\bin\$(Configuration)\net8.0-windows\</HostBinDir>
+		</PropertyGroup>
+		<ItemGroup>
+			<PluginArtifacts Include="$(TargetPath)" />
+			<PluginArtifacts Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+		</ItemGroup>
+		<!-- 宿主 exe 开着时会锁文件 → 只警告不中断编译 -->
+		<Copy SourceFiles="@(PluginArtifacts)"
+		      DestinationFolder="$(HostBinDir)"
+		      SkipUnchangedFiles="true"
+		      ContinueOnError="WarnAndContinue" />
+	</Target>
+</Project>

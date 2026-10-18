@@ -14,8 +14,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ============ 顶部信息卡 ============ -->
-        <Border Grid.Row="0"
+        <!-- ============ 顶部信息卡 ============
+             ★ x:Name 是为了让内容页能用 Tag="FullScreen" 把它整个收起来（见 cs 的 Navigated）。 -->
+        <Border x:Name="HeaderCard"
+                Grid.Row="0"
                 Style="{StaticResource ModuleFunctionCardStyle}"
                 Height="70"
                 Margin="5,4,6,0">
@@ -56,7 +58,8 @@
                                Margin="0,2,0,0"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2"
+                <StackPanel x:Name="PART_ButtonBar"
+                            Grid.Column="2"
                             Orientation="Horizontal"
                             VerticalAlignment="Center"
                             Margin="0,0,10,0">
@@ -115,11 +118,13 @@
         </Border>
 
         <!-- ============ 内容区 Frame ============ -->
-        <Border Grid.Row="1" Margin="-4,0,-4,0" Background="Transparent">
-            <Grid Margin="4">
+        <Border x:Name="ContentArea"
+                Grid.Row="1" Margin="-4,0,-4,0" Background="Transparent">
+            <Grid x:Name="ContentAreaInner" Margin="4">
                 <Frame x:Name="PART_ContentFrame"
                        NavigationUIVisibility="Hidden"
-                       FocusVisualStyle="{x:Null}"/>
+                       FocusVisualStyle="{x:Null}"
+                       Navigated="PART_ContentFrame_Navigated"/>
             </Grid>
         </Border>
     </Grid>

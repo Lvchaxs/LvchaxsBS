@@ -1,0 +1,269 @@
+<Page x:Class="LvchaxsBS_Macro.Views.MacroConfigPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:controls="clr-namespace:LvchaxsBS_Macro.Controls"
+      mc:Ignorable="d"
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="自定义宏"
+      Background="Transparent">
+
+    <!--
+        ★★ 这一页的卡片**逐项照抄 UID 分组列表**（用户要求「一模一样」）：
+          · 卡片 = 70 高、圆角 8、Padding 16,0、ClipToBounds（右侧灰区靠负边距贴边，不裁剪会漏出去）
+          · 三列：图标（-16 抵消 padding，与首页卡片对齐）/ 标题+描述 / 右侧整块
+          · 右侧整块再分三列：四角星（32×32，右距 24）/ 操作按钮（编辑·删除）/ 排序手柄
+          · 灰区 = 跨「右侧整块」三列，Margin 34,0,-16,0（左接星右尖、右吃回 padding 贴卡片边），Opacity 0.06
+          · 灰区与四角星的显隐绑 **ShowStar**（纯界面标志），滑入/滑出由 code-behind 播动画 —— 同 UID
+        ★ 底部那一排（添加宏 / 触发键 / 配置 / 返回 / 开关）由宿主配置容器页提供。
+    -->
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- UID 用的是 ExponentialEaseOut；宿主里没有这个资源，这里用 CubicEase（曲线几乎一致） -->
+        <CubicEase x:Key="SortEaseOut" EasingMode="EaseOut"/>
+
+        <!-- ============ 排序手柄的图标（与 UID 分组/账号卡片**同一份几何**） ============
+             左边「上下双向箭头 + 竖杆中间断开成一个点」，右边「三条横线」，全部圆头描边。 -->
+        <StreamGeometry x:Key="SortHandleIconGeometry">M 1,4.8 L 3.2,2.2 L 5.4,4.8 M 3.2,3 L 3.2,6.6 M 3.2,7.9 L 3.2,8.05 M 3.2,9.4 L 3.2,13 M 1,11.2 L 3.2,13.8 L 5.4,11.2 M 8.2,3.2 H 16 M 8.2,8 H 16 M 8.2,12.8 H 16</StreamGeometry>
+
+        <!-- 排序手柄：24×24、悬停放大 1.2、按下即进入拖动（无长按延迟） -->
+        <Style x:Key="SortHandleButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <!-- ★ 在手柄那一列里右移 6px（左 +6 / 右 −6 相抵，列宽仍是 29），同 UID -->
+            <Setter Property="Margin" Value="11,0,-6,0"/>
+            <!-- ★ 和 UID 完全一致：**不要给底色**。铺的是透明命中区，
+                 置顶时后面那块灰底才能连贯地透过来（给不透明底色会在灰区里挖出一个方块）。 -->
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="ToolTip" Value="按住拖动排序"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <!-- ★★ 透明底铺满 = 命中区（三条杠是只有描边的线，缝隙里没有可命中的像素）
+                             ⛔ 必须 Transparent：给不透明底色会在置顶灰区里挖出一个方块。 -->
+                        <Border Background="Transparent"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <Path x:Name="sortIcon"
+                                  Data="{StaticResource SortHandleIconGeometry}"
+                                  Stroke="{DynamicResource TextDisabledBrush}"
+                                  StrokeThickness="1.8"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Stretch="Uniform"
+                                  Width="16" Height="16"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <ScaleTransform x:Name="sortScale" ScaleX="1" ScaleY="1"/>
+                                </Path.RenderTransform>
+                            </Path>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="sortIcon" Property="Stroke"
+                                        Value="{DynamicResource TextSecondaryBrush}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1.2" Duration="0:0:0.1"
+                                                             EasingFunction="{StaticResource SortEaseOut}"/>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1.2" Duration="0:0:0.1"
+                                                             EasingFunction="{StaticResource SortEaseOut}"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1" Duration="0:0:0.1"
+                                                             EasingFunction="{StaticResource SortEaseOut}"/>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1" Duration="0:0:0.1"
+                                                             EasingFunction="{StaticResource SortEaseOut}"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer Style="{DynamicResource CustomScrollViewer}">
+        <StackPanel Margin="5,4,0,0">
+
+            <ItemsControl x:Name="MacroList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <!-- 关掉虚拟化：拖动排序要按「显示顺序」把卡片下标映射回数据项 -->
+                        <VirtualizingStackPanel IsVirtualizing="False"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <!-- ★ Padding 16,0 + ClipToBounds：与 UID 分组卡片同一套（灰区负边距贴边要靠裁剪兜住） -->
+                        <Border Style="{DynamicResource ModuleFunctionCardStyle}"
+                                Padding="16,0"
+                                ClipToBounds="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 图标（-11 = 5 − 16，抵消卡片 padding ⇒ 与首页卡片逐像素对齐）
+                                     点它 = 置顶 / 取消置顶（同 UID 点头像） -->
+                                <Border Grid.Column="0"
+                                        Style="{DynamicResource IconBorderStyle}"
+                                        Margin="-11,0,12,0"
+                                        VerticalAlignment="Center"
+                                        Cursor="Hand"
+                                        ToolTip="点击置顶 / 取消置顶"
+                                        MouseLeftButtonDown="MacroIcon_MouseLeftButtonDown">
+                                    <controls:MacroGlyph Width="30" Height="20"
+                                                         VerticalAlignment="Center"
+                                                         HorizontalAlignment="Center"/>
+                                </Border>
+
+                                <!-- 标题 + 描述（格式同 UID 分组卡片：第一行名称 + 编辑/删除，第二行备注） -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="16" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,6,0"/>
+
+                                        <!-- 标题右侧的编辑 / 删除：改的是**宏名称 + 描述**（同 UID 分组卡片的标题行） -->
+                                        <Button Style="{DynamicResource IconEditButtonStyle}"
+                                                Margin="6,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Tag="{Binding Id}"
+                                                Click="EditMacro_Click"/>
+
+                                        <Button Style="{DynamicResource IconDeleteButtonStyle}"
+                                                Margin="8,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Tag="{Binding Id}"
+                                                Click="DeleteMacro_Click"/>
+                                    </StackPanel>
+
+                                    <!-- 描述行（没描述就整行隐藏） -->
+                                    <TextBlock Text="{Binding Description}"
+                                               Visibility="{Binding HasDescription, Converter={StaticResource BoolToVis}}"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               Margin="0,3,0,0"/>
+                                </StackPanel>
+
+                                <!-- ★ 右侧整块拆成**三列**：星 / 操作按钮 / 手柄 —— 星永远不会压到按钮上（同 UID）
+                                     ★ 操作列给 MinWidth：保证灰区长度不随内容变化（UID 也是这么做的） -->
+                                <Grid Grid.Column="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>   <!-- 四角星 -->
+                                        <ColumnDefinition Width="Auto" MinWidth="124"/>   <!-- 编辑 / 删除 -->
+                                        <ColumnDefinition Width="Auto"/>   <!-- 排序手柄 -->
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- 置顶标识的底：从四角星右尖开始铺到卡片最右边的灰色区（照 UID 分组卡片）
+                                         ★ 透明度写在**这个父 Grid** 上（子元素各自带 Opacity 会在交界处叠出缝）
+                                         ★ 右 -16 吃回卡片 Padding，让灰区贴到卡片边缘；右圆角 7 = 卡片圆角 8 − 边框 1 -->
+                                    <Grid x:Name="PinnedArcLayer"
+                                          Grid.Column="0" Grid.ColumnSpan="3"
+                                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                          Margin="34,0,-16,0"
+                                          Opacity="0.06"
+                                          Visibility="{Binding ShowStar, Converter={StaticResource BoolToVis}}">
+                                        <Grid.RenderTransform>
+                                            <TranslateTransform X="0"/>
+                                        </Grid.RenderTransform>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="19.3"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Path Grid.Column="0"
+                                              Stretch="Fill"
+                                              Fill="{DynamicResource TextPrimaryBrush}"
+                                              Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 Z"/>
+
+                                        <Border Grid.Column="1"
+                                                Margin="-0.5,0,0,0"
+                                                CornerRadius="0,7,7,0"
+                                                Background="{DynamicResource TextPrimaryBrush}"/>
+                                    </Grid>
+
+                                    <!-- 置顶标识：矢量四角星（上下左右四个尖角，尖角之间是往内凹的弧线）
+                                         ★ 右边距 24 留给灰区那段弧：弧宽 19.3，不能压到第一个按钮上 -->
+                                    <Path x:Name="PinnedStar"
+                                          Grid.Column="0"
+                                          Width="32" Height="32"
+                                          Margin="0,0,24,0"
+                                          Stretch="Uniform"
+                                          Fill="{DynamicResource TextPrimaryBrush}"
+                                          Opacity="0.06"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"
+                                          Visibility="{Binding ShowStar, Converter={StaticResource BoolToVis}}"
+                                          Data="M12 2 C12.5 7 17 11.5 22 12 C17 12.5 12.5 17 12 22 C11.5 17 7 12.5 2 12 C7 11.5 11.5 7 12 2 Z">
+                                        <Path.RenderTransform>
+                                            <TranslateTransform X="0"/>
+                                        </Path.RenderTransform>
+                                    </Path>
+
+                                    <!-- 操作区：**「编辑宏指令」按钮**（位置 = UID 分组卡片的「打开」，在手柄左边）
+                                         ★ 它编辑的是这个宏的按键指令序列，不是名称/描述（名称在标题行那对图标里改）。
+                                         ★ 规格照 UID 的「打开」：文字按钮、高 28、Padding 10,0、MinWidth 60。
+                                         ★ 操作列 MinWidth=124（UID 是 140）：让灰区长度和 UID 一致。 -->
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <Button Content="编辑指令"
+                                                Style="{DynamicResource FlatButtonStyleRound6}"
+                                                Background="{DynamicResource CardBackgroundBrush}"
+                                                Foreground="{DynamicResource TextSecondaryBrush}"
+                                                BorderBrush="{DynamicResource BorderStrongBrush}"
+                                                Height="28" Padding="10,0" MinWidth="72" FontSize="11"
+                                                ToolTip="编辑这个宏的按键指令"
+                                                Tag="{Binding Id}"
+                                                Click="EditMacroCommands_Click"/>
+                                    </StackPanel>
+
+                                    <!-- 排序手柄（按住即拖，效果与首页 / UID 一致） -->
+                                    <Button Grid.Column="2"
+                                            Style="{StaticResource SortHandleButtonStyle}"
+                                            Tag="{Binding Id}"
+                                            PreviewMouseLeftButtonDown="SortHandle_PreviewMouseLeftButtonDown"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- 空列表提示 -->
+            <TextBlock x:Name="EmptyHint"
+                       Text="还没有宏，点底部「添加宏」新建一个"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Margin="8,6,0,0"
+                       Visibility="Collapsed"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

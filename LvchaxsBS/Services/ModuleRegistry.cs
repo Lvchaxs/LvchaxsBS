@@ -34,6 +34,22 @@ namespace LvchaxsBS.Services
         public Func<System.Windows.Controls.Page> CreateConfigPage { get; init; }
             = () => new System.Windows.Controls.Page();
 
+        /// <summary>
+        /// 配置容器页**底部按钮条最前面**额外挂的一个按钮（插件模块用；null = 不加）。
+        /// <para>★ 效果就是「添加宏 / 触发键 / 配置 / 返回 / 开关」这一排里的第一个。</para>
+        /// <para>★ 同样要延迟创建（控件必须在 UI 线程建）。</para>
+        /// </summary>
+        public Func<System.Windows.FrameworkElement>? CreateToolbarElement { get; init; }
+
+        /// <summary>
+        /// 卡片第二行的**扩展控件**工厂（可选；2026-10-18 为插件模块加的）。
+        /// <para>★ 返回 null 的模块显示 <see cref="Description"/>；返回控件的模块把那一行换成
+        /// 插件自己的控件（如「自定义宏」的两个下拉），描述就不显示了。</para>
+        /// <para>★★ 必须**延迟创建**：这个 Func 在首页建卡片数据项时才调（那时是 UI 线程），
+        /// 不能在 <see cref="ModuleRegistry"/> 静态初始化阶段就 new 控件。</para>
+        /// </summary>
+        public Func<System.Windows.FrameworkElement>? CreateCardExtension { get; init; }
+
         /// <summary>分辨率标签工厂（null = 不显示标签）</summary>
         public Func<TagInfo[]?>? CreateTags { get; init; }
 
@@ -57,7 +73,11 @@ namespace LvchaxsBS.Services
     /// </summary>
     public static class ModuleRegistry
     {
-        public static readonly ModuleInfo[] All =
+        /// <summary>
+        /// 宿主内置模块（编译期固定）。
+        /// ★ 对外请用 <see cref="All"/> —— 那里还会拼上可选插件模块。
+        /// </summary>
+        private static readonly ModuleInfo[] BuiltIn =
         {
             new ModuleInfo
             {
@@ -131,9 +151,65 @@ namespace LvchaxsBS.Services
             },
         };
 
+        private static ModuleInfo[]? _all;
+
+        /// <summary>
+        /// 全部功能模块 = 宿主内置模块 + **可选插件模块**（exe 同目录有 <c>LvchaxsBS_macro.dll</c> 时的「自定义宏」）。
+        /// <para>
+        /// ★ 插件模块**走的是同一条通道**：首页卡片（可拖动排序）、顶部导航图标、触发键页与占用检测、
+        ///   配置容器页，全部由 <see cref="All"/> 驱动 —— 插件只需要提供图标 / 第二行控件 / 空白配置页。
+        /// </para>
+        /// <para>
+        /// ★★ 只构建一次并缓存：插件在启动时探测，**运行中才拷进来的 dll 要重启才认**（和 UID 一样）。
+        /// </para>
+        /// </summary>
+        public static ModuleInfo[] All => _all ??= BuildAll();
+
+        private static ModuleInfo[] BuildAll()
+        {
+            var list = new List<ModuleInfo>(BuiltIn);
+
+            try
+            {
+                var plugin = MacroModuleService.CreateModuleInfo();
+                if (plugin != null) list.Add(plugin);
+            }
+            catch
+            {
+                // 插件坏了不能连累宿主启动：静默少一张卡片
+            }
+
+            return list.ToArray();
+        }
+
         /// <summary>按模块 Id 查找（HomePage 开关 Tag）</summary>
         public static ModuleInfo? ById(string id)
             => All.FirstOrDefault(m => string.Equals(m.Id, id, StringComparison.OrdinalIgnoreCase));
+
+        /// <summary>
+        /// 按 <see cref="HomePageSettings.ModuleOrder"/> 排模块。
+        /// ★ 设置里没有的模块（后来新增的）按 <see cref="All"/> 的默认顺序补在后面；
+        ///   设置里多出来的 Id（已删模块）直接忽略。
+        /// </summary>
+        public static ModuleInfo[] Ordered(HomePageSettings s)
+        {
+            var result = new List<ModuleInfo>(All.Length);
+
+            foreach (var id in s.ModuleOrder ?? new List<string>())
+            {
+                var m = ById(id);
+                if (m != null && !result.Contains(m)) result.Add(m);
+            }
+
+            foreach (var m in All)
+                if (!result.Contains(m)) result.Add(m);
+
+            return result.ToArray();
+        }
+
+        /// <summary>把当前显示顺序写回设置（首页拖动排序后调用，之后由调用方落盘）。</summary>
+        public static void SaveOrder(HomePageSettings s, IEnumerable<ModuleInfo> ordered)
+            => s.ModuleOrder = ordered.Select(m => m.Id).ToList();
 
         /// <summary>按显示名查找（ConfigContainerPage 的 CurrentModuleName）</summary>
         public static ModuleInfo? ByName(string name)

@@ -125,7 +125,7 @@
                                            FontWeight="Bold"
                                            VerticalAlignment="Center"
                                            Margin="0,0,5,0"/>
-                                <TextBlock Text="确认" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="OkText" Text="确认" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 
@@ -141,7 +141,7 @@
                                            FontWeight="Bold"
                                            VerticalAlignment="Center"
                                            Margin="0,0,5,0"/>
-                                <TextBlock Text="取消" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="CancelText" Text="取消" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 
