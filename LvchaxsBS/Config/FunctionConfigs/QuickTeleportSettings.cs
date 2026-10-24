@@ -40,7 +40,7 @@ namespace LvchaxsBS.Config.FunctionConfigs
         /// <summary>
         /// 右列表点击项延迟（毫秒）
         /// </summary>
-        public int RightListClickItemDelay_1 { get; set; } = 100;
+        public int RightListClickItemDelay_2 { get; set; } = 200;
 
         /// <summary>
         /// 右列表秘境F键延迟（毫秒）
@@ -80,5 +80,58 @@ namespace LvchaxsBS.Config.FunctionConfigs
         /// 开图键：快速传送模块专用的地图打开按键（多选，逗号分隔）
         /// </summary>
         public string OpenMapKey_1 { get; set; } = "M";
+
+        // ============ 快速切图（地图界面内按地区触发键直接切地区）============
+
+        /// <summary>
+        /// 快速切图总开关。关掉后地区触发键完全不响应（触发键配置保留）。
+        /// </summary>
+        public bool EnableQuickMapSwitch { get; set; } = true;
+
+        /// <summary>
+        /// 切图识别开关（配置页「启用切图识别」复选框，放在总开关下面）：
+        /// <para>勾选（默认）= 按地区触发键后先做 RGB 画面识别（地图探测点 / 导航条 / 地区列表），
+        ///   确认在地图界面才执行，不在图里或画面不认识就静默放弃。</para>
+        /// <para>不勾选 = **完全不识别画面**，按下地区键直接按「点导航条 → 等延迟 → 点地区」执行
+        ///   （用户自己负责在地图界面按，按错了会点到地图上）。</para>
+        /// </summary>
+        public bool EnableCutRecognition { get; set; } = true;
+
+        /// <summary>
+        /// 各地区的触发键：地区 ID（Mondstadt / Liyue …）→ 键名（"F1" / "M" …）。
+        /// 没有这一项 = 未设置，该地区不响应。
+        /// <para>
+        /// ★ 默认值 = 用户实机调好的一整套（1/2/3/4 + QWEASDZXCRFV），
+        ///   新装 / 重置配置后直接就能用，不用再一个个绑。
+        /// </para>
+        /// </summary>
+        public Dictionary<string, string> QuickMapKeys { get; set; } = new()
+        {
+            // 提瓦特
+            ["Mondstadt"] = "1",
+            ["Liyue"] = "2",
+            ["Inazuma"] = "Q",
+            ["Sumeru"] = "W",
+            ["Fontaine"] = "A",
+            ["Natlan"] = "S",
+            ["NodKrai"] = "Z",
+            ["Snezhnaya"] = "X",
+            // 地下 / 其他
+            ["Enkanomiya"] = "3",
+            ["Chasm"] = "4",
+            ["SeaOfBygoneEras"] = "E",
+            ["AncientSacredMountain"] = "R",
+            ["TempleOfTheVoid"] = "D",
+            ["Frostmoon"] = "F",
+            ["SereniteaPot"] = "C",
+            ["StellarRealm"] = "V",
+        };
+
+        /// <summary>
+        /// 快速切图：点地区之前的等待（毫秒）。
+        /// 地区列表是展开动画，太短会点在没展开完的列表上。
+        /// <para>导航条本身是直接点的，没有"点导航条之前的延迟"。</para>
+        /// </summary>
+        public int QuickMapRegionDelay { get; set; } = 100;
     }
 }

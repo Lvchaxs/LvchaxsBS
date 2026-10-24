@@ -1,4 +1,4 @@
-﻿using LvchaxsBS_UID.Services.EncryptionServices;
+using LvchaxsBS_UID.Services.EncryptionServices;
 using System;
 using System.ComponentModel;
 using System.Linq;
@@ -22,8 +22,9 @@ namespace LvchaxsBS_UID.Models
         private bool _isMarked = false;
         private bool _isPinned = false;
         private bool _showStar = false;
-        private DateTime _createdTime;
-        private DateTime? _pinnedTime;
+        private bool _hasLoginError = false;
+        private string _loginErrorText = "";
+        private int _order;
 
         [JsonPropertyName("id")]
         public int Id
@@ -65,13 +66,59 @@ namespace LvchaxsBS_UID.Models
         }
 
         /// <summary>
-        /// 卡片是否显示「置顶 / 置底」的四角星标识。
+        /// 上次登录是不是「账号或密码错误」（登录流程重试满次数仍报错时打上）。
+        /// ★ 会落盘 —— 卡片上的红色标签一直挂到这个账号的编辑窗口里点了「清除异常」才去掉。
+        /// </summary>
+        [JsonPropertyName("hasLoginError")]
+        public bool HasLoginError
+        {
+            get => _hasLoginError;
+            set
+            {
+                if (_hasLoginError != value)
+                {
+                    _hasLoginError = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// ★★ 上次登录失败的原因文案 —— 卡片上那个红标签显示的就是它。
+        /// <list type="bullet">
+        ///   <item><b>空串</b> = 没有标签（正常账号）；</item>
+        ///   <item><c>账号或密码错误-账号编辑中清除异常</c>（<c>LoginConfirmControl.AccountErrorHintText</c>）
+        ///         = 账密被服务器判错；</item>
+        ///   <item><c>账号验证失效</c>（<c>LoginConfirmControl.VerifyInvalidHintText</c>）
+        ///         = 设备验证过期，弹出过「请先验证身份后再登录」。</item>
+        /// </list>
+        /// ★ 是否显示由 <see cref="HasLoginError"/> 决定，显示什么由它决定 ——
+        ///   两个字段要一起写，别只改一个（只改它会看不见，只改 HasLoginError 文案会串）。
+        /// ★ 同样会落盘，清除方式与 <see cref="HasLoginError"/> 一致（编辑账号里点「清除异常」）。
+        /// </summary>
+        [JsonPropertyName("loginErrorText")]
+        public string LoginErrorText
+        {
+            get => _loginErrorText;
+            set
+            {
+                string v = value ?? string.Empty;
+                if (_loginErrorText != v)
+                {
+                    _loginErrorText = v;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 卡片是否显示「置顶 / 置底」竖条（左缘那条蓝色竖条）。
         /// ★ 纯界面状态、不落盘：由列表构建逻辑按**当前模式**算好写进来 ——
         ///   主列表 = 该账号自己的置顶（<see cref="IsPinned"/>）；
         ///   分组内 = 该账号在**这个分组**里的置底（<c>AccountGroup.IsAccountMarked</c>）；
         ///   移入模式 = 不显示。
         /// ★ 不能直接绑 <see cref="IsPinned"/> —— 它是全局字段、分组内不会重置，
-        ///   否则主列表里置顶过的账号一进分组也会亮星。
+        ///   否则主列表里置顶过的账号一进分组也会亮高亮。
         /// </summary>
         [JsonIgnore]
         public bool ShowStar
@@ -87,24 +134,20 @@ namespace LvchaxsBS_UID.Models
             }
         }
 
-        [JsonPropertyName("createdTime")]
-        public DateTime CreatedTime
+        /// <summary>
+        /// 手动排序号（「自由排序」，照前端模拟 <c>LvchaxsBS_UID_WebSim/index.html</c>）：
+        /// **取代了按添加时间 / 置顶时间排序**。数字越小越靠前。
+        /// 置顶区与普通区（分组内是未置底区 / 置底区）各自独立按它排、两区互不跨界。
+        /// <para>★ 0 是合法值（第一张卡就是 0）；判断老数据有没有排序号只能看**整批是不是全 0**，
+        /// 见 <see cref="SortingService.EnsureAccountOrders"/>。</para>
+        /// </summary>
+        [JsonPropertyName("order")]
+        public int Order
         {
-            get => _createdTime;
+            get => _order;
             set
             {
-                _createdTime = value;
-                OnPropertyChanged();
-            }
-        }
-
-        [JsonPropertyName("pinnedTime")]
-        public DateTime? PinnedTime
-        {
-            get => _pinnedTime;
-            set
-            {
-                _pinnedTime = value;
+                _order = value;
                 OnPropertyChanged();
             }
         }
@@ -218,7 +261,7 @@ namespace LvchaxsBS_UID.Models
         /// <summary>
         /// 服务器标签，按 UID **首位**判定（《原神》UID 统一 9 位，官服与国际服都是）。
         /// 官服（1/2/3 开头）返回**空串** —— 界面不显示标签，因为默认就是官服，没必要标。
-        /// 其余：5=渠道服、6=亚服、7=美服、8=欧服、9=港澳台服。
+        /// 其余：5=渠道服、6=美服、7=欧服、8=亚服、9=港澳台服。
         /// 首位不在上述范围（老数据、手工填错）时按官服处理，避免误伤登录按钮。
         /// </summary>
         [JsonIgnore]
@@ -240,9 +283,9 @@ namespace LvchaxsBS_UID.Models
             {
                 '1' or '2' or '3' => "",        // 官服（天空岛 / 世界树）
                 '5' => "渠道服",                 // B服、小米服等
-                '6' => "亚服",
-                '7' => "美服",
-                '8' => "欧服",
+                '6' => "美服",                   // 国际服 UID 首位：6 美 / 7 欧 / 8 亚 / 9 港澳台
+                '7' => "欧服",
+                '8' => "亚服",
                 '9' => "港澳台服",
                 _ => ""                          // 认不出来就当官服，别把登录按钮弄没了
             };
@@ -334,7 +377,6 @@ namespace LvchaxsBS_UID.Models
         // 构造函数
         public Account()
         {
-            _createdTime = DateTime.Now;
         }
 
         public Account(int id, string uid, int level, string nickname, string username, string password)
@@ -345,21 +387,12 @@ namespace LvchaxsBS_UID.Models
             _nickname = nickname ?? "";
             _encryptedUsername = AccountEncryptionService.Encrypt(username ?? "");
             _encryptedPassword = AccountEncryptionService.Encrypt(password ?? "");
-            _createdTime = DateTime.Now;
         }
 
-        // 设置置顶时间
+        // 置顶 / 取消置顶（排序号由调用方按自由排序规则改，见 SortingService.AssignPinOrder）
         public void SetPinned(bool isPinned)
         {
             IsPinned = isPinned;
-            if (isPinned)
-            {
-                PinnedTime = DateTime.Now;
-            }
-            else
-            {
-                PinnedTime = null;
-            }
         }
 
         // 私有辅助方法

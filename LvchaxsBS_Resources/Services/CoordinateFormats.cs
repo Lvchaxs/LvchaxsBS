@@ -253,6 +253,15 @@ namespace LvchaxsBS.Services
             public Rect Rect { get; set; }
             public double Threshold { get; set; }
 
+            /// <summary>区域内要匹配的目标颜色（可多个，命中任一即算通过）。</summary>
+            public List<RgbColor> Colors { get; set; } = new();
+
+            /// <summary>
+            /// 颜色容差。★ 与 <c>ImageRecognition.CheckPixelColor</c> 的默认容差一致（=5）。
+            /// 画面有轻微色彩抖动 / 亮度渐变，容差太小会导致明明在却判定失败。
+            /// </summary>
+            public int Tolerance { get; set; } = 5;
+
             // 四角独立偏移：分辨率 → (X1偏移, Y1偏移, X2偏移, Y2偏移)
             public Dictionary<(int width, int height), (int x1, int y1, int x2, int y2)>? CustomCompensation { get; set; }
 
@@ -267,6 +276,21 @@ namespace LvchaxsBS.Services
             {
                 Rect = new Rect(x1, y1, x2, y2);
                 Threshold = threshold;
+                CustomCompensation = customCompensation;
+            }
+
+            /// <summary>
+            /// 带颜色与容差的模板匹配区域：区域 + 阈值 + 容差 + 分辨率补偿 + 目标颜色。
+            /// <para>★ 与 <see cref="DetectPoint"/> 的签名风格保持一致（tolerance 在前、colors 收尾）。</para>
+            /// </summary>
+            public MatchRect(int x1, int y1, int x2, int y2, double threshold, int tolerance,
+                Dictionary<(int width, int height), (int x1, int y1, int x2, int y2)>? customCompensation,
+                params (byte r, byte g, byte b)[] colors)
+            {
+                Rect = new Rect(x1, y1, x2, y2);
+                Threshold = threshold;
+                Tolerance = tolerance;
+                Colors = colors.Select(c => new RgbColor(c.r, c.g, c.b)).ToList();
                 CustomCompensation = customCompensation;
             }
 
@@ -295,7 +319,9 @@ namespace LvchaxsBS.Services
                     y2 += comp.y2;
                 }
 
-                return new MatchRect(x1, y1, x2, y2, Threshold);
+                var screen = new MatchRect(x1, y1, x2, y2, Threshold, Tolerance, null);
+                screen.Colors = Colors;          // ★ 容差与颜色跟着一起换算，别只搬矩形
+                return screen;
             }
         }
 
@@ -381,7 +407,7 @@ namespace LvchaxsBS.Services
 
         #region 坐标定义 头像怎字幕
 
-        public static Point 自动烹饪_字幕显示坐标 = new Point(155, 1370,
+        public static Point 自动烹饪_字幕显示坐标 = new Point(77, 1370,
             new Dictionary<(int, int), (int, int)>
             {
                 [(5120, 2160)] = (97, 0),
@@ -390,7 +416,7 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static Point 钓鱼辅助_字幕显示坐标 = new Point(60, 520,
+        public static Point 钓鱼辅助_字幕显示坐标 = new Point(77, 520,
             new Dictionary<(int, int), (int, int)>
             {
                 [(5120, 2160)] = (128, 0),
@@ -399,7 +425,7 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static Point 自动伐木_字幕显示坐标 = new Point(60, 520,
+        public static Point 自动伐木_字幕显示坐标 = new Point(77, 520,
             new Dictionary<(int, int), (int, int)>
             {
                 [(5120, 2160)] = (128, 0),
@@ -430,7 +456,7 @@ namespace LvchaxsBS.Services
             }
         );
 
-        public static MatchRect 快速传送_右侧列表区域 = new MatchRect(2590, 900, 2710, 1870, 0.9,
+        public static MatchRect 快速传送_右侧列表区域 = new MatchRect(2590, 570, 2710, 1870, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (83, 0, 43, 0),
@@ -444,6 +470,156 @@ namespace LvchaxsBS.Services
             {
                 [(3440, 1440)] = (0, 0, 0, 0),
                 [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        #endregion
+
+        #region 坐标定义 快速切图
+
+        public static DetectPoint 快速切图_地区探测点 = new DetectPoint(2603, 27, 5,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (189, 0),
+                [(2560, 1080)] = (135, 0),
+            },
+            (61, 69, 85)
+        );
+
+        public static MatchRect 快速切图_导航条区域 = new MatchRect(3651, 2035, 3720, 2036, 0.9, 5,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(3440, 1440)] = (-56, 0, -66, 0),
+                [(2560, 1080)] = (-44, 0, -52, -1),
+            },
+            (236, 229, 216)
+        );
+
+        public static Point 快速切图_蒙德 = new Point(2906, 360,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (118, 0),
+                [(2560, 1080)] = (83, -1),
+            }
+        );
+
+        public static Point 快速切图_璃月 = new Point(3501, 360,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (-18, 0),
+                [(2560, 1080)] = (-16, -1),
+            }
+        );
+
+        public static Point 快速切图_稻妻 = new Point(2906, 566,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (118, 0),
+                [(2560, 1080)] = (83, -1),
+            }
+        );
+
+        public static Point 快速切图_须弥 = new Point(3501, 566,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (-18, 0),
+                [(2560, 1080)] = (-16, -1),
+            }
+        );
+
+        public static Point 快速切图_枫丹 = new Point(2906, 773,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (118, 0),
+                [(2560, 1080)] = (83, 0),
+            }
+        );
+
+        public static Point 快速切图_纳塔 = new Point(3501, 773,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (-18, 0),
+                [(2560, 1080)] = (-16, 0),
+            }
+        );
+
+        public static Point 快速切图_挪德卡莱 = new Point(2906, 977,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (118, 0),
+                [(2560, 1080)] = (83, 1),
+            }
+        );
+
+        public static Point 快速切图_至冬 = new Point(3501, 977,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (-18, 0),
+                [(2560, 1080)] = (-16, 1),
+            }
+        );
+
+        public static Point 快速切图_渊下宫 = new Point(2906, 1218,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (118, 0),
+                [(2560, 1080)] = (83, 0),
+            }
+        );
+
+        public static Point 快速切图_层岩巨渊 = new Point(3501, 1218,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (-18, 0),
+                [(2560, 1080)] = (-16, 0),
+            }
+        );
+
+        public static Point 快速切图_旧日之海 = new Point(2906, 1424,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (118, 0),
+                [(2560, 1080)] = (83, 0),
+            }
+        );
+
+        public static Point 快速切图_远古圣山 = new Point(3501, 1424,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (-18, 0),
+                [(2560, 1080)] = (-16, 0),
+            }
+        );
+
+        public static Point 快速切图_空之神殿 = new Point(2906, 1629,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (118, 0),
+                [(2560, 1080)] = (83, 1),
+            }
+        );
+
+        public static Point 快速切图_霜月 = new Point(3501, 1629,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (-18, 0),
+                [(2560, 1080)] = (-16, 1),
+            }
+        );
+
+        public static Point 快速切图_尘歌壶 = new Point(2906, 1868,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (118, 0),
+                [(2560, 1080)] = (83, 0),
+            }
+        );
+
+        public static Point 快速切图_千星奇域 = new Point(3501, 1868,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(3440, 1440)] = (-18, 0),
+                [(2560, 1080)] = (-16, 0),
             }
         );
 
@@ -705,8 +881,8 @@ namespace LvchaxsBS.Services
             }
         );
 
-        //主界面按下ESC后会打开→派蒙菜单页面
-        public static MatchRect 派蒙菜单区域 = new MatchRect(71, 70, 121, 120, 0.9,
+        //主界面按下ESC后会打开→派蒙菜单页面 而此处检测的是菜单中的相机功能图标代表处于菜单界面
+        public static MatchRect 派蒙菜单区域 = new MatchRect(46, 730, 146, 830, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
                 [(5120, 2160)] = (114, 0, 110, 0),
@@ -725,6 +901,27 @@ namespace LvchaxsBS.Services
             }
         );
 
+        //进入游戏后可能会显示月卡 空月祝福 领取界面 
+        public static MatchRect 空月祝福 = new MatchRect(1868, 1308, 1968, 1408, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //检测账号是否在另一处设备重复登录/连接服务器失败的提示界面，检测到的是重复登录时按下esc后会返回登录界面，检测到连接服务器失败说明网络出现问题了直接结束不执行登录了
+        //账号列表登录时 如果当前账号未输入过账号密码登录也检测到“检测账号是否在另一处设备重复登录”说明当前是处于其他账号中直接esc回到登录大厅就行了
+        //分组账号列表登录时 如果检测到检测账号是否在另一处设备重复登录时注意是成功登录后的持续检测中检测到的说明当前账号被顶了所以直接按流程回到登录大厅执行登录下一个账号，如果检测到连接服务器失败直接结束不执行登录了
+        public static MatchRect 连接已断开 = new MatchRect(1636, 986, 2206, 1056, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
         #endregion
 
         #region 退出游戏-正常退出
@@ -749,6 +946,26 @@ namespace LvchaxsBS.Services
             }
         );
 
+        //登录大厅点击{登录或退出区域}后的退出登录窗口
+        public static MatchRect 是否保留登录记录 = new MatchRect(1374, 920, 1430, 1172, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //登录大厅点击{登录或退出区域}后的退出登录窗口 → 确认退出登录 的点击坐标
+        public static Point 退出登录点击坐标 = new Point(2175, 1353,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (114, 0),
+                [(3440, 1440)] = (68, 0),
+                [(2560, 1080)] = (49, 0),
+            }
+        );
+
         #endregion
 
         #region 退出登录-用户中心退出
@@ -759,7 +976,7 @@ namespace LvchaxsBS.Services
             {
                 [(5120, 2160)] = (0, 0),
                 [(3440, 1440)] = (0, 0),
-                [(2560, 1080)] = (49, 0),
+                [(2560, 1080)] = (0, 0),
             }
         );
 
@@ -767,9 +984,9 @@ namespace LvchaxsBS.Services
         public static MatchRect 设置界面区域 = new MatchRect(286, 68, 390, 124, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
-                [(5120, 2160)] = (25, 0, -15, 0),
-                [(3440, 1440)] = (14, 0, 0, 0),
-                [(2560, 1080)] = (12, 0, 0, 0),
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
             }
         );
 
@@ -777,9 +994,9 @@ namespace LvchaxsBS.Services
         public static Point 账户点击坐标 = new Point(352, 1140,
             new Dictionary<(int, int), (int, int)>
             {
-                [(5120, 2160)] = (114, 0),
-                [(3440, 1440)] = (68, 0),
-                [(2560, 1080)] = (49, 0),
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
             }
         );
 
@@ -787,9 +1004,9 @@ namespace LvchaxsBS.Services
         public static MatchRect 账户跳转区域 = new MatchRect(3518, 394, 3576, 452, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
-                [(5120, 2160)] = (25, 0, -15, 0),
-                [(3440, 1440)] = (14, 0, 0, 0),
-                [(2560, 1080)] = (12, 0, 0, 0),
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
             }
         );
 
@@ -797,9 +1014,9 @@ namespace LvchaxsBS.Services
         public static MatchRect 用户中心刷新按钮区域 = new MatchRect(3616, 30, 3820, 97, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
-                [(5120, 2160)] = (25, 0, -15, 0),
-                [(3440, 1440)] = (14, 0, 0, 0),
-                [(2560, 1080)] = (12, 0, 0, 0),
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
             }
         );
 
@@ -807,9 +1024,9 @@ namespace LvchaxsBS.Services
         public static Point 切换账号击坐标 = new Point(3250, 420,
             new Dictionary<(int, int), (int, int)>
             {
-                [(5120, 2160)] = (114, 0),
-                [(3440, 1440)] = (68, 0),
-                [(2560, 1080)] = (49, 0),
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
             }
         );
 
@@ -828,13 +1045,25 @@ namespace LvchaxsBS.Services
 
         #region 登录账号
 
+        //处于登录大厅时有两个状态，一个是当前客户区没有账号在登录点击{登录或退出区域}后直接是输入账号密码界面，一个是当前客户区有账号还未退出点击{登录或退出区域}后弹出的是一些退出账号的步骤操作
+        //{登录或退出区域}这里只有一个模版如果检测的到那就说明当前客户区没有账号点击后就是输入界面，如果检测不到但是{点击进入区域}检测的到就说明当前客户区已有账号了点击{点击进入区域}后直接就进入游戏了，如果刚执行时还未输入过账号密码时这里检测到{点击进入区域}不能点击进入游戏
+        //所以 ui 点击确认登录激活窗口后检测到了{点击进入区域}时可以直接点击{登录或退出区域}执行退出账号操作，如果检测到了{登录或退出区域}可以直接点击此处然后就是输入账号密码阶段了
+        public static MatchRect 登录或退出区域 = new MatchRect(3606, 1930, 3690, 2008, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
         //如果游戏有保存登录记录的话从用户中心退出游戏之后会处于无法输入账号密码的的账号登录界面，所以检测到 登录其他账号区域 就点击此处会打开使用账号密码登录其他账号
         public static MatchRect 登录其他账号区域 = new MatchRect(1772, 1380, 2068, 1436, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
-                [(5120, 2160)] = (25, 0, -15, 0),
-                [(3440, 1440)] = (14, 0, 0, 0),
-                [(2560, 1080)] = (12, 0, 0, 0),
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
             }
         );
 
@@ -842,9 +1071,9 @@ namespace LvchaxsBS.Services
         public static MatchRect 进入游戏区域 = new MatchRect(1816, 1392, 2022, 1452, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
-                [(5120, 2160)] = (25, 0, -15, 0),
-                [(3440, 1440)] = (14, 0, 0, 0),
-                [(2560, 1080)] = (12, 0, 0, 0),
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
             }
         );
 
@@ -852,9 +1081,9 @@ namespace LvchaxsBS.Services
         public static Point 输入账号点击坐标 = new Point(2000, 795,
             new Dictionary<(int, int), (int, int)>
             {
-                [(5120, 2160)] = (114, 0),
-                [(3440, 1440)] = (68, 0),
-                [(2560, 1080)] = (49, 0),
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
             }
         );
 
@@ -862,9 +1091,9 @@ namespace LvchaxsBS.Services
         public static Point 输入密码点击坐标 = new Point(2000, 965,
             new Dictionary<(int, int), (int, int)>
             {
-                [(5120, 2160)] = (114, 0),
-                [(3440, 1440)] = (68, 0),
-                [(2560, 1080)] = (49, 0),
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
             }
         );
 
@@ -872,9 +1101,182 @@ namespace LvchaxsBS.Services
         public static MatchRect 同意登录区域 = new MatchRect(2138, 1194, 2240, 1246, 0.9,
             new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
             {
-                [(5120, 2160)] = (25, 0, -15, 0),
-                [(3440, 1440)] = (14, 0, 0, 0),
-                [(2560, 1080)] = (12, 0, 0, 0),
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //同意登录后如果账号有问题时此处区域能检测到，说明账号或密码有问题，账号密码正确时此处区域不会检测到
+        public static MatchRect 账号密码出错区域 = new MatchRect(1738, 1054, 2100, 1108, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //同意登录后如果没有出错的话过一会会检测到 欢迎进入游戏 区域，说明账号登录成功了马上就会检测到 点击进入 了
+        public static MatchRect 欢迎进入游戏区域 = new MatchRect(1738, 1054, 2100, 1108, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //检测到这里说明"您的账号存在安全风险，为确保是您本人操作，请先验证身份后再登录"说明验证失效了需要重新验证此设备
+        public static MatchRect 验证身份 = new MatchRect(1718, 1010, 2206, 1068, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //"您的账号存在安全风险，为确保是您本人操作，请先验证身份后再登录"点击"取消验证"位置即可关闭此弹窗不进行验证
+        public static Point 取消验证 = new Point(2426, 862,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
+            }
+        );
+
+        #endregion
+
+        #region 聊天界面
+
+        //聊天界面内的"消息发送"按钮
+        public static MatchRect 消息发送 = new MatchRect(2096, 1988, 2218, 2052, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //聊天界面中的"当前队伍"频道按钮
+        public static MatchRect 当前队伍 = new MatchRect(164, 252, 344, 312, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //聊天界面中的"当前队伍"是排在最上面的也就这个坐标位置选择后第一个聊天频道的背景会变成65, 72, 86
+        //所以检测到这个颜色说明已经选择的了最上面的 频道，如果没有就点击
+        //这个频道列表是可以滚动的所以如果当前队伍频道不在最上面就需要滚动到最顶部然后点击这个坐标，点击后如果还检测不到说明还不在联机中。
+        //"当前队伍"只有在联机时才会有
+        public static DetectPoint 选择当前队伍 = new DetectPoint(30, 290, 0,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
+            },
+            (65, 72, 86)
+        );
+
+        //处于聊天界面时输入框处于焦点时这里会是白色的，说明可以输入文字了，如果不是白色说明没有焦点需要点击或回车输入框后才能输入文字 
+        public static DetectPoint 聊天输入框 = new DetectPoint(760, 2020, 0,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
+            },
+            (255, 255, 255)
+        );
+
+        //聊天界面中队友发送消息，个区域检测到说明有队友发送的消息，最底部的消息是最新的
+        public static MatchRect 队友消息 = new MatchRect(828, 208, 860, 1872, 0.8,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //聊天界面中自己自动回复队友的消息，如果自己自动回复的消息比队友发送的最新消息的y要低时说明自己已经回复了队友的消息，如果对应的消息比自己的y要地说明没有恢复队友消息
+        public static MatchRect 自己消息 = new MatchRect(1790, 208, 1976, 1874, 0.8,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        #endregion  
+
+        #region 联机
+
+        //主界面中可查看的当前是否处于多人模式的联机状态
+        public static MatchRect 多人模式 = new MatchRect(692, 58, 752, 118, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //主界面中可查看的当前的联机队友
+        public static MatchRect 联机队友 = new MatchRect(3630, 500, 3662, 870, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //联机大厅内的"世界权限"按钮
+        public static MatchRect 世界权限 = new MatchRect(546, 2008, 848, 2060, 0.9,
+            new Dictionary<(int, int), (int x1, int y1, int x2, int y2)>
+            {
+                [(5120, 2160)] = (0, 0, 0, 0),
+                [(3440, 1440)] = (0, 0, 0, 0),
+                [(2560, 1080)] = (0, 0, 0, 0),
+            }
+        );
+
+        //不允许加入
+        public static Point 不允许加入 = new Point(670, 1740,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
+            }
+        );
+
+        //直接加入
+        public static Point 直接加入 = new Point(670, 1840,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
+            }
+        );
+
+        //确认后可加入
+        public static Point 确认后可加入 = new Point(670, 1940,
+            new Dictionary<(int, int), (int, int)>
+            {
+                [(5120, 2160)] = (0, 0),
+                [(3440, 1440)] = (0, 0),
+                [(2560, 1080)] = (0, 0),
             }
         );
 

@@ -116,96 +116,30 @@ namespace LvchaxsBS.Core.Function
 
         public static bool IsRunning => _isRunning;
 
+        /// <summary>本功能的识别阈值（每次现取，用户改配置立刻生效 —— 与原实现一致）。</summary>
+        private static double MedicineThreshold =>
+            ConfigManager.Get<AutoCookSettings>().MedicineDetectThreshold;
+
+        // ===== 纯「模板匹不匹配」的检测：流水线在 Core/TemplateProbe.cs =====
+        // 下面几个原来各自抄了一遍「判缓存 → 查区域 → 截屏 → 取模板 → 匹配」的 28 行，
+        // 只有区域键 / 模板键 / 日志文案不同。注意：拆除（TryDetectDismantle）走的是
+        // MatchTemplateScaledBest（多倍缩放择优），不属于这条流水线，所以单独保留。
+
+        private static bool DetectMedicine(string rectKey, string templateKey, string label, string? templateMissingLog = null)
+            => TemplateProbe.TryRun(
+                rectKey, templateKey, MedicineThreshold, "自动清药", label,
+                out _, out _, out _, out _,
+                logHit: false, requireNonEmptyRect: true, templateMissingLog: templateMissingLog);
+
         public static bool TryDetectStorageDevice()
-        {
-            try
-            {
-                if (!CoordinateFormats.CacheReady) return false;
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>(STORAGE_DEVICE_REGION_KEY);
-                if (matchRect == null) return false;
-
-                var rect = matchRect.Rect;
-                if (rect.Width <= 0 || rect.Height <= 0) return false;
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null) return false;
-
-                var template = TemplateManager.GetCachedTemplate(STORAGE_DEVICE_TEMPLATE_KEY);
-                if (template == null) return false;
-
-                double threshold = ConfigManager.Get<AutoCookSettings>().MedicineDetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                return result != null && result.Similarity >= threshold;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+            => DetectMedicine(STORAGE_DEVICE_REGION_KEY, STORAGE_DEVICE_TEMPLATE_KEY, "寄物装置");
 
         private static bool TryDetectOpenStorage()
-        {
-            try
-            {
-                if (!CoordinateFormats.CacheReady) return false;
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>(OPEN_STORAGE_REGION_KEY);
-                if (matchRect == null) return false;
-
-                var rect = matchRect.Rect;
-                if (rect.Width <= 0 || rect.Height <= 0) return false;
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null) return false;
-
-                var template = TemplateManager.GetCachedTemplate(OPEN_STORAGE_TEMPLATE_KEY);
-                if (template == null) return false;
-
-                double threshold = ConfigManager.Get<AutoCookSettings>().MedicineDetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                return result != null && result.Similarity >= threshold;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+            => DetectMedicine(OPEN_STORAGE_REGION_KEY, OPEN_STORAGE_TEMPLATE_KEY, "打开寄物装置");
 
         private static bool TryDetectAutoMainWindow()
-        {
-            try
-            {
-                if (!CoordinateFormats.CacheReady) return false;
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>(AUTO_MAIN_REGION_KEY);
-                if (matchRect == null) return false;
-
-                var rect = matchRect.Rect;
-                if (rect.Width <= 0 || rect.Height <= 0) return false;
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null) return false;
-
-                var template = TemplateManager.GetCachedTemplate(AUTO_MAIN_TEMPLATE_KEY);
-                if (template == null)
-                {
-                    Debug.WriteLine($"【自动清药】主界面模板不存在: {AUTO_MAIN_TEMPLATE_KEY}");
-                    return false;
-                }
-
-                double threshold = ConfigManager.Get<AutoCookSettings>().MedicineDetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                return result != null && result.Similarity >= threshold;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+            => DetectMedicine(AUTO_MAIN_REGION_KEY, AUTO_MAIN_TEMPLATE_KEY, "主界面",
+                              templateMissingLog: $"主界面模板不存在: {AUTO_MAIN_TEMPLATE_KEY}");
 
         private static bool TryDetectDismantle()
         {
@@ -806,42 +740,20 @@ namespace LvchaxsBS.Core.Function
 
         private static bool TryDetectConfirmStorage(out int clickX, out int clickY)
         {
-            clickX = 0;
-            clickY = 0;
+            bool detected = TemplateProbe.TryRun(
+                CONFIRM_STORAGE_REGION_KEY, CONFIRM_STORAGE_TEMPLATE_KEY, MedicineThreshold,
+                "自动清药", "确认存放",
+                out _, out _, out clickX, out clickY,
+                logHit: false, computeClickPoint: true, requireNonEmptyRect: true);
 
-            try
+            // TryRun 失败时已经写过 0，这里只是把语义写明白
+            if (!detected)
             {
-                if (!CoordinateFormats.CacheReady) return false;
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>(CONFIRM_STORAGE_REGION_KEY);
-                if (matchRect == null) return false;
-
-                var rect = matchRect.Rect;
-                if (rect.Width <= 0 || rect.Height <= 0) return false;
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null) return false;
-
-                var template = TemplateManager.GetCachedTemplate(CONFIRM_STORAGE_TEMPLATE_KEY);
-                if (template == null) return false;
-
-                double threshold = ConfigManager.Get<AutoCookSettings>().MedicineDetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                if (result != null && result.Similarity >= threshold)
-                {
-                    double capScale = ImageRecognition.GetCaptureScale();
-                    clickX = rect.X1 + (int)((result.X + template.Width / 2.0) / capScale);
-                    clickY = rect.Y1 + (int)((result.Y + template.Height / 2.0) / capScale);
-                    return true;
-                }
-
-                return false;
+                clickX = 0;
+                clickY = 0;
             }
-            catch
-            {
-                return false;
-            }
+
+            return detected;
         }
 
         private static bool CheckFuelPointHasColor()

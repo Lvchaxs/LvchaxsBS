@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;   // VisualTreeHelper（遍历视觉树建按键映射）
 using LvchaxsBS.Core;
 using LvchaxsBS.Services;
+using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Pages
 {
@@ -100,7 +101,7 @@ namespace LvchaxsBS.UI.Pages
         /// </summary>
         private void BuildKeyMap()
         {
-            foreach (var btn in FindVisualChildren<Button>(this))
+            foreach (var btn in VisualTreeEx.FindChildren<Button>(this))
             {
                 if (string.IsNullOrEmpty(btn.Name) || !btn.Name.StartsWith("Gamepad")) continue;
 
@@ -109,17 +110,6 @@ namespace LvchaxsBS.UI.Pages
 
                 _keyButtonMap[keyName] = btn;
                 _buttonToName[btn] = keyName;
-            }
-        }
-
-        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T t) yield return t;
-                foreach (var c in FindVisualChildren<T>(child))
-                    yield return c;
             }
         }
 

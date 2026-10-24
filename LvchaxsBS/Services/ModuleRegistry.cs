@@ -30,6 +30,13 @@ namespace LvchaxsBS.Services
         /// <summary>是否使用手柄按键页（GamepadTriggerKeyPage）</summary>
         public bool UseGamepad { get; init; } = false;
 
+        /// <summary>
+        /// 是否在**首页生成卡片**（默认 true）。
+        /// <para>★★ 2026-10-21：自定义宏改成「只在顶部按钮里进」——首页不再放那张大卡片，
+        ///   但模块本身还要留在 <see cref="ModuleRegistry.All"/> 里（触发键占用检测、按 KeyTag 查找都要靠它）。</para>
+        /// </summary>
+        public bool ShowOnHome { get; init; } = true;
+
         /// <summary>配置页工厂</summary>
         public Func<System.Windows.Controls.Page> CreateConfigPage { get; init; }
             = () => new System.Windows.Controls.Page();
@@ -49,6 +56,14 @@ namespace LvchaxsBS.Services
         /// 不能在 <see cref="ModuleRegistry"/> 静态初始化阶段就 new 控件。</para>
         /// </summary>
         public Func<System.Windows.FrameworkElement>? CreateCardExtension { get; init; }
+
+        /// <summary>
+        /// 卡片**第一行标题右侧**的扩展控件工厂（可选；2026-10-19 为插件模块加的）。
+        /// <para>★ 返回控件的模块用这个控件**替代**分辨率标签那一排（如「自定义宏」的
+        /// <c>宏文件 N 个</c> + 编辑按钮）；返回 null 的模块照旧按 <see cref="CreateTags"/> 显示标签。</para>
+        /// <para>★ 同样必须延迟创建（控件只能在 UI 线程 new）。</para>
+        /// </summary>
+        public Func<System.Windows.FrameworkElement>? CreateTagExtension { get; init; }
 
         /// <summary>分辨率标签工厂（null = 不显示标签）</summary>
         public Func<TagInfo[]?>? CreateTags { get; init; }
@@ -160,10 +175,15 @@ namespace LvchaxsBS.Services
         ///   配置容器页，全部由 <see cref="All"/> 驱动 —— 插件只需要提供图标 / 第二行控件 / 空白配置页。
         /// </para>
         /// <para>
-        /// ★★ 只构建一次并缓存：插件在启动时探测，**运行中才拷进来的 dll 要重启才认**（和 UID 一样）。
+        /// ★★ 只构建一次并缓存。
+        ///   插件 dll 补上后会调 <see cref="Invalidate"/> 清掉这份缓存，
+        ///   下次访问 <see cref="All"/> 就能把新装进来的模块拼进来（热加载）。
         /// </para>
         /// </summary>
         public static ModuleInfo[] All => _all ??= BuildAll();
+
+        /// <summary>丢掉缓存，下次访问 <see cref="All"/> 时重新构建（热加载用）。</summary>
+        public static void Invalidate() => _all = null;
 
         private static ModuleInfo[] BuildAll()
         {

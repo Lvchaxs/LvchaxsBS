@@ -12,6 +12,12 @@
         <!-- 头像：把账号的 Avatar（角色名）转成资源包里的图片，取不到时回落到「空」 -->
         <converters:AvatarConverter x:Key="AvatarConverter"/>
 
+        <!-- ★★ 列表容器间距：「最后一项下边距 0、其余 8」—— 滚到底时最后一张卡底边贴视口底。
+             用绑定而不是代码刷：代码刷总比容器生成晚一步（首进 / 滚动中新建的行都会漏），
+             用户实测「账号列表首次打开滚到底有空白，打开一次分组再返回才正常」就是这个。
+             绑在行 / 容器自己身上 ⇒ 生成即正确，排序 Move / 过滤 / 换集合自动重算。 -->
+        <converters:LastItemSpacingConverter x:Key="LastItemSpacing"/>
+
         <!-- 细滚动条（6px）：与主程序 CustomScrollBar 同规格。
              模块没有编译期引用，不能直接用宿主的样式，这里自带一份；
              颜色走 DynamicResource 宿主题键，深浅主题自动跟随。
@@ -170,7 +176,8 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="10,4"/>
-            <Setter Property="Height" Value="33"/>
+            <!-- ★ 32：与同一行的统计胶囊 / 搜索框统一高度 -->
+            <Setter Property="Height" Value="32"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -331,6 +338,93 @@
             </Setter>
         </Style>
 
+        <!-- ============ 排序手柄（自由排序，照前端模拟的 .sort-btn） ============
+             24×24、悬停放大 1.2、按下即进入拖动（无长按延迟）。
+             拖动逻辑在 AccountManagerView.xaml.cs 的「自由排序」region 里。
+
+             ★ 图标（2026-10-14 重绘）：左边「上下双向箭头 + 竖杆中间断开成一个点」，
+               右边「三条横线」。全部用**圆头描边**画（圆头线段 = 胶囊条），
+               圆头极短线 = 一个圆点 —— 所以不需要改用 Fill，也不必用 DashArray。
+             ★ 坐标铺满 16×16：`Stretch=Uniform` 下几何按 min(16/宽, 16/高) 缩放、
+               **描边不缩放**，所以视野别随坐标大小变粗细（16 宽 11.6 高 → 缩放 1.07）。 -->
+        <StreamGeometry x:Key="SortHandleIconGeometry">M 1,4.8 L 3.2,2.2 L 5.4,4.8 M 3.2,3 L 3.2,6.6 M 3.2,7.9 L 3.2,8.05 M 3.2,9.4 L 3.2,13 M 1,11.2 L 3.2,13.8 L 5.4,11.2 M 8.2,3.2 H 16 M 8.2,8 H 16 M 8.2,12.8 H 16</StreamGeometry>
+
+        <Style x:Key="SortHandleButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <!-- ★ 在手柄那一列里**右移 6px**：左 +6 / 右 −6 相抵 → 这一列总宽仍是 29，
+                 所以「星」和「操作按钮」不会跟着挪，只有手柄本体往右走。
+                 为什么：手柄右侧原本是「按钮内居中留白 4 + 卡片内边距 16」≈ 20px，
+                 左侧只有「按钮行到它的间距 5 + 留白 4」≈ 9px → 看着偏左。
+                 挪 6px 后左右两侧各约 14/15px，视觉上居中平衡（负右边距让 24×24 的
+                 命中区多探出去 6px，正好处在卡片内边距那块空白里，不会压到任何东西）。 -->
+            <Setter Property="Margin" Value="11,0,-6,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="ToolTip" Value="按住拖动排序"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <!-- ★★ 这层透明底不是装饰，是**命中区**：
+                             三条杠是三条**只有描边**的线，线之间的缝隙没有任何可命中的像素，
+                             鼠标落在缝里时 WPF 的命中测试找不到这个按钮 → 既不触发 IsMouseOver
+                             动画、按下也进不了拖动。铺一层铺满整个按钮的 Border（Background=Transparent）
+                             之后，24×24 的方块整体都能命中。 -->
+                        <Border Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <Path x:Name="sortIcon"
+                                  Data="{StaticResource SortHandleIconGeometry}"
+                                  Stroke="{DynamicResource TextDisabledBrush}"
+                                  StrokeThickness="1.8"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Stretch="Uniform"
+                                  Width="16" Height="16"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <ScaleTransform x:Name="sortScale" ScaleX="1" ScaleY="1"/>
+                                </Path.RenderTransform>
+                            </Path>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="sortIcon" Property="Stroke" Value="{DynamicResource TextSecondaryBrush}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1.2" Duration="0:0:0.1"
+                                                             EasingFunction="{StaticResource ExponentialEaseOut}"/>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1.2" Duration="0:0:0.1"
+                                                             EasingFunction="{StaticResource ExponentialEaseOut}"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1" Duration="0:0:0.1"
+                                                             EasingFunction="{StaticResource ExponentialEaseOut}"/>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1" Duration="0:0:0.1"
+                                                             EasingFunction="{StaticResource ExponentialEaseOut}"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- 紧凑危险按钮样式 -->
         <Style x:Key="CompactDangerButtonStyle" TargetType="Button" 
                BasedOn="{StaticResource CompactActionButtonStyle}">
@@ -465,8 +559,14 @@
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <!-- 68 + 卡片自身 1px 上下边框 = 70，与主程序功能卡片（ModuleFunctionCardStyle）一致 -->
-            <Setter Property="RowHeight" Value="68"/>
+            <!-- ★★ 70：2026-10-14 二次改动 —— 卡片那圈 1px 边框从「行上」挪到「单元格里」了
+                 （见 DataGridRowStyle 模板里的说明）。行的根元素不再有 BorderThickness，
+                 于是**行高就是卡片的外框高度**：RowHeight=70 → 卡片 70、内容区 68，
+                 正好等于分组卡片那张 Border 的 Height=70。
+                 ★ 数值是**实测**的（离屏探针 `D:/C#/_rowprobe`，不显示窗口、只量 ActualHeight）：
+                   边框在行上时：RowHeight=66 → 行 68；**68 → 行 70 ✓**；70 → 行 72 ✗。
+                   （即旧结论「行高是内容区、+2 是边框」只对**带边框的行**成立，边框挪走后不再 +2。） -->
+            <Setter Property="RowHeight" Value="70"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="AutoGenerateColumns" Value="False"/>
             <Setter Property="HeadersVisibility" Value="None"/>
@@ -548,23 +648,47 @@
         <!-- DataGrid 行样式：每行账号就是一张卡片（圆角 8 + 1px 边框 + 行间距 8，对齐主程序卡片） -->
         <Style x:Key="DataGridRowStyle" TargetType="DataGridRow">
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <!-- ★★ 行的圆角底色 = **透明**（原来是 CardBackgroundBrush）：
+                 卡片那层（accountCardBorder，同一个画刷）铺满整个单元格，行底完全被它盖住，
+                 留着就等于**两层半透明白叠在一起** —— 宿主开了壁纸后 CardBackgroundBrush 是
+                 alpha=128 的（AppearanceService 按「控件透明度」改写），两层叠起来约等于 0.75，
+                 卡片看起来就比主程序的卡片更实、更白。
+                 改成 Transparent 后账号卡和主程序的卡片一样是**单层**半透明。
+                 ★ 移入模式的整行高亮不受影响：真正生效的是 accountCardBorder 上的那个 DataTrigger
+                   （见 CellTemplate），这里下面那条行级触发器只是原来留下的、现在被卡片盖住看不出来。 -->
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Margin" Value="0,0,0,8"/>
+            <!-- 0：卡片边框改画在单元格里（见下面模板的说明），行本身不再有边框 ——
+                 行上只要带 1px 边框就会让行宽超出可用宽度 2px 而被裁掉。 -->
+            <Setter Property="BorderThickness" Value="0"/>
+            <!-- ★★ 2026-10-21：行间距改成**绑定**算（见 LastItemSpacingConverter）：
+                 原来这里是写死的 8 —— 最后一行也带着 8 ⇒ 滚到底时视口底与卡片底之间
+                 空出一截；之前靠 RefreshAccountRowSpacing 代码刷最后一行，可它总比
+                 容器生成晚一步（首进 / 滚动中新建的行刷不到）⇒ 用户看到「首次打开有空白，
+                 打开一次分组再返回才正常」。绑上之后行一生成就带对的值。
+                 ⛔ 别再写代码去设 row.Margin —— 本地值会覆盖这个绑定，之后再也不更新。 -->
+            <Setter Property="Margin">
+                <Setter.Value>
+                    <MultiBinding Converter="{StaticResource LastItemSpacing}">
+                        <Binding RelativeSource="{RelativeSource Self}" Path="Item"/>
+                        <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}" Path="Items"/>
+                        <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}" Path="ItemsSource"/>
+                    </MultiBinding>
+                </Setter.Value>
+            </Setter>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridRow">
-                        <!-- ★ ClipToBounds：卡片内的装饰（置顶/置底那块灰区）用负边距去贴卡片边缘，
-                             窗口缩放重排的那一瞬间会短暂超出卡片 → 没裁剪就会看到卡片上下外面
-                             也有灰色在闪。开裁剪后一切裁在卡片矩形内。 -->
+                        <!-- ★★★ 卡片那圈 1px 边框**不画在行上**，画在单元格里（账号卡 CellTemplate 里的
+                             accountCardBorder）：行的根元素只要带 BorderThickness，行的期望宽度就比可用
+                             宽度多出 2px，而本表横向滚动被禁用 → ScrollContentPresenter 把多出的 2px
+                             直接裁掉，卡片右边框会被切掉一截。
+                             边框移到单元格内以后：行宽 = 单元格宽 = 可用宽度，不溢出、也就不再被裁。
+                             ★ 这里只留圆角底色：移入模式勾选后的整行高亮（RowHighlightBrush）靠它。 -->
                         <Border x:Name="RowCard"
                                 Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="8"
-                                ClipToBounds="True"
                                 SnapsToDevicePixels="True">
                             <DataGridCellsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"
                                                     SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
@@ -580,9 +704,8 @@
                      现在：行样式不给选中画任何底色/边框（下面查询确认过，单元格样式也没有），
                      所以「点了之后变灰、一直灰着」的观感没有了；
                      内部那个 SelectedItem 没人读（代码里无引用），留着无害。 -->
-                <!-- ★ 置底不再给整卡灰底 + 0.8 透明（原来点头像置底后整张卡会变灰、一直灰着）。
-                     置顶/置底的标识现在只靠右侧那颗四角星 + 灰区，卡片本身不再变色，
-                     和字幕设置的列表一样：悬停、点击都不改变卡片背景。 -->
+                <!-- ★ 置顶/置底的标识只靠卡片左缘那条蓝色竖条，行本身不改底色：
+                     悬停、点击都不改变卡片背景（和字幕设置的列表一样）。 -->
                 <!-- 移入模式：鼠标变成手型（提示「点卡片任意处即选中」） -->
                 <DataTrigger Binding="{Binding Path=IsMoveMode, RelativeSource={RelativeSource AncestorType={x:Type local:AccountManagerView}}}" Value="True">
                     <Setter Property="Cursor" Value="Hand"/>
@@ -647,6 +770,41 @@
 
 
 
+        <!-- ============ 分组卡片头像里的「文件夹」图标 ============
+             分组不是角色、没有立绘，所以头像统一用文件夹图标（矢量自绘，不依赖资源包里的图片）。
+             线稿风格、描边走主题键，深浅主题自动适配；和「复制 / 眼睛」那几个图标同一路做法。 -->
+        <!-- ============ 分组头像的「文件夹」图标（线稿） ============
+             造型照用户给的参考图：一个**正面带透视的文件夹** ——
+               ① 背板：左边一条竖线，左上角是一个「标签页」（先平上去、再落回长顶边），
+                  右上角转下来一小段就停住（再往下就被前盖挡住了）；
+               ② 前盖：一个**平行四边形**（左右两条边同斜率往左下斜），上沿近乎水平、
+                  比背板顶边低一截并略微向右上翘；它的右下角比背板还靠右，所以会「探出来」。
+             ★ 只描边、不填充（Fill=Transparent），线宽也照参考图的比例给。
+             ★ 转角用 **Miter**：Round 会把每个折角都磨圆，和参考图那种干脆的折角差很多。
+             ★ 背板右边那条竖线只画到 y=8（折线下方）—— 画长了它的**圆头线帽**会从折线下露出来一小块。
+             ★ 路径数据由探针 `D:/C#/_geoprobe` 校验 + 渲染预览（XAML 编译期不校验路径数据，
+               写坏了只在运行时抛，宿主没有全局异常处理 = 直接崩）。 -->
+        <StreamGeometry x:Key="GroupFolderIconGeometry">M33.6,29 H2 V3.4 A2.2,2.2 0 0 1 4.2,1.2 H11.6 A1.6,1.6 0 0 1 13.2,2.8 V4 H32 A1,1 0 0 1 33,5 V8 M10.4,8.7 L39.6,8 L33.2,28.6 L3.5,28.6 Z</StreamGeometry>
+
+        <!-- 「添加分组」按钮右下角的徽标：一圈圆 + 圈里的加号。
+             ★ 和文件夹**同色**（都是 TextSecondaryBrush）—— 只有一套灰，不额外引入颜色。
+             ★ 圆要**填卡片底色**：它压在文件夹右下角上，填充把那两条线遮断才像「别在角上的徽标」，
+               不填的话文件夹的线会从圈里穿过去，糊成一团。
+             ★ 两个 .Data 由探针 `D:/C#/_geoprobe` 校验 + 渲染预览（XAML 编译期不校验路径数据）。 -->
+        <StreamGeometry x:Key="GroupFolderPlusCircleGeometry">M26.8,23.2 A6.2,6.2 0 1 1 39.2,23.2 A6.2,6.2 0 1 1 26.8,23.2 Z</StreamGeometry>
+        <StreamGeometry x:Key="GroupFolderPlusGeometry">M29.5,23.2 H36.5 M33,19.7 V26.7</StreamGeometry>
+
+        <!-- ============ 「添加账号」按钮的人像图标（线稿，用户从 5 个样本里选的 A） ============
+             一条路径里三个子图形，全部只描边（Fill=Transparent）：
+               ① 外圈（半径 13.5，圆心 21,15.5）
+               ② 头的圆（半径 4.9，圆心 21,12.4）
+               ③ 肩是一段**开口弧** —— ★ 两端必须落在外圈的圆上：
+                  按圈半径反算 `dx = sqrt(R² - dy²)`，这里 y=26 时 dx≈8.5，
+                  不然弧的两端会戳到圈外面（画出来像个笑脸）。
+             ★ 用同一块 42x31 画布（和文件夹图标一致）→ 同一个 Viewbox 下两个按钮的图标大小协调。
+             ★ 路径由探针 `D:/C#/_geoprobe` 校验（XAML 编译期不校验路径数据，写坏了运行时才崩）。 -->
+        <StreamGeometry x:Key="PersonIconGeometry">M7.5,15.5 A13.5,13.5 0 1 1 34.5,15.5 A13.5,13.5 0 1 1 7.5,15.5 Z M16.1,12.4 A4.9,4.9 0 1 1 25.9,12.4 A4.9,4.9 0 1 1 16.1,12.4 Z M12.5,26 A8.5,7.6 0 0 1 29.5,26</StreamGeometry>
+
         <!-- ============ 账号卡片：照主程序功能卡片的规格 ============
              图标位（头像 60x60 圆角 6，左边距 5、右边距 12）与两个等级标签。
              模块没有编译期引用，样式在本文件自带；颜色走宿主题键，深浅主题自动跟随。 -->
@@ -658,6 +816,19 @@
             <Setter Property="ClipToBounds" Value="True"/>
             <Setter Property="Margin" Value="5,0,8,0"/>
             <Setter Property="Background" Value="{DynamicResource Gray100Brush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 分组头像的框：尺寸/圆角/边距和账号头像**完全一致**（这样两张卡片的头像位置分毫不差），
+             区别只有一点 —— **不要灰底**（分组那颗文件夹是线稿，垫个灰圆反而糊；
+             而且账号那头像的灰底是给立绘当衬底的，分组不吃这套）。 -->
+        <Style x:Key="GroupIconBorderStyle" TargetType="Border">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+            <Setter Property="Margin" Value="5,0,8,0"/>
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
@@ -685,6 +856,12 @@
             <Setter Property="Background" Value="{DynamicResource Gray100Brush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <!-- 「账号或密码错误」红标签：登录重试满次数仍报错时挂上，编辑窗口点「清除异常」才去掉。
+             底色用主题的 TagRedBgBrush（和主程序的红色语义一致），红字 TagRedFgBrush。 -->
+        <Style x:Key="AccountTagRedStyle" TargetType="Border" BasedOn="{StaticResource AccountTagStyle}">
+            <Setter Property="Background" Value="{DynamicResource TagRedBgBrush}"/>
         </Style>
 
         <!-- 置顶按钮：圆角方块边框（18x18、圆角 2、1px）+ **向上箭头**（代表置顶）：
@@ -731,29 +908,48 @@
 
     </UserControl.Resources>
 
-    <Grid Background="{DynamicResource AppBackgroundBrush}">
+    <!-- ★★ 根容器**必须透明**（和主程序的页面一样，见 LvchaxsBS/UI/Pages/*.xaml 的
+         `Page Background="Transparent"`）：本模块是嵌在宿主 MainFrame 里的内容，
+         宿主窗口的壁纸层就在它下面，铺任何底色都会把壁纸整块盖住。
+         这里原来写的是 `{DynamicResource AppBackgroundBrush}` —— 那个键只受「窗口透明度」影响，
+         默认值 0 = **完全不透明**，所以一开壁纸，本页背景就是纯白、壁纸全被遮住。
+         卡片自己不透明的问题不用管：宿主的 AppearanceService 会把 CardBackgroundBrush
+         换成带 alpha 的画刷（受「控件透明度」控制），DynamicResource 自动跟着变，
+         和主程序里的卡片是同一份画刷 → 深浅主题、壁纸下的半透明效果都一致。 -->
+    <Grid Background="Transparent">
         <!-- 主内容区 -->
         <!-- 左右边距对齐主程序卡片：左 5 与主页卡片左边界一致；右边 0，
              右侧的留白由滚动条列（6px）自然给出，与主程序 CustomScrollViewer 同机制 -->
         <Grid Margin="5,-4,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto" MinHeight="48"/>
+                <!-- ★ 这一行不再设 MinHeight=48：行的上下间距按首页基准算
+                     （首页第一张卡片距顶 4、卡片之间 8），行高就跟着 32 高的胶囊/按钮走，
+                     多出来的 16 会让「这行→第一张卡片」的距离不是 8。 -->
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
             <!-- 第 0 行已清空（原来这里是标题区和模块自带的提示条）。
                  提示条已改用主程序标题栏的，见 Utils/UI/ToastManager.cs -->
             <!-- 搜索和按钮区 -->
-            <Grid Grid.Row="1" Margin="0,13,0,1">
+            <!-- ★★ 上下间距照首页（HomePage 的 `StackPanel Margin="5,4,0,0"` + 卡片自带 Margin 下 8）：
+                 · 行 Margin 上 8 − 外层 Grid 的 -4 = 距内容区顶 4 —— 和首页第一张卡片一样高
+                 · 行下 0，第一张卡片由列表容器的 Margin 2 + Padding 6 再让出 8 —— 等于卡片之间那 8
+                 ★ 右边距 6：账号列表的 DataGrid 模板里右侧有一条 6px 的滚动条列
+                 （见 ModernDataGridStyle），卡片因此停在「距右边 6」处；
+                 这一行若铺满整宽，「分组管理 / 添加账号」就会比卡片右边缘多出 6px。
+                 只影响右侧的 * 列，左边的统计胶囊 / 搜索框位置不变。 -->
+            <Grid Grid.Row="1" Margin="0,8,6,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- 搜索框 -->
-                <Border x:Name="searchBox" Grid.Column="0" Height="34" VerticalAlignment="Center" CornerRadius="5" 
+                <!-- 搜索框（2026-10-21：与统计胶囊互换位置；左侧补 8 的间距，否则和统计胶囊贴脸） -->
+                <Border x:Name="searchBox" Grid.Column="1" Height="32" VerticalAlignment="Center" CornerRadius="5"
+                        Margin="8,0,0,0"
                         Background="{DynamicResource CardBackgroundBrush}" BorderThickness="1" BorderBrush="{DynamicResource BorderStrongBrush}">
                     <Grid HorizontalAlignment="Right" Width="187">
                         <Grid.ColumnDefinitions>
@@ -785,8 +981,15 @@
                 </Border>
 
                 <!-- 当前分组名称标签 -->
-                <Border x:Name="currentGroupLabel" Grid.Column="1" Background="{DynamicResource HoverBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="5" Padding="12,6" Margin="8,0,0,0" Visibility="Visible" VerticalAlignment="Center"
+                <!-- ★ 2026-10-21：这一行三个控件（统计胶囊 / 搜索框 / 右侧按钮）统一 Height=32。
+                     原来胶囊是「Padding 12,6 自适应」约 31、搜索框 34、按钮 33，并排看着高矮不齐。
+                     ★ 左边距 0（原来 8）：这个 8 是胶囊还放在搜索框**右边**时留的间距，
+                       互换位置后它变成了「距页面左边 8」，叠上外层 Grid 的 5 就是 13 ——
+                       比卡片框左边缘（5）多出 8，看着这一行整体往右偏。
+                       归零后胶囊左边缘 = 卡片左边缘，和下面的账号卡片对齐。
+                       胶囊与搜索框之间的 8 由搜索框自己的 Margin 提供，间距不受影响。 -->
+                <Border x:Name="currentGroupLabel" Grid.Column="0" Background="{DynamicResource HoverBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="5" Padding="12,0" Height="32" Margin="0" Visibility="Visible" VerticalAlignment="Center"
                         HorizontalAlignment="Left" ToolTipService.ShowDuration="10000">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -795,8 +998,20 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- 文件夹图标 -->
-                        <TextBlock Grid.Column="0" Text="📂" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <!-- 文件夹图标：改用**矢量绘制**（和分组卡片头像同一个 Geometry）——
+                             原来是 📂 emoji：字形随系统字体走（不同机器长得不一样），
+                             颜色也不好控制，换成 Path 之后跟文字的主题色完全同步。 -->
+                        <Viewbox Grid.Column="0" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center">
+                            <Canvas Width="42" Height="31">
+                                <Path Data="{StaticResource GroupFolderIconGeometry}"
+                                      Stroke="{DynamicResource TextSecondaryBrush}"
+                                      StrokeThickness="2.5"
+                                      Fill="Transparent"
+                                      StrokeLineJoin="Miter"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"/>
+                            </Canvas>
+                        </Viewbox>
 
                         <!-- 左侧：分组名 -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -816,7 +1031,30 @@
                     <Button x:Name="addGroupButton" Style="{StaticResource NeutralButtonStyle}" HorizontalAlignment="Left" 
         Width="110" Margin="0,0,10,0" Click="CreateGroupButton_Click" Visibility="Collapsed">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="+" FontSize="20" FontWeight="Bold" VerticalAlignment="Bottom" Margin="0,0,6,0"/>
+                            <!-- 图标 = 文件夹 + 右下角「圆圈套加号」徽标（和分组卡片头像同一个文件夹 Geometry）。
+                                 原来是文字「+」，现在合成到图标里了。三层叠着画：
+                                 文件夹 → 徽标圆（填卡片底色，把文件夹右下角的线遮断）→ 圈里的加号。 -->
+                            <Viewbox Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center">
+                                <Canvas Width="42" Height="31">
+                                    <Path Data="{StaticResource GroupFolderIconGeometry}"
+                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                          StrokeThickness="2.5"
+                                          Fill="Transparent"
+                                          StrokeLineJoin="Miter"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"/>
+                                    <Path Data="{StaticResource GroupFolderPlusCircleGeometry}"
+                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                          StrokeThickness="2.5"
+                                          Fill="{DynamicResource CardBackgroundBrush}"/>
+                                    <Path Data="{StaticResource GroupFolderPlusGeometry}"
+                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                          StrokeThickness="2.2"
+                                          Fill="Transparent"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"/>
+                                </Canvas>
+                            </Viewbox>
                             <TextBlock Text="添加分组" FontSize="14" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
@@ -834,6 +1072,18 @@
                     <Button x:Name="groupManagementButton" Style="{StaticResource NeutralButtonStyle}" HorizontalAlignment="Left" 
         Width="110" Margin="0,0,10,0" Click="GroupManagementButton_Click">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- 文件夹图标（和分组卡片头像、添加分组按钮同一份 Geometry） -->
+                            <Viewbox Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center">
+                                <Canvas Width="42" Height="31">
+                                    <Path Data="{StaticResource GroupFolderIconGeometry}"
+                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                          StrokeThickness="2.5"
+                                          Fill="Transparent"
+                                          StrokeLineJoin="Miter"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"/>
+                                </Canvas>
+                            </Viewbox>
                             <TextBlock Text="分组管理" FontSize="14" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
@@ -842,7 +1092,22 @@
                     <Button x:Name="addAccountButton" Style="{StaticResource NeutralButtonStyle}" HorizontalAlignment="Left" 
             Width="110" Margin="0,0,0,0" Click="AddAccountButton_Click">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="+" FontSize="20" FontWeight="Bold" VerticalAlignment="Bottom" Margin="0,0,6,0"/>
+                            <!-- 人像图标（线稿，和「分组管理」的文件夹图标同一块 42x31 画布）。
+                                 原来是文字「+」，现在合成到图标里。
+                                 ★ 这里的 Viewbox 是 **23**（文件夹那边是 20）:人像是圆的，画布 42x31 里
+                                   横向用不满 → 同样 20px 会比文件夹明显小一圈。放大到 23 才和文件夹观感相当
+                                   （渲染对比见 `_geoprobe/preview/button_pair.png`）。 -->
+                            <Viewbox Width="23" Height="23" Margin="0,0,6,0" VerticalAlignment="Center">
+                                <Canvas Width="42" Height="31">
+                                    <Path Data="{StaticResource PersonIconGeometry}"
+                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                          StrokeThickness="2.5"
+                                          Fill="Transparent"
+                                          StrokeLineJoin="Miter"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"/>
+                                </Canvas>
+                            </Viewbox>
                             <TextBlock Text="添加账号" FontSize="14" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
@@ -869,14 +1134,35 @@
 
             <!-- 账号列表容器：由「一整张大卡片包住表格」改为「顶部表头 + 每行一张卡片」，
                  外层退成透明留白（Padding 让卡片与表头左右对齐、四周有呼吸感） -->
+            <!-- ★ 2026-10-21：底部 Padding 10 → 0。那 10 在**视口外**（ScrollViewer 之外），
+                 滚到底时最后一张卡贴着视口底、视口底下还留一截空白 ⇒ 用户报「底部流出了很高的空白区」。
+                 参照物是**首页**（ScrollViewer 无 Margin，滚到底最后一张卡下只有自身那 8px 间距）。
+                 上间距 6 + Margin 2 保留（统计行到第一张卡片 8，未变）。 -->
             <Border Grid.Row="2" Background="Transparent" BorderThickness="0"
-                    Padding="0,6,0,10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,6,0,0">
+                    Padding="0,6,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Margin="0,2,0,0">
                 <Grid>
 
                     <!-- 无数据提示 -->
                     <Border x:Name="noDataMessage" Visibility="Visible" Background="{DynamicResource CardBackgroundBrush}" VerticalAlignment="Center"
                             HorizontalAlignment="Center" Padding="40" Panel.ZIndex="1">
                         <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                            <!-- ★ 「没有账号」时用**「添加账号」按钮同一个矢量图标**（人像线稿）——
+                                 原来这里是 📋 表情，看着像"复制"。
+                                 规格与那个按钮一致：同一块 42×31 画布 + 同一枚 PersonIconGeometry，
+                                 只把颜色换成这里的次要提示色（TextDisabledBrush）、整体放大到 40。
+                                 另外两种状态（分组为空 📂 / 搜索无结果 🔍）仍走下面的文字表情。 -->
+                            <Viewbox x:Name="noDataVectorIcon" Width="40" Height="40" Margin="0,0,0,15"
+                                     HorizontalAlignment="Center" Visibility="Collapsed">
+                                <Canvas Width="42" Height="31">
+                                    <Path Data="{StaticResource PersonIconGeometry}"
+                                          Stroke="{DynamicResource TextDisabledBrush}"
+                                          StrokeThickness="2.5"
+                                          Fill="Transparent"
+                                          StrokeLineJoin="Miter"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"/>
+                                </Canvas>
+                            </Viewbox>
                             <TextBlock x:Name="noDataIcon" FontSize="32" HorizontalAlignment="Center" Foreground="{DynamicResource TextDisabledBrush}" Margin="0,0,0,15"/>
                             <TextBlock x:Name="noDataText" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"
                                        HorizontalAlignment="Center" TextAlignment="Center"/>
@@ -902,24 +1188,54 @@
                                     <TextBlock Text="📂" FontSize="32" HorizontalAlignment="Center" Foreground="{DynamicResource TextDisabledBrush}" Margin="0,0,0,15"/>
                                     <TextBlock Text="当前没有分组" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"
                                                HorizontalAlignment="Center"/>
-                                    <TextBlock Text="伴生Lvchaxs&#10;点击右上角'添加分组'按钮创建第一个分组" FontSize="14" 
+                                    <TextBlock Text="点击右上角'添加分组'按钮创建第一个分组" FontSize="14" 
                                                Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,5,0,15"
                                                HorizontalAlignment="Center" TextAlignment="Center"/>
                                 </StackPanel>
                             </Border>
 
+                            <!-- ★ PreviewMouseWheel：滚轮一格 = 一张分组卡片（和账号列表同一手感，
+                                 这里是普通 ScrollViewer，默认物理滚动只有 48px/格）。 -->
                             <ScrollViewer Style="{StaticResource ThinScrollViewer}"
                                           VerticalScrollBarVisibility="Auto"
-                                          HorizontalScrollBarVisibility="Disabled">
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          PreviewMouseWheel="CardList_PreviewMouseWheel">
                                 <ItemsControl x:Name="groupsItemsControl">
+                                    <!-- ★★ 2026-10-21：分组卡间距也改成绑定算（同账号列表，见 LastItemSpacingConverter）。
+                                         卡片模板自己的 Margin 已经是 0，间距只从容器出；
+                                         最后一项容器绑成 0 ⇒ 滚到底时贴视口底。 -->
+                                    <ItemsControl.ItemContainerStyle>
+                                        <Style TargetType="ContentPresenter">
+                                            <Setter Property="Margin">
+                                                <Setter.Value>
+                                                    <MultiBinding Converter="{StaticResource LastItemSpacing}">
+                                                        <Binding RelativeSource="{RelativeSource Self}" Path="DataContext"/>
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=ItemsControl}" Path="Items"/>
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=ItemsControl}" Path="ItemsSource"/>
+                                                    </MultiBinding>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ItemsControl.ItemContainerStyle>
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel />
+                                            <!-- ★ 关掉虚拟化：拖动排序要按「显示顺序」把卡片下标映射回数据项
+                                                 （ContainerFromItem / panel.Children），虚拟化下滚出视区的行会被回收、
+                                                 下标就对不上了。分组数量本来就少，全部生成即可。 -->
+                                            <VirtualizingStackPanel IsVirtualizing="False"/>
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Height="70" Margin="0,0,0,8" Padding="16,0">
+                                            <!-- ★ ClipToBounds：置顶高亮层铺满整张卡片，
+                                                 窗口缩放重排的一瞬间会短暂超出卡片 → 不裁剪就会看到卡片外面也在闪。 -->
+                                            <!-- ★★ Margin="0" 必须显式写（2026-10-21）：间距只从
+                                                 容器出（RefreshGroupCardSpacing 按「是不是最后一张」
+                                                 给 ContentPresenter 设 8/0），卡片自己再带 8 的话：
+                                                 ① 普通卡间距变 16；② 最后一张卡底下永远剩 8
+                                                 （滚到底贴不了视口底）。和自定义宏页同一套结构。 -->
+                                            <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Height="70" Margin="0" Padding="16,0"
+                                                    ClipToBounds="True">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto"/>
@@ -927,49 +1243,198 @@
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
 
-                                                    <!-- 置顶：和账号卡片同一套（方块边框 + 五角星，未置顶灰描边 / 已置顶橙实心） -->
-                                                    <Button Grid.Column="0" Style="{DynamicResource IconPinButtonStyle}"
-                                                            Tag="{Binding Id}" Click="GroupPinButton_Click"
-                                                            HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                                    <!-- 置顶标识：卡片左缘一条主题蓝细竖条 —— 卡片本身的底色和边框都不动。
+                                                         ★ IsHitTestVisible=False 不吃点击，垫在最底层。
+                                                         ★ RenderTransformOrigin 在竖条正中心，代码播 ScaleY 0→1 时从中心向上下同时展开，
+                                                           收回时向中心缩回。由 AccountManagerView 的 ApplyStarToggle 播。
+                                                         ★ 这张卡片自带 Padding="16,0"，所以左边要 -16 的负边距
+                                                           把内容区内缩抵消掉，竖条才贴得住卡片左缘。 -->
+                                                    <Grid x:Name="PinHighlightLayer"
+                                                          Grid.ColumnSpan="3"
+                                                          IsHitTestVisible="False"
+                                                          Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                        <!-- 宽 2、上下各内缩 6、两端全圆角；Opacity 0.5 是它的浓度。
+                                                             ★ SnapsToDevicePixels + UseLayoutRounding：2px 的条一经系统缩放
+                                                               （125%/150%）就会落到半个物理像素上，边缘发虚、位置也像偏了半 px。
+                                                               开这两个属性让它钉在物理像素边界，和账号卡片一样锐利。 -->
+                                                        <Border x:Name="PinBar"
+                                                                Width="2"
+                                                                Margin="-16,6"
+                                                                CornerRadius="1"
+                                                                HorizontalAlignment="Left"
+                                                                VerticalAlignment="Stretch"
+                                                                Background="{DynamicResource PinBarBrush}"
+                                                                SnapsToDevicePixels="True"
+                                                                UseLayoutRounding="True"
+                                                                RenderTransformOrigin="0.5,0.5"/>
+                                                    </Grid>
 
-                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,0"/>
-                                                            <TextBlock Text="{Binding TagNote}" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" Margin="4,0,0,0"
-                                                                       VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                                    <!-- 头像（图标位，可点击）：分组不是角色 → 统一是一个**文件夹图标**，
+                                                         尺寸/悬停反馈沿用账号卡头像那一套（48x48、悬停 1.06），
+                                                         但不垫灰底（分组头像框 = GroupIconBorderStyle）。
+                                                         ★ 点它 = 置顶/取消置顶，和账号卡点头像同一个动作；
+                                                           是否置顶看卡片左缘那条蓝色竖条。
+                                                         ★ 左边距 -16：这张分组卡片自带 16 的左右 Padding，而账号卡片没有 ——
+                                                           不抵消掉的话文件夹会比账号头像**右移 16px**，两张卡片的头像对不齐。
+                                                           抵消后头像（连同后面的文字）与账号卡片逐像素对齐。 -->
+                                                    <Button Grid.Column="0" Style="{DynamicResource AccountAvatarButtonStyle}"
+                                                            Margin="-16,0,0,0"
+                                                            Tag="{Binding Id}" Click="GroupAvatarButton_Click">
+                                                        <Border Style="{StaticResource GroupIconBorderStyle}">
+                                                            <!-- 画在固定 42x31 的 Canvas 上（路径数据就是按这套坐标写的），
+                                                                 再整体 Viewbox 缩放 —— 这样描边粗细也跟着同比例缩，
+                                                                 不会因为各自的包围盒不同而变形。 -->
+                                                            <Viewbox Width="32" Height="32">
+                                                                <Canvas Width="42" Height="31">
+                                                                    <Path Data="{StaticResource GroupFolderIconGeometry}"
+                                                                          Stroke="{DynamicResource TextSecondaryBrush}"
+                                                                          StrokeThickness="2.5"
+                                                                          Fill="Transparent"
+                                                                          StrokeLineJoin="Miter"
+                                                                          StrokeStartLineCap="Round"
+                                                                          StrokeEndLineCap="Round"/>
+                                                                </Canvas>
+                                                            </Viewbox>
+                                                        </Border>
+                                                    </Button>
+
+                                                    <!-- 标题 + 描述：**格式完全照账号卡片** ——
+                                                         第一行「分组名（= 账号卡的昵称位置）+ 三个标签 + 编辑/删除」，
+                                                         第二行「备注」（= 账号卡 UID/账号/密码 那一行）。 -->
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock x:Name="GroupNameText" Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"
+                                                                       Margin="0,0,6,0"
+                                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                                       DataContextChanged="PinTitle_DataContextChanged">
+                                                                <!-- 置顶时名称变主题蓝：基础态由 Style 给（容器重建/首进就是对的），
+                                                                     过渡动画由 code-behind 播（和左侧蓝杠同时长、同时收）。
+                                                                     ★ 画刷必须是「逐实例」的才能动画 —— 代码里发现还是主题
+                                                                       共享实例时会换成一个新的（动画共享实例会污染全程序）。 -->
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding ShowStar}" Value="True">
+                                                                                <Setter Property="Foreground" Value="{DynamicResource PinNameBrush}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+
+                                                            <!-- 三个标签：包含几个账号 / 已标记几个 / 未标记几个。
+                                                                 复用账号卡片那套标签样式（蓝 / 紫 / 中性灰），
+                                                                 颜色和「冒险等级 / 世界等级 / 服务器」三个标签一一对应。 -->
+                                                            <Border Style="{StaticResource AccountTagBlueStyle}">
+                                                                <TextBlock FontSize="10" FontWeight="SemiBold"
+                                                                           Foreground="{DynamicResource TagBlueFgBrush}" VerticalAlignment="Center">
+                                                                    <Run Text="包含 "/><Run Text="{Binding AccountCount, Mode=OneWay}"/><Run Text=" 个账号"/>
+                                                                </TextBlock>
+                                                            </Border>
+                                                            <Border Style="{StaticResource AccountTagPurpleStyle}">
+                                                                <TextBlock FontSize="10" FontWeight="SemiBold"
+                                                                           Foreground="{DynamicResource TagPurpleFgBrush}" VerticalAlignment="Center">
+                                                                    <Run Text="已标记 "/><Run Text="{Binding MarkedCount, Mode=OneWay}"/><Run Text=" 个"/>
+                                                                </TextBlock>
+                                                            </Border>
+                                                            <Border Style="{StaticResource AccountTagServerStyle}">
+                                                                <TextBlock FontSize="10" FontWeight="SemiBold"
+                                                                           Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center">
+                                                                    <Run Text="未标记 "/><Run Text="{Binding UnmarkedCount, Mode=OneWay}"/><Run Text=" 个"/>
+                                                                </TextBlock>
+                                                            </Border>
+
+                                                            <!-- 编辑 / 删除：移到**三个标签后面**（和账号卡片同一位置）。
+                                                                 操作区里不再放这两个，只剩「清除置底」「打开」。 -->
+                                                            <Button Style="{DynamicResource IconEditButtonStyle}" Margin="6,0,0,0"
+                                                                    VerticalAlignment="Center" Tag="{Binding Id}" Click="EditGroupButton_Click"/>
+                                                            <Button Style="{DynamicResource IconDeleteButtonStyle}" Margin="8,0,0,0"
+                                                                    VerticalAlignment="Center" Tag="{Binding Id}" Click="DeleteGroupButton_Click"/>
                                                         </StackPanel>
-                                                        <TextBlock Text="{Binding DisplayText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0">
-                                                            <TextBlock.Style>
-                                                                <Style TargetType="TextBlock">
-                                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding HasAccounts}" Value="False">
-                                                                            <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}"/>
-                                                                        </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding HasMarks}" Value="True">
-                                                                            <Setter Property="Foreground" Value="{StaticResource PurpleBrush}"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBlock.Style>
-                                                        </TextBlock>
+
+                                                        <!-- 第二行：备注（照账号卡描述行的规矩：标签次要色 + 内容主色）
+                                                             ★★ Height=24：账号卡这一行里有**复制/显示隐藏按钮**，宿主
+                                                               `IconCopyButtonStyle` 是 **24×24** → 那一行实际高 24；
+                                                               分组卡这行只有 12px 文字 → 只有 15.24，整个「两行块」
+                                                               比账号卡矮 **8.76px**，两行相对卡片中心各偏 4.4px，
+                                                               看着就是「间距不一样」。写死 24 后两块都是
+                                                               20.32 + 3 + 24 = 47.32，两行逐像素对齐。
+                                                               （数值是离屏探针 `D:/C#/_rowprobe rows` 实测的。） -->
+                                                        <!-- ★ 不再写「备注 」前缀：有备注就直接显示备注内容，
+                                                             没备注（空串 / null）显示「无备注」—— 靠下面的触发器切，
+                                                             占位文字用次要色，和真备注一眼能分开。 -->
+                                                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0" Height="24">
+                                                            <TextBlock x:Name="groupRemarkText" FontSize="12" VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       Text="{Binding Remark}"/>
+                                                        </StackPanel>
                                                     </StackPanel>
 
-                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <Button x:Name="clearMarksButton" Content="清除置底" Style="{StaticResource OutlineButtonStyle}"
-                                                                Height="28" Padding="10,0" MinWidth="60" Margin="0,0,5,0" Tag="{Binding Id}"
-                                                                Click="ClearMarksButton_Click" Visibility="Collapsed"/>
-                                                        <Button Content="打开" Style="{StaticResource OutlineButtonStyle}" Height="28" Padding="10,0"
-                                                                MinWidth="60" Margin="0,0,5,0" Tag="{Binding Id}" Click="OpenGroupButton_Click"/>
-                                                        <!-- 编辑：改用主程序那套图标按钮（悬停显示「编辑」） -->
-                                                        <Button Style="{DynamicResource IconEditButtonStyle}"
-                                                                Margin="0,0,5,0" Tag="{Binding Id}" Click="EditGroupButton_Click"/>
-                                                        <!-- 删除：红色垃圾桶图标（悬停显示「删除」） -->
-                                                        <Button Style="{DynamicResource IconDeleteButtonStyle}"
-                                                                Tag="{Binding Id}" Click="DeleteGroupButton_Click"/>
-                                                    </StackPanel>
+                                                    <!-- ★ 右侧整块拆成**三列**：留空列、操作按钮、排序手柄 ——
+                                                         按钮永远不会被别的东西挤压；也不用像账号卡片那样靠写死宽度把操作列撑开。 -->
+                                                    <Grid Grid.Column="2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>                    <!-- 留空列（置顶不再占位），固定后面两列的下标 -->
+                                                            <!-- ★ MinWidth 写在**列**上、不写在按钮面板上：
+                                                                 StackPanel 永远从左往右码子元素，MinWidth 写在它身上时，
+                                                                 多出来的空白会落在它**右边** —— 面板本身右对齐了，
+                                                                 里面的按钮却不会跟着贴到面板右边，于是整排按钮比卡片右边缘短一截。
+                                                                 列宽固定住以后，面板仍是内容宽度，再靠 HorizontalAlignment="Right"
+                                                                 贴住列的右边 → 按钮贴卡片右边，列宽也不随「清除置底」显隐变化。 -->
+                                                            <ColumnDefinition Width="Auto" MinWidth="140"/>     <!-- 操作按钮 -->
+                                                            <!-- ★ 排序手柄**单独一列**：和账号卡完全一样的三列结构
+                                                                 （留空 + 按钮140 + 手柄29），总宽是确定值 → 两张卡逐像素对齐。
+                                                                 ★ 手柄常驻显示，这里恒定 29px。 -->
+                                                            <ColumnDefinition Width="29"/>                    <!-- 排序手柄 -->
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- 操作按钮：右对齐，永远贴卡片右边（列宽由上面那句 MinWidth 兜住）。
+                                                             ★ 面板自己**不能**写 MinWidth —— 那会把空白留在面板右边、把按钮推离卡片右边缘。
+                                                             ★ 只剩「清除置底」「打开」：编辑/删除已经移到标题行、跟在三个标签后面。 -->
+                                                        <!-- ★ 背景用**不透明**的卡片底色（样式里默认 Transparent）：
+                                                             按钮区域始终是一块干净的卡片色，不受父级底色影响。 -->
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                            <!-- ★ 显隐**直接绑 HasMarks**（原来是在 code-behind 里按名字找按钮再赋值）：
+                                                         列表一刷新容器就重建，新容器先按 XAML 的默认值 Collapsed 出来、
+                                                         再被代码改成 Visible → 每次置底/取消置底都能看见它闪一下。
+                                                         改成绑定后，容器一建出来就是对的，不会再闪。 -->
+                                                    <Button x:Name="clearMarksButton" Content="清除置底" Style="{StaticResource OutlineButtonStyle}"
+                                                                    Background="{DynamicResource CardBackgroundBrush}"
+                                                                    Height="28" Padding="10,0" MinWidth="60" Margin="0,0,5,0" Tag="{Binding Id}"
+                                                                    Click="ClearMarksButton_Click"
+                                                                    Visibility="{Binding HasMarks, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                            <Button Content="打开" Style="{StaticResource OutlineButtonStyle}"
+                                                                    Background="{DynamicResource CardBackgroundBrush}"
+                                                                    Height="28" Padding="10,0"
+                                                                    MinWidth="60" Tag="{Binding Id}" Click="OpenGroupButton_Click"/>
+                                                        </StackPanel>
+                                                            <!-- 排序手柄：常驻显示，按住拖动自由排序（和账号卡片同一个）。
+                                                                 ★ 独立第 3 列（不塞进按钮行）→ 两卡操作区总宽确定相等。 -->
+                                                            <Button x:Name="groupSortHandleButton" Grid.Column="2"
+                                                                    Style="{StaticResource SortHandleButtonStyle}"
+                                                                    Tag="{Binding Id}"
+                                                                    MouseLeave="SortHandleButton_MouseLeave"
+                                                                    PreviewMouseLeftButtonDown="SortHandleButton_PreviewMouseLeftButtonDown"/>
+                                                    </Grid>
                                                 </Grid>
                                             </Border>
+
+                                            <!-- 备注为空（空串 / null）时显示占位文字「无备注」（次要色）。 -->
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Remark}" Value="">
+                                                    <Setter TargetName="groupRemarkText" Property="Text" Value="无备注"/>
+                                                    <Setter TargetName="groupRemarkText" Property="Foreground"
+                                                            Value="{DynamicResource TextSecondaryBrush}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Remark}" Value="{x:Null}">
+                                                    <Setter TargetName="groupRemarkText" Property="Text" Value="无备注"/>
+                                                    <Setter TargetName="groupRemarkText" Property="Foreground"
+                                                            Value="{DynamicResource TextSecondaryBrush}"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -978,13 +1443,32 @@
                     </Border>
 
                     <!-- DataGrid 表格 -->
+                    <!-- ★★★ 拖动排序对这张表的两个硬要求（都是日志里查出来的，别改回去）：
+                         ① `VirtualizingPanel.ScrollUnit="Pixel"` = **像素级滚动**。
+                            默认条目制下 `VerticalOffset` 的单位是"行"，面板会把小数偏移**取整到整行** ——
+                            拖着卡片自动滚动时（每帧只推进几个 DIP）：
+                              · 往下滚 `9 + 0.06 → 9` = **一动不动** → 「拖到窗口底部不会往下滚」
+                              · 往上滚 `9 − 0.15 → 8` = **一帧跳一整行 78px** → 「往上飞速到顶」
+                         ② **行虚拟化平时保持开启**（= 按可视数量动态加载：一屏 5~6 个就只造那几个 + 缓冲，
+                            所以**首次进 UID 打开很快**、鼠标在列表上移动也不掉帧）。
+                            但被拖卡那一行必须在整段拖动里一直活着，所以由 `WarmUpSortCards()`
+                            在**自动滚动真要开始**的那一刻做一次性预热
+                            （`VirtualizingPanel.SetIsVirtualizing(面板, false)` + `UpdateLayout()`，
+                            把其余行全部实例化；几十个账号时是几百毫秒，见 `EnsureSortCardsWarmed`）。
+                            只在可见的几张卡之间挪位置的拖动不付这笔开销。
+                            ⛔ 别去掉预热：虚拟化下被拖那一行的**布局槽位**一旦滚出可见区，
+                            行容器就被回收重建 —— 长距离拖动（把最后一张拖到最顶上）必踩，
+                            日志里就是每帧一条「行容器被回收重建」，卡片抓不住、松手原位不动。 -->
                     <DataGrid x:Name="accountsDataGrid" PreviewMouseWheel="DataGrid_PreviewMouseWheel" Visibility="Collapsed"
+                              MouseLeave="AccountsDataGrid_MouseLeave"
                               PreviewMouseLeftButtonDown="AccountsDataGrid_PreviewMouseLeftButtonDown"
                               Style="{StaticResource ModernDataGridStyle}"
                               RowStyle="{StaticResource DataGridRowStyle}" CellStyle="{StaticResource DataGridCellStyle}"
                               ItemsSource="{Binding}" AutoGeneratingColumn="DataGrid_AutoGeneratingColumn"
                               AutoGenerateColumns="False"
                               HeadersVisibility="None"
+                              EnableColumnVirtualization="False"
+                              VirtualizingPanel.ScrollUnit="Pixel"
                               HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Panel.ZIndex="0">
                         <!-- 账号列表已改成「每行一张卡片」，布局照主程序的功能卡片：
                              头像（图标位） + 昵称（标题） + 冒险等级/世界等级两个标签
@@ -998,23 +1482,69 @@
                                         <Setter Property="BorderThickness" Value="0"/>
                                         <Setter Property="HorizontalAlignment" Value="Stretch"/>
                                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <!-- ★ 纵向也要撑满卡片（基础样式里写的是 Center）：
+                                             单元格只占内容那么高（48，头像高度）的话，置顶卡片的
+                                             置顶竖条就只有 48 高 —— 分组卡片是整张卡的高度（68），
+                                             两张卡的观感对不上。撑满以后底色上下顶到卡片边，
+                                             和分组卡片一致（内容本身仍是居中的：头像按钮样式带
+                                             VerticalAlignment=Center，文字面板也写了 Center）。 -->
+                                        <Setter Property="VerticalAlignment" Value="Stretch"/>
+                                        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
                                     </Style>
                                 </DataGridTemplateColumn.CellStyle>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Grid VerticalAlignment="Center">
+                                        <!-- ★★ 账号卡片的外框（边框画在单元格里，见 DataGridRowStyle 的说明）：
+                                             1px 边框 + 圆角 8 + 卡片底色，和分组卡片那张 Border 完全一致
+                                             （分组卡 Height=70；这里由行高 70 撑出同样的 70，内容区同为 68）。
+                                             ★ ClipToBounds：置顶高亮层铺满整张卡片，不裁剪的话边缘会露出卡片外面。 -->
+                                        <Border x:Name="accountCardBorder"
+                                                Background="{DynamicResource CardBackgroundBrush}"
+                                                BorderBrush="{DynamicResource BorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="8"
+                                                ClipToBounds="True"
+                                                SnapsToDevicePixels="True">
+                                        <!-- ★ Stretch（不是 Center）：整张卡片的高度都要能被置顶高亮层铺到，
+                                             居中时这块只有内容高度（48）→ 底色上下离卡片边各差一截，和分组卡片对不齐。
+                                             里面每个子元素各自带 VerticalAlignment=Center，视觉上照样居中。 -->
+                                        <Grid VerticalAlignment="Stretch">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>   <!-- 头像 -->
                                                 <ColumnDefinition Width="*"/>      <!-- 标题 + 描述 -->
                                                 <ColumnDefinition Width="Auto"/>   <!-- 右侧操作 -->
                                             </Grid.ColumnDefinitions>
 
+                                            <!-- 置顶标识：卡片左缘一条主题蓝细竖条 —— 卡片本身的底色和边框都不动。
+                                                 ★ IsHitTestVisible=False 不吃点击，垫在最底层。
+                                                 ★ RenderTransformOrigin 在竖条正中心，代码播 ScaleY 0→1 时从中心向上下同时展开，
+                                                   收回时向中心缩回。由 AccountManagerView 的 ApplyStarToggle 播。 -->
+                                            <Grid x:Name="PinHighlightLayer"
+                                                  Grid.ColumnSpan="3"
+                                                  IsHitTestVisible="False"
+                                                  Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <!-- 宽 2、上下各内缩 6、两端全圆角；Opacity 0.5 是它的浓度。
+                                                     ★ SnapsToDevicePixels + UseLayoutRounding：2px 的条一经系统缩放
+                                                       （125%/150%）就会落到半个物理像素上，边缘发虚、位置也像偏了半 px。
+                                                       开这两个属性让它钉在物理像素边界（账号卡本就开着，这是补齐另两处）。 -->
+                                                <Border x:Name="PinBar"
+                                                        Width="2"
+                                                        Margin="0,6"
+                                                        CornerRadius="1"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Stretch"
+                                                        Background="{DynamicResource PinBarBrush}"
+                                                        SnapsToDevicePixels="True"
+                                                        UseLayoutRounding="True"
+                                                        RenderTransformOrigin="0.5,0.5"/>
+                                            </Grid>
+
                                             <!-- ③ 头像（图标位，可点击）：显示账号自己选的 Avatar（角色名），
                                                  在「添加/编辑账号」窗口里选，图片来自共用资源包。
                                                  账号没设头像、或资源包里没有这张图时回落到「空」。
-                                                 ★ 点它（卡片上已不再单独放置顶、置底按钮）= 主列表 置顶/取消置顶、分组内 置底/取消置底；
+                                                 ★ 点它（卡片上没有单独的置顶/置底按钮）= 主列表 置顶/取消置顶、分组内 置底/取消置底；
                                                  移入模式 = 选中/取消选中。头像上不弹悬停提示。
-                                                     是否置顶/置底，看卡片有没有四角星。 -->
+                                                     是否置顶/置底，看名称颜色（置顶的变成主题色）。 -->
                                             <Button Grid.Column="0" Style="{DynamicResource AccountAvatarButtonStyle}"
                                                     Tag="{Binding Id}" Click="AccountAvatarButton_Click">
                                                 <Border Style="{StaticResource AccountIconBorderStyle}">
@@ -1026,9 +1556,25 @@
                                             <!-- ④ 标题（昵称 + 两个等级标签）与描述（UID / 账号 / 密码） -->
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding Nickname}" FontSize="16" FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"
-                                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock x:Name="AccountNameText" Text="{Binding Nickname}" FontSize="16" FontWeight="SemiBold"
+                                                               Margin="0,0,6,0"
+                                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                               DataContextChanged="PinTitle_DataContextChanged">
+                                                        <!-- 置顶/置底时名称变主题蓝：基础态由 Style 给（容器重建/首进就是对的），
+                                                             过渡动画由 code-behind 播（和左侧蓝杠同时长、同时收）。
+                                                             ★ 画刷必须是「逐实例」的才能动画 —— 代码里发现还是主题
+                                                               共享实例时会换成一个新的（动画共享实例会污染全程序）。 -->
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ShowStar}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource PinNameBrush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                     <!-- 冒险等级 -->
                                                     <Border Style="{StaticResource AccountTagBlueStyle}">
                                                         <TextBlock FontSize="10" FontWeight="SemiBold"
@@ -1053,6 +1599,18 @@
 
                                                     <!-- 编辑 / 删除：跟在等级标签右侧，
                                                          大小与字幕设置的编辑按钮一致（16x16） -->
+                                                    <!-- ★ 登录失败红标签：账密错误 / 账号验证失效都用它（按钮(view Binding LoginErrorText）。
+                                                         2026-10-14：文案由「账号或密码错误」改长，把「去哪里修」也写进去，
+                                                         免得用户看到红标签不知道怎么办。标签是自适应宽度，长出来不会截断。
+                                                         2026-10-15：文案不再是写死的一句 —— 失败原因写在 Account.LoginErrorText 里：
+                                                           · 账密错误 → 「账号或密码错误-账号编辑中清除异常」
+                                                           · 验证失效 → 「账号验证失效」
+                                                         显不显示仍由 HasLoginError 决定（编辑账号里「清除异常」一起清）。 -->
+                                                    <Border x:Name="loginErrorTag" Style="{StaticResource AccountTagRedStyle}"
+                                                            Visibility="{Binding HasLoginError, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                        <TextBlock Text="{Binding LoginErrorText, Mode=OneWay}" FontSize="10" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource TagRedFgBrush}" VerticalAlignment="Center"/>
+                                                    </Border>
                                                     <Button x:Name="editAccountButton" Style="{DynamicResource IconEditButtonStyle}" Margin="6,0,0,0"
                                                             VerticalAlignment="Center"
                                                             Tag="{Binding Id}" Click="EditAccountButton_Click"/>
@@ -1157,92 +1715,37 @@
                                                 </StackPanel>
                                             </StackPanel>
 
-                                            <!-- ⑤ 操作按钮（外层 Grid 用来叠「右侧灰色区」这张底图） -->
-                                            <Grid Grid.Column="2">
-                                                <!-- 底层：从四角星右尖开始铺到卡片最右边的灰色区。
-                                                     左端是一段弧（上下两端向右收、中间向左凸出，凸出点与星尖相接），
-                                                     弧右侧是一块矩形，两块拼起来把卡片右侧整片铺满（上下也铺满卡片高度）。
-                                                     按钮们叠在它上面。 -->
-                                                <!-- ★ 透明度（0.06）写在**这个父 Grid** 上、不写在子元素上：
-                                                     两个各自带 Opacity 的相邻元素会被各自渲染成独立图层，
-                                                     交界处抗锯齿的 alpha 叠不到 1 → 看得见一条缝。
-                                                     合成到一层里画（下面两个子元素都不写 Opacity）就没有接缝。
-                                                     ★ 长度**固定 218**（不再是 Stretch 自适应铺到卡片右边）：
-                                                     原来主列表操作区窄（只有登录）、分组内宽（登录+移出），
-                                                     灰区就跟着时短时长；218 是分组内那一版（观感合适）的长度 ——
-                                                     星 32 + 100 + 登录 55 + 移出 55 + 右边距 10 = 252，减去左边让给星的 34。
-                                                     因为宽度写死，置顶/置底的卡片操作列会被撑到 252。
-                                                     ★ 整块跟着 ShowStar 折叠（Visibility 绑 ShowStar）：
-                                                       没有星的普通卡片这块**直接 Collapsed**，不占宽度 ——
-                                                       所以只有置顶/置底的卡片才会让描述区窄 55px，
-                                                       普通卡片完全不受影响（相当于「同一个卡片、一个有背景」）。 -->
-                                                <!-- 显隐仍由 ShowStar 绑定（瞬时、可靠，开页面/容器回收时状态一定正确）。
-                                                     划入/滑出动画**在代码里播**（AccountManagerView.PlayStarSlide）：
-                                                     列表刷新会重建行容器，触发器驱动的动画在新容器上不可靠
-                                                     （取消时新容器一建出来就是不显示，滑出动画根本没机会播）。
-                                                     X=260 时整块停在卡片右侧外面，被 RowCard 的 ClipToBounds 裁掉。 -->
-                                                <Grid HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                                                      Width="218"
-                                                      Margin="34,0,0,0"
-                                                      Opacity="0.06"
-                                                      Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                      x:Name="pinnedMarkArcLayer">
-                                                    <Grid.RenderTransform>
-                                                        <TranslateTransform X="0"/>
-                                                    </Grid.RenderTransform>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="19.3"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
+                                            <!-- ⑤ 操作按钮 -->
+                                            <!-- ★★ 右侧整块拆成**两列**（星一列、按钮一列），和**分组卡片完全同一套**：
+                                                 星永远压不到按钮上，也不用写死宽度。
+                                                 ★★ 右边距 16：分组卡片的容器自带 Padding=16，按钮因此离卡片边 16；
+                                                   账号卡片（DataGrid 行）没有内边距，整块会**往右多出 16**、
+                                                   和分组卡片的按钮对不齐。这里补上同样的 16 → 两块逐像素重合。 -->
+                                            <Grid Grid.Column="2" Margin="0,0,16,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>                    <!-- 留空列（置顶不再占位），固定后面两列的下标 -->
+                                                    <!-- ★ MinWidth 写在**列**上（不写在按钮面板上，理由同分组卡片）：
+                                                         列宽固定住后，面板仍是内容宽度、靠 Right 贴住列右边，
+                                                        按钮贴卡片右边，列宽也不随按钮显隐变化。 -->
+                                                    <ColumnDefinition Width="Auto" MinWidth="140"/>     <!-- 操作按钮 -->
+                                                    <!-- ★ 排序手柄**单独一列**：不用挤进上面的按钮行，
+                                                         两卡的操作区总宽 = 留空 + 按钮140 + 手柄29 —— **确定值**，
+                                                         分组卡按钮再多也撑不破（140 是 MinWidth 兜底）。
+                                                         ★ 手柄常驻显示，这里恒定 29px（同分组卡）。 -->
+                                                    <ColumnDefinition Width="29"/>                    <!-- 排序手柄 -->
+                                                </Grid.ColumnDefinitions>
 
-                                                    <Path x:Name="pinnedMarkArc"
-                                                          Grid.Column="0"
-                                                          Stretch="Fill"
-                                                          Fill="{DynamicResource TextPrimaryBrush}"
-                                                          Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 Z"/>
-
-                                                    <!-- 右侧那块用**带右圆角的 Border**，不再用直角 Rectangle：
-                                                         卡片行是 CornerRadius=8 + 边框 1px，内容区圆角就是 7；
-                                                         这里给右上/右下 7 的圆角，两条圆弧同心 →
-                                                         灰区的右边缘与卡片边缘严格平行，右上/右下不会再露出灰色的直角尖。
-                                                         ★ 纵向边距必须是 0（不能留负边距），否则圆角起点对不上卡片圆角，又会冒尖。
-                                                         向左多占 0.5px：和左边的弧轻微叠一点，防止半像素接缝。 -->
-                                                    <Border x:Name="pinnedMarkFill"
-                                                            Grid.Column="1"
-                                                            Margin="-0.5,0,0,0"
-                                                            CornerRadius="0,7,7,0"
-                                                            Background="{DynamicResource TextPrimaryBrush}"/>
-                                                </Grid>
-
-                                                <!-- 置顶 / 置底的标识：四角星 —— 上下左右四个尖角，
-                                                     尖角之间是往内凹的弧线（不是直线连接）。
-                                                     ★ 它已取代卡片上原来的置顶/置底按钮 —— 是否置顶/置底，就看卡片有没有这颗星（两者外观不区分）。
-                                                     显示与否绑 ShowStar（模式感知，见 Account.ShowStar）。
-                                                     ★ 位置：**贴操作区最左侧**（右边那圈灰区的弧尖正好咬在星的右尖上）。
-                                                       它**不放在按钮行里** —— 按钮行改成右对齐后两者互不牵扯：
-                                                       主列表按钮少（只有「登录」）也不会把星往右带、按钮也不会被挤走。 -->
-                                                <Path x:Name="pinnedMarkStar"
-                                                      Width="32" Height="32"
-                                                      Stretch="Uniform"
-                                                      Fill="{DynamicResource TextPrimaryBrush}"
-                                                      Opacity="0.06"
-                                                      HorizontalAlignment="Left"
-                                                      VerticalAlignment="Center"
-                                                      Visibility="{Binding ShowStar, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                      Data="M12 2 C12.5 7 17 11.5 22 12 C17 12.5 12.5 17 12 22 C11.5 17 7 12.5 2 12 C7 11.5 11.5 7 12 2 Z">
-                                                    <Path.RenderTransform>
-                                                        <TranslateTransform X="0"/>
-                                                    </Path.RenderTransform>
-                                                </Path>
-
-                                                <!-- 按钮层：**右对齐**，永远贴卡片右边（自带 10px 右边距）——
-                                                     左边灰区是固定长度，右侧按钮就不会被它带着移位。 -->
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
-                                                            VerticalAlignment="Center" Margin="0,0,10,0">
+                                                <!-- 按钮层：**右对齐**，永远贴卡片右边 -->
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                                                            VerticalAlignment="Center">
                                                 <!-- 登录：文字按钮（和「移出」同一尺寸规格，中性配色），
-                                                     不再用图标样式 -->
+                                                     不再用图标样式。
+                                                     ★ 背景用**不透明**的卡片底色（样式里默认 Transparent），
+                                                       按钮区域始终是一块干净的卡片色。
+                                                       「移出」是红色的、本来就不透明，不用动。 -->
                                                 <Button x:Name="loginAccountButton" Content="登录"
                                                         Style="{StaticResource CompactActionButtonStyle}"
+                                                        Background="{DynamicResource CardBackgroundBrush}"
                                                         Margin="5,0,0,0" Tag="{Binding Id}" Click="LoginAccountButton_Click"/>
                                                 <Button x:Name="removeFromGroupButton" Content="移出"
                                                         Style="{StaticResource CompactDangerButtonStyle}"
@@ -1258,14 +1761,35 @@
                                                            VerticalAlignment="Center" Margin="5,0,0,0"
                                                            Visibility="Collapsed"/>
                                             </StackPanel>
+                                                <!-- 排序手柄：按住拖动自由排序（照前端模拟的 sort-btn；移入模式下隐藏）。
+                                                     ★ 放在**独立的第 3 列**（不是塞进按钮行里）——
+                                                       两张卡的操作区总宽就是「留空 + 按钮 140 + 手柄 29」这个确定值，
+                                                       分组卡按钮再宽也撑不破（140 是 MinWidth 兜底）→ 两张卡的按钮必然对齐。
+                                                     ★ 塞进按钮行里的话：分组卡按钮(133)+柄(29) 超 140 被撑到 162，
+                                                       账号卡只有 84 → 两卡不等宽 = 按钮位置就错开了。
+                                                     ★ 排序手柄常驻显示；「移入模式隐藏」由下面
+                                                       DataTemplate.Triggers 里那条 Trigger 负责。 -->
+                                                <Button x:Name="sortHandleButton" Grid.Column="2"
+                                                        Style="{StaticResource SortHandleButtonStyle}"
+                                                        Tag="{Binding Id}"
+                                                        MouseLeave="SortHandleButton_MouseLeave"
+                                                        PreviewMouseLeftButtonDown="SortHandleButton_PreviewMouseLeftButtonDown"/>
                                             </Grid>
                                         </Grid>
+                                        </Border>
 
                                         <DataTemplate.Triggers>
-                                            <!-- 注：「四角星 + 灰区」的划入/划出动画不在触发器里 ——
+                                            <!-- 移入模式：已勾选的卡片整张高亮。
+                                                 ★ 卡片底色由**这张 Border** 画（行上的底色被它盖住了），
+                                                   所以高亮也要落到它身上，否则勾了看不出变化。 -->
+                                            <DataTrigger Binding="{Binding IsSelectedForMove}" Value="True">
+                                                <Setter TargetName="accountCardBorder" Property="Background"
+                                                        Value="{DynamicResource RowHighlightBrush}"/>
+                                            </DataTrigger>
+                                            <!-- 注：置顶高亮层的展开/收回动画不写在触发器里 ——
                                                  列表刷新会重建行容器，触发器驱动的动画在新容器上不可靠
-                                                 （取消时新容器一建出来就是不显示，滑出动画没机会播，看着是瞬失）。
-                                                 改由 AccountManagerView.PlayStarSlide 在代码里播。 -->
+                                                 （取消时新容器一建出来就是不显示，收起动画没机会播，看着是瞬失）。
+                                                 改由 AccountManagerView.ApplyStarToggle 在代码里播。 -->
                                             <DataTrigger Binding="{Binding Path=IsInGroupMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:AccountManagerView}}}" Value="False">
                                                 <Setter TargetName="deleteAccountButton" Property="Visibility" Value="Visible"/>
                                                 <Setter TargetName="removeFromGroupButton" Property="Visibility" Value="Collapsed"/>
@@ -1275,6 +1799,11 @@
                                                 <Setter TargetName="deleteAccountButton" Property="Visibility" Value="Collapsed"/>
                                                 <Setter TargetName="removeFromGroupButton" Property="Visibility" Value="Visible"/>
                                                 <Setter TargetName="loginAccountButton" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+
+                                            <!-- 移入模式：不给排序（也不给编辑/删除） -->
+                                            <DataTrigger Binding="{Binding Path=IsMoveMode, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type local:AccountManagerView}}}" Value="True">
+                                                <Setter TargetName="sortHandleButton" Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
 
                                             <!-- 官服不显示服务器标签（ServerTag 返回空串，默认就是官服没必要标） -->

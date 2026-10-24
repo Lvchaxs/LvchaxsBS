@@ -4,9 +4,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:controls="clr-namespace:LvchaxsBS_Macro.Controls"
+        xmlns:ui="clr-namespace:LvchaxsBS_Macro.Utils"
         mc:Ignorable="d"
         Title="自定义宏"
-        Width="337" Height="268"
+        Width="640" Height="480"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         WindowStyle="None"
@@ -15,10 +16,120 @@
         KeyDown="Window_KeyDown">
 
     <!--
-        ★ 样式和 UID 的「新建/编辑分组」窗口一个路子（无边框 + 圆角 + 阴影 + 标题条 + 底部按钮条），
-          但控件一律用**宿主**的 keyed 样式 / 主题画刷（DynamicResource），深浅主题自动跟随。
+        ★ 布局照 UID 的「新建/编辑账号」窗口：**左表单、右头像网格**，
+          不是弹二级窗选头像 —— 打开就能直接点。
+        ★ 外观一律用宿主的 keyed 样式 / 主题画刷（DynamicResource），深浅主题自动跟随。
     -->
-    <Border Background="{DynamicResource CardBackgroundBrush}"
+    <Window.Resources>
+        <!-- 选项胶囊：单选，选中 = 主色淡底 + 主色边 -->
+        <Style x:Key="OptionChipStyle" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="chip"
+                                Height="28" Padding="10,0"
+                                CornerRadius="5"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="chip" Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="chip" Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
+                                <Setter TargetName="chip" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryDarkBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 元素筛选按钮（全部 + 七个元素 + 其他）—— 与 UID 添加账号窗口同款 -->
+        <Style x:Key="ElementFilterToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="0,0,3,0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <!-- 「全部」按钮里的四个方块用它上色（模板触发器改这个值就能高亮） -->
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="ring"
+                                CornerRadius="16"
+                                BorderThickness="1.5"
+                                Background="{DynamicResource HoverBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ring" Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="ring" Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
+                                <Setter TargetName="ring" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 细滚动条（8px，半透明圆角），画在头像容器**外面**右侧 -->
+        <Style x:Key="AvatarScrollBarThumbStyle" TargetType="Thumb">
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{DynamicResource Gray400Brush}" CornerRadius="3" Margin="1"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="AvatarScrollBarStyle" TargetType="ScrollBar">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="MinWidth" Value="8"/>
+            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}"
+                                                  Opacity="0" Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource AvatarScrollBarThumbStyle}"/>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}"
+                                                  Opacity="0" Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource PopupBackgroundBrush}"
             BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="1"
             CornerRadius="10">
@@ -28,9 +139,9 @@
 
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="48"/>
+                <RowDefinition Height="40"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="56"/>
+                <RowDefinition Height="52"/>
             </Grid.RowDefinitions>
 
             <!-- 标题条（按住可拖动窗口） -->
@@ -42,8 +153,6 @@
                     MouseLeftButtonDown="Header_MouseLeftButtonDown">
                 <Grid>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <!-- 标题前的矢量 </> 图标 -->
-                        <controls:MacroGlyph Width="18" Height="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBlock x:Name="WindowTitle" Text="新建宏"
                                    FontSize="18" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
@@ -52,72 +161,281 @@
                 </Grid>
             </Border>
 
-            <!-- 内容 -->
-            <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <StackPanel Width="262">
+            <!-- 内容：左表单 / 右头像 -->
+            <Grid Grid.Row="1" Margin="20,16,20,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="322"/>
+                </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="宏名称" FontSize="12" FontWeight="Medium"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               Margin="0,0,0,4"/>
+                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
 
-                    <Grid>
-                        <TextBox x:Name="NameTextBox"
-                                 Style="{DynamicResource PublicTextBoxStyle}"
-                                 Height="32" Padding="8,0"
-                                 TextChanged="Input_TextChanged"/>
-                        <TextBlock x:Name="NameWatermark" Text="请输入宏名称"
-                                   VerticalAlignment="Center" Margin="9,0"
-                                   Foreground="{DynamicResource TextDisabledBrush}"
-                                   IsHitTestVisible="False"/>
+                        <TextBlock x:Name="NameLabel" Text="宏名称" FontSize="12" FontWeight="Medium"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4"/>
+
+                        <Grid>
+                            <TextBox x:Name="NameTextBox"
+                                     Style="{DynamicResource PublicTextBoxStyle}"
+                                     Height="32" Padding="8,0"
+                                     TextChanged="Input_TextChanged"/>
+                            <TextBlock x:Name="NameWatermark" Text="请输入宏名称"
+                                       VerticalAlignment="Center" Margin="9,0"
+                                       Foreground="{DynamicResource TextDisabledBrush}"
+                                       IsHitTestVisible="False"/>
+                        </Grid>
+
+                        <TextBlock x:Name="DescLabel" Text="宏描述" FontSize="12" FontWeight="Medium"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,10,0,4"/>
+
+                        <Grid>
+                            <TextBox x:Name="DescTextBox"
+                                     Style="{DynamicResource PublicTextBoxStyle}"
+                                     Height="32" Padding="8,0"
+                                     TextChanged="Input_TextChanged"/>
+                            <TextBlock x:Name="DescWatermark" Text="可填可不填"
+                                       VerticalAlignment="Center" Margin="9,0"
+                                       Foreground="{DynamicResource TextDisabledBrush}"
+                                       IsHitTestVisible="False"/>
+                        </Grid>
+
+                        <!-- 生效范围：二选一（对应 MacroScope）—— 排在触发方式前面（和卡片标签顺序一致）
+                             标题行直接显示当前选中项的说明（不额外占一行） -->
+                        <StackPanel x:Name="ScopeSection">
+                            <TextBlock x:Name="ScopeTitle" Text="生效范围：游戏内或游戏外按下都执行"
+                                       FontSize="12" FontWeight="Medium"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,10,0,4" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="ScopeClient" Content="客户区内"
+                                             GroupName="Scope" Style="{StaticResource OptionChipStyle}"
+                                             Checked="ScopeOption_Checked"/>
+                                <RadioButton x:Name="ScopeGlobal" Content="全局生效"
+                                             GroupName="Scope" Style="{StaticResource OptionChipStyle}"
+                                             Checked="ScopeOption_Checked"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- 触发方式：三选一（对应 MacroTriggerMode）
+                             标题行直接显示当前选中项的说明（不额外占一行） -->
+                        <StackPanel x:Name="ModeSection">
+                            <TextBlock x:Name="ModeTitle" Text="触发方式：按下时只执行一次"
+                                       FontSize="12" FontWeight="Medium"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,10,0,4" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="ModeOnce" Content="执行一次"
+                                             GroupName="Mode" Style="{StaticResource OptionChipStyle}"
+                                             Checked="ModeOption_Checked"/>
+                                <RadioButton x:Name="ModeHold" Content="长按循环"
+                                             GroupName="Mode" Style="{StaticResource OptionChipStyle}"
+                                             Checked="ModeOption_Checked"/>
+                                <RadioButton x:Name="ModeToggle" Content="循环执行"
+                                             GroupName="Mode" Style="{StaticResource OptionChipStyle}"
+                                             Checked="ModeOption_Checked"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- 触发条件：二选一（对应 MacroCondition）—— 看的是**游戏画面**
+                             （当前是不是主界面），和上面的「生效范围」（看窗口焦点）各管一段 -->
+                        <StackPanel x:Name="ConditionSection">
+                            <TextBlock x:Name="ConditionTitle" Text="触发条件：任何界面按下都执行"
+                                       FontSize="12" FontWeight="Medium"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,10,0,4" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="ConditionNone" Content="无条件"
+                                             GroupName="Condition" Style="{StaticResource OptionChipStyle}"
+                                             Checked="ConditionOption_Checked"/>
+                                <RadioButton x:Name="ConditionMain" Content="主界面"
+                                             GroupName="Condition" Style="{StaticResource OptionChipStyle}"
+                                             Checked="ConditionOption_Checked"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock x:Name="ErrorText" Text=""
+                                   FontSize="11"
+                                   Foreground="{DynamicResource DangerBrush}"
+                                   Margin="0,10,0,0"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 右栏：头像（照 UID「添加/编辑账号」窗口：上面一排元素筛选，下面 5 列网格）
+                     ★ 容器宽度固定 → 一行永远 5 格；内置滚动条 Hidden（仍可滚），
+                       滚条画在**容器外侧**那 11px 里，滚条出现/消失都不会把 5 列挤成 4 列。 -->
+                <Grid x:Name="AvatarSection" Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 元素筛选：左边「四个方块」= 全部，后面依次是火/水/风/雷/草/冰/岩，
+                         最后一个 = 「其他头像」（NPC / 任务类）。单选，再点同一个回到「全部」。 -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                        <ToggleButton x:Name="filterAllToggle"
+                                      Style="{StaticResource ElementFilterToggleStyle}"
+                                      IsChecked="True"
+                                      Click="ElementFilter_Click">
+                            <Viewbox Width="17" Height="17">
+                                <Grid Width="15" Height="15">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Row="0" Grid.Column="0" Margin="1" CornerRadius="1.5"
+                                            Background="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"/>
+                                    <Border Grid.Row="0" Grid.Column="1" Margin="1" CornerRadius="1.5"
+                                            Background="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"/>
+                                    <Border Grid.Row="1" Grid.Column="0" Margin="1" CornerRadius="1.5"
+                                            Background="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"/>
+                                    <Border Grid.Row="1" Grid.Column="1" Margin="1" CornerRadius="1.5"
+                                            Background="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"/>
+                                </Grid>
+                            </Viewbox>
+                        </ToggleButton>
+
+                        <ToggleButton x:Name="filterFireToggle" Tag="火"
+                                      Style="{StaticResource ElementFilterToggleStyle}" Click="ElementFilter_Click">
+                            <Image Source="{ui:Asset Images/元素/火.png}" Width="21" Height="21" Stretch="Uniform"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="filterWaterToggle" Tag="水"
+                                      Style="{StaticResource ElementFilterToggleStyle}" Click="ElementFilter_Click">
+                            <Image Source="{ui:Asset Images/元素/水.png}" Width="21" Height="21" Stretch="Uniform"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="filterWindToggle" Tag="风"
+                                      Style="{StaticResource ElementFilterToggleStyle}" Click="ElementFilter_Click">
+                            <Image Source="{ui:Asset Images/元素/风.png}" Width="21" Height="21" Stretch="Uniform"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="filterThunderToggle" Tag="雷"
+                                      Style="{StaticResource ElementFilterToggleStyle}" Click="ElementFilter_Click">
+                            <Image Source="{ui:Asset Images/元素/雷.png}" Width="21" Height="21" Stretch="Uniform"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="filterGrassToggle" Tag="草"
+                                      Style="{StaticResource ElementFilterToggleStyle}" Click="ElementFilter_Click">
+                            <Image Source="{ui:Asset Images/元素/草.png}" Width="21" Height="21" Stretch="Uniform"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="filterIceToggle" Tag="冰"
+                                      Style="{StaticResource ElementFilterToggleStyle}" Click="ElementFilter_Click">
+                            <Image Source="{ui:Asset Images/元素/冰.png}" Width="21" Height="21" Stretch="Uniform"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="filterRockToggle" Tag="岩"
+                                      Style="{StaticResource ElementFilterToggleStyle}" Click="ElementFilter_Click">
+                            <Image Source="{ui:Asset Images/元素/岩.png}" Width="21" Height="21" Stretch="Uniform"/>
+                        </ToggleButton>
+                        <!-- 「其他头像」：NPC / 任务类，没有元素归属，图标取自其他头像里的「活力相谈」 -->
+                        <ToggleButton x:Name="filterOtherToggle" Tag="其他"
+                                      Style="{StaticResource ElementFilterToggleStyle}" Click="ElementFilter_Click">
+                            <Image Source="{ui:Asset Images/Pictures/其他头像/活力相谈.png}" Width="21" Height="21" Stretch="Uniform"/>
+                        </ToggleButton>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <!-- 固定 11px（滚动条 8 + 间距 3）：无论滚动条显示与否，
+                                 头像容器的宽度都完全一样，5 列的尺寸与位置不会变 -->
+                            <ColumnDefinition Width="11"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border x:Name="avatarContainer"
+                                Grid.Column="0"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1.2"
+                                CornerRadius="6"
+                                Padding="4">
+                            <ListBox x:Name="avatarListBox"
+                                     SelectionMode="Single"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ItemContainerStyle="{DynamicResource AccountAvatarListItemStyle}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                     MouseDoubleClick="AvatarList_MouseDoubleClick">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <!-- 方格 5 列：实际格子边长由 code-behind 按容器宽度算
+                                             （= 容器可用宽 / 5），保证一行永远 5 个 -->
+                                        <WrapPanel ItemWidth="60" ItemHeight="60" Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Image Source="{Binding Image}"
+                                               Width="48" Height="48"
+                                               Stretch="UniformToFill"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+
+                        <!-- 滚动条：在头像容器**外面**的右侧，与列表滚动位置同步（见 code-behind） -->
+                        <ScrollBar x:Name="avatarScrollBar"
+                                   Grid.Column="1"
+                                   Style="{StaticResource AvatarScrollBarStyle}"
+                                   Orientation="Vertical"
+                                   Margin="3,0,0,0"
+                                   VerticalAlignment="Stretch"
+                                   Visibility="Collapsed"
+                                   Scroll="AvatarScrollBar_Scroll"/>
                     </Grid>
-
-                    <TextBlock Text="宏描述" FontSize="12" FontWeight="Medium"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               Margin="0,10,0,4"/>
-
-                    <Grid>
-                        <TextBox x:Name="DescTextBox"
-                                 Style="{DynamicResource PublicTextBoxStyle}"
-                                 Height="32" Padding="8,0"
-                                 TextChanged="Input_TextChanged"/>
-                        <TextBlock x:Name="DescWatermark" Text="可填可不填"
-                                   VerticalAlignment="Center" Margin="9,0"
-                                   Foreground="{DynamicResource TextDisabledBrush}"
-                                   IsHitTestVisible="False"/>
-                    </Grid>
-
-                    <TextBlock x:Name="ErrorText" Text=""
-                               FontSize="11"
-                               Foreground="{DynamicResource DangerBrush}"
-                               Margin="0,6,0,0"
-                               Visibility="Collapsed"/>
-                </StackPanel>
+                </Grid>
             </Grid>
 
-            <!-- 按钮条 -->
+            <!-- 按钮条：左边一行小提示、右边保存/取消（贴右，同 UID 添加账号窗口） -->
             <Border Grid.Row="2"
                     Background="{DynamicResource DialogHeaderBackgroundBrush}"
                     CornerRadius="0,0,10,10"
                     BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="0,1,0,0">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button x:Name="SaveButton"
-                            Style="{DynamicResource SettingsButtonStyleRound6}"
-                            MinWidth="80" Height="30" Margin="0,0,8,0"
-                            Click="SaveButton_Click">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="✓" FontSize="14" FontWeight="Bold"
-                                       Foreground="{DynamicResource TagGreenFgBrush}"
-                                       VerticalAlignment="Center" Margin="0,0,5,0"/>
-                            <TextBlock Text="保存" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                    <Button x:Name="CancelButton"
-                            Style="{DynamicResource SettingsButtonStyleRound6}"
-                            MinWidth="80" Height="30"
-                            Content="取消"
-                            Click="CancelButton_Click"/>
-                </StackPanel>
+                <Grid Margin="20,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               Text="提示：同一个触发键可以设置多个宏，但不能同时执行多个宏只允许一个宏开启"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="SaveButton"
+                                Style="{DynamicResource SettingsButtonStyleRound6}"
+                                MinWidth="80" Height="30" Margin="0,0,8,0"
+                                Click="SaveButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✓" FontSize="14" FontWeight="Bold"
+                                           Foreground="{DynamicResource TagGreenFgBrush}"
+                                           VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="保存" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="CancelButton"
+                                Style="{DynamicResource SettingsButtonStyleRound6}"
+                                MinWidth="80" Height="30"
+                                Click="CancelButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="✗" FontSize="13" FontWeight="Bold"
+                                           Foreground="{DynamicResource TagRedFgBrush}"
+                                           VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="取消" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
     </Border>

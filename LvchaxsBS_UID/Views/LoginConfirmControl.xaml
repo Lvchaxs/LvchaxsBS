@@ -66,7 +66,7 @@
                HoverBackgroundBrush  账号卡底
                Gray100Brush          选项区底
                BorderBrush / BorderStrongBrush  1px 描边
-               TagAmberBg/FgBrush    警告条
+               （TagAmberBg/FgBrush 原用于提示条，2026-10-14 起本窗口不再使用，改为中性配色）
         -->
 
 
@@ -232,11 +232,14 @@
                 </Grid>
             </Border>
 
-            <!-- 警告提示 -->
+            <!-- 提示条：2026-10-14 用户要求 —— 去掉黄色警示背景（改成普通的浅面板底 + 常规描边），
+                 原来的 ⚠ 三角警示图标也不要了，换成一个写着「16:9」的小标签。
+                 配色全部走中性主题键（Gray100Brush 底 / BorderBrush 边 / TextSecondaryBrush 字），
+                 深浅主题下都不会出现突兀的黄。 -->
             <Border Grid.Row="1" 
                     Margin="24,12,24,0" 
-                    Background="{DynamicResource TagAmberBgBrush}" 
-                    BorderBrush="{DynamicResource WarningBrush}" 
+                    Background="{DynamicResource Gray100Brush}" 
+                    BorderBrush="{DynamicResource BorderBrush}" 
                     BorderThickness="1"
                     CornerRadius="6" 
                     Padding="12,8">
@@ -245,12 +248,24 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="⚠" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource WarningBrush}" 
-                               VerticalAlignment="Top" Margin="0,0,8,0"/>
+                    <!-- ★ 与主程序完全同源：直接引用宿主 App 级资源里的 TagLabelBlueStyle
+                         （定义在 LvchaxsBS/UI/Styles/CardStyles.xaml），
+                         底色 TagBlueBgBrush + 圆角 3 + Padding 6,2；文字用 TagBlueFgBrush、
+                         FontSize 10 / SemiBold / 居中，宽 35 —— 与 HomePage 模块卡片上的那枚一致。
+                         插件拿不到宿主的 StaticResource，只能 DynamicResource（运行时从
+                         Application.Resources 取），取不到也只是无底色，不会崩。 -->
+                    <Border Grid.Column="0"
+                            Style="{DynamicResource TagLabelBlueStyle}"
+                            Width="35"
+                            VerticalAlignment="Top"
+                            Margin="0,0,8,0">
+                        <TextBlock Text="16:9" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TagBlueFgBrush}" HorizontalAlignment="Center"/>
+                    </Border>
                     <TextBlock Grid.Column="1" 
                                Text="登录过程中尽量不要操作鼠标或键盘，等待进入游戏并结束" 
                                FontSize="13"
-                               Foreground="{DynamicResource TagAmberFgBrush}" 
+                               Foreground="{DynamicResource TextSecondaryBrush}" 
                                FontWeight="SemiBold" 
                                TextWrapping="Wrap" 
                                LineHeight="18"/>
@@ -463,8 +478,11 @@
 
             <!-- 登录后的附加选项：4 列 x 3 行。
                  原来是 Canvas + Canvas.Left/Top 手填坐标（10/170/269/377），
-                 列宽全靠数字凑，改一个文案就会撞车；换成 Grid 后自动排。 -->
+                 列宽全靠数字凑，改一个文案就会撞车；换成 Grid 后自动排。
+                 ★ 整块由 ShowExtraOptions 控制显隐：只有**分组内**的登录才有附加动作，
+                   账号列表里的登录是单纯的登录（检测到主界面就结束），这一块要收起来。 -->
             <Border Grid.Row="3"
+                    x:Name="ExtraOptionsRow"
                     Margin="24,12,24,0"
                     Background="{DynamicResource Gray100Brush}"
                     CornerRadius="6"
@@ -581,24 +599,19 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- 左侧：两行（第一行 登录完成并置底复选框；第二行 置底图标按钮 + 右侧文案） -->
+                    <!-- 左侧：分组内的「置底」图标按钮 + 右侧文案（仅分组内显示，见 ShowMarkToggle） -->
                     <StackPanel Grid.Column="0" Orientation="Vertical"
                                 HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <!-- 第一行：登录完成并置底 -->
-                        <CheckBox x:Name="MarkAfterLoginCheckBox"
-                                  Content="登录完成并置底"
-                                  Style="{DynamicResource PurpleCheckBoxStyle}"
-                                  HorizontalAlignment="Left"
-                                  VerticalAlignment="Center"
-                                  Visibility="Collapsed"
-                                  Checked="MarkAfterLoginCheckBox_Checked"
-                                  Unchecked="MarkAfterLoginCheckBox_Unchecked"/>
+                        <!-- ★ 原来这里还有个「登录完成并置底」复选框（2026-10-17 删除）：
+                             登录成功**必须**置底、不存在"要不要"的选择，所以这个开关连同
+                             它那份 `mark_after_login_preference.json` 一起删了 —— 置底由
+                             AccountManagerView.MarkCurrentAccountAfterLogin 无条件执行。
 
-                        <!-- 第二行：置底的向下箭头图标按钮（和卡片里的置底按钮同一个样式，
+                             置底的向下箭头图标按钮（和卡片里的置底按钮同一个样式，
                              已置底时实心橙）+ 右侧文案（一行，不换行）。
                              未置底：「点击置底后，代表已登录」；已置底：「已置底，取消置底后恢复登录」。 -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Left"
-                                    VerticalAlignment="Center" Margin="0,6,0,0"
+                                    VerticalAlignment="Center"
                                     Visibility="Collapsed" x:Name="MarkToggleRow">
                             <Button x:Name="MarkToggleButton"
                                     Style="{DynamicResource IconMarkButtonStyle}"

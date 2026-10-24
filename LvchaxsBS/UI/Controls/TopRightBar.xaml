@@ -63,7 +63,7 @@
                 MinWidth="28"
                 Margin="0,0,4,0"
                 Style="{StaticResource ImageButtonStyleRound6}"
-                ui:ButtonTip.Text="截图"
+                ui:ButtonTip.Text="客户区右SHIFT"
                 Click="ButtonScreenshot_Click">
             <Viewbox Width="20" Height="20"
                      HorizontalAlignment="Center"
@@ -119,7 +119,7 @@
                 </Grid>
             </Viewbox>
         </Button>
-        
+
         <!-- 重启 -->
         <Button x:Name="ButtonRestart"
                 Width="28" Height="28"

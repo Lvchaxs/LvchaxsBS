@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -197,7 +198,7 @@ namespace LvchaxsBS.UI.Pages
             if (RestoreContentCache()) return;
 
             // 只有本次运行第一次进入才走"完整加载"：先让页面出现，再扫描 + 写盘 + 逐张渲染
-            Dispatcher.BeginInvoke(new Action(() =>
+            Dispatcher.BeginInvoke(new Func<Task>(async () =>
             {
                 if (!IsLoaded) return;   // 这一帧内页面已被切走，放弃
 
@@ -205,7 +206,21 @@ namespace LvchaxsBS.UI.Pages
                 bool progressive = !_progressiveShownOnce;
                 _progressiveShownOnce = true;
 
-                RefreshFromDisk(progressive);
+                // ★★ 扫描 + 写盘是**纯 IO**，放到后台线程（2026-10-16「首次点字幕设置卡一下」）：
+                //    `ScanAndBuildConfig()` 要递归统计整个 Voice 目录（135 个文件、逐个 FileInfo）、
+                //    读每个 wav 的时长、并从资源包枚举全部资源键 —— 这一堆同步 IO 全压在 UI 线程上，
+                //    首次点击会把界面和鼠标一起卡住。渲染（建卡片）必须留在 UI 线程。
+                var cfg = await Task.Run(() =>
+                {
+                    var c = ScanAndBuildConfig();
+                    SaveConfig(c);
+                    return c;
+                });
+
+                if (!IsLoaded) return;   // 扫描期间页面已被切走
+
+                _currentConfig = cfg;
+                RenderCharacters(cfg, progressive);
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
@@ -544,6 +559,7 @@ namespace LvchaxsBS.UI.Pages
 
             string keyword = SearchBox?.Text?.Trim() ?? "";
 
+            // ★ 空 / 荧 是**固定卡片**：不管有没有语音都显示（只受搜索关键字影响）
             KongCard.Visibility = MatchKeyword("空", keyword) ? Visibility.Visible : Visibility.Collapsed;
             YingCard.Visibility = MatchKeyword("荧", keyword) ? Visibility.Visible : Visibility.Collapsed;
 
@@ -558,6 +574,8 @@ namespace LvchaxsBS.UI.Pages
 
             if (items.Count == 0)
             {
+                // 动态卡全被过滤掉：只剩空 / 荧两张固定卡（也可能都收起），照常刷一次底部间距
+                FixLastCardSpacing();
                 UpdateStats(cfg);
                 return;
             }
@@ -632,6 +650,8 @@ namespace LvchaxsBS.UI.Pages
             }
 
             _renderTimer?.Stop();
+            // 卡片齐了：把最后一张的下边距刷成 0 ⇒ 滚到底时底边贴视口底
+            FixLastCardSpacing();
             if (_renderConfig != null) UpdateStats(_renderConfig);
         }
 
@@ -656,6 +676,89 @@ namespace LvchaxsBS.UI.Pages
             DynamicCharacterPanel.Children.Add(CreateCard(name, cc));
         }
 
+        // ============ 列表滚动 / 底部间距 ============
+
+        /// <summary>
+        /// 滚轮：一格 = **一张角色卡片**（和 UID 账号列表 / 首页功能卡 / 自定义宏列表同一手感）。
+        /// <para>本页卡片高度不一致：空 / 荧两张固定卡是 70px，动态角色卡是自适应高
+        /// （标签换行时会更高），所以不像别的页那样写死 78px 一步 —— 这里**吸附到卡片边界**：
+        /// 现量每张卡的顶边位置，往下滚对齐到「下一张卡的顶」、往上滚对齐到「上一张卡的顶」，
+        /// 高度再乱也是滚一格动一张，不会半张半张的。</para>
+        /// </summary>
+        private void VoiceScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is not ScrollViewer sv) return;
+            e.Handled = true;
+
+            double offset = sv.VerticalOffset;
+            double target = offset + (e.Delta > 0 ? -CardRowPitch : CardRowPitch);
+
+            // 按可视顺序收集卡片（空 / 荧可能被搜索关键字收起，动态卡只建匹配上的）
+            var cards = new List<FrameworkElement>(DynamicCharacterPanel.Children.Count + 2);
+            if (KongCard.Visibility == Visibility.Visible) cards.Add(KongCard);
+            if (YingCard.Visibility == Visibility.Visible) cards.Add(YingCard);
+            foreach (UIElement child in DynamicCharacterPanel.Children)
+                if (child is FrameworkElement fe && fe.Visibility == Visibility.Visible)
+                    cards.Add(fe);
+
+            if (cards.Count > 0)
+            {
+                for (int i = 0; i < cards.Count; i++)
+                {
+                    // 卡片顶边在「内容坐标」里的位置（现量 + 当前偏移，与滚到哪无关）
+                    double top = cards[i].TransformToAncestor(sv).Transform(new Point(0, 0)).Y + offset;
+
+                    if (e.Delta < 0)
+                    {
+                        // 往下：第一个顶边在当前位置下方的卡（正好停在下一张的顶上）
+                        if (top > offset + 0.5) { target = top; break; }
+                    }
+                    else
+                    {
+                        // 往上：最后一个顶边在当前位置上方的卡（正好停在上一张的顶上）
+                        if (top < offset - 0.5) target = top;
+                    }
+                }
+            }
+
+            sv.ScrollToVerticalOffset(Math.Max(0, Math.Min(sv.ScrollableHeight, target)));
+        }
+
+        /// <summary>一张卡片的占位兜底值：卡片 70 + 卡片间距 8（与 UID / 首页 / 宏列表一致）。</summary>
+        private const double CardRowPitch = 78;
+
+        /// <summary>
+        /// 角色卡列表「最后一张贴视口底」：把**可视顺序里最后一张卡**的下边距刷成 0，其余保持 8
+        /// ⇒ 滚到底时最后一张卡的底边正好贴在视口底（与 UID 账号列表 / 首页功能卡 / 自定义宏列表同一标准）。
+        /// <para>★ 为什么这里用代码刷、而 UID / 首页那边用绑定：本页卡片是**普通 StackPanel 的直接子元素**，
+        /// 没有 ItemsControl 的容器可以挂 <see cref="Lvchaxs.Converters.LastItemSpacingConverter"/> 的 MultiBinding；
+        /// 同时卡片不虚拟化（不回收）、渲染完成时机确定（<see cref="RenderNextBatch"/> 队列排空、
+        /// <see cref="RestoreContentCache"/> 塞回缓存控件），筛选 / 排序 / 刷新 / 进出页面都会走到这几个调用点，
+        /// 刷一次就稳 —— 不存在 UID 那边「容器还没生成」或「滚完才刷」的死亡时机。</para>
+        /// </summary>
+        private void FixLastCardSpacing()
+        {
+            var spacing = new Thickness(0, 0, 0, 8);
+            var flush = new Thickness(0);
+
+            // 先全部回到 8：空 / 荧是常驻卡，上一轮可能被刷成 0；动态卡新建的本来就带 8
+            KongCard.Margin = spacing;
+            YingCard.Margin = spacing;
+            foreach (UIElement child in DynamicCharacterPanel.Children)
+                if (child is FrameworkElement fe) fe.Margin = spacing;
+
+            // 可视顺序里的最后一张：动态卡非空 → 面板里最后一张；否则看空 / 荧谁还没被收起
+            FrameworkElement? last = null;
+            if (DynamicCharacterPanel.Children.Count > 0)
+                last = DynamicCharacterPanel.Children[DynamicCharacterPanel.Children.Count - 1] as FrameworkElement;
+            else if (YingCard.Visibility == Visibility.Visible)
+                last = YingCard;
+            else if (KongCard.Visibility == Visibility.Visible)
+                last = KongCard;
+
+            if (last != null) last.Margin = flush;
+        }
+
         /// <summary>
         /// 构造渲染列表，顺序 = voice_config.json 里的键顺序
         /// （空 → 荧 → 其余按排序规则 → 未分类），json 里没有的键补在最后。
@@ -677,6 +780,13 @@ namespace LvchaxsBS.UI.Pages
                     if (show) list.Add(("?", cc));
                     continue;
                 }
+
+                // ★ 空 / 荧 是**固定卡片**，不受"只加载有语音的"影响（有没有语音都显示）
+                if (key == "空" || key == "荧") { list.Add((key, cc)); continue; }
+
+                // ★★ 只列出**有语音**的角色：没有语音的角色既没有音频标签可看，头像也是白加载的
+                //    （头像由 LoadAvatar 按需解码 —— 不建卡片就不会去解码这批图片）。
+                if (cc.Wavs.Count == 0) continue;
 
                 if (MatchKeyword(key, keyword))
                     list.Add((key, cc));
@@ -757,6 +867,7 @@ namespace LvchaxsBS.UI.Pages
         {
             if (_cachedCards == null || _currentConfig == null) return false;
 
+            // ★ 空 / 荧 是固定卡片：无条件显示（只受搜索关键字影响，见 RenderCharacters）
             KongCard.Visibility = Visibility.Visible;
             YingCard.Visibility = Visibility.Visible;
 
@@ -783,6 +894,9 @@ namespace LvchaxsBS.UI.Pages
                 _totalSizeBytes = st.sizeBytes;
                 StatsText.Text = $"角色数量：{st.matched}/{st.total}    音频数量：{st.wavCount}    大小：{st.sizeBytes / 1024.0 / 1024.0:F0} MB";
             }
+
+            // 缓存控件是上次那批实例：下边距可能停在旧状态（上次的最后一张是 0），重新刷一次
+            FixLastCardSpacing();
 
             return true;
         }

@@ -202,75 +202,36 @@ namespace LvchaxsBS.Core
             }
         }
 
+        // ===== 检测方法 =====
+        // 流水线只有一份（Core/TemplateProbe.cs）。原来「同步 / 异步」两份实现逐字相同，
+        // 只有命中时写不写日志这一点差别，用一个参数表达即可。
+
         private static (bool detected, double similarity, long elapsedMs) DetectHiddenButtonSync()
+            => DetectHiddenButtonCore(logHit: false);
+
+        private static Task<(bool detected, double similarity, long elapsedMs)> DetectHiddenButton()
+            => Task.FromResult(DetectHiddenButtonCore(logHit: true));
+
+        /// <summary>
+        /// 检测「隐藏按钮」。未命中但匹配到东西时仍返回真实匹配度（与原实现一致）。
+        /// </summary>
+        /// <param name="logHit">命中时是否写 Debug 日志（高频轮询入口关掉）。</param>
+        private static (bool detected, double similarity, long elapsedMs) DetectHiddenButtonCore(bool logHit)
         {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds);
+            bool detected = TemplateProbe.TryRun(
+                "剧情对话_隐藏按钮区域",
+                "剧情对话_隐藏按钮",
+                ConfigManager.Get<StoryDialogueSettings>().DetectThreshold,
+                "剧情对话",
+                "隐藏按钮",
+                out double similarity,
+                out long elapsedMs,
+                out _,
+                out _,
+                logHit);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("剧情对话_隐藏按钮区域");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var template = TemplateManager.GetCachedTemplate("剧情对话_隐藏按钮");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                double threshold = ConfigManager.Get<StoryDialogueSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                return (result != null && result.Similarity >= threshold, result?.Similarity ?? 0, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【剧情对话】检测异常: {ex.Message}");
-                return (false, 0, sw.ElapsedMilliseconds);
-            }
+            return (detected, similarity, elapsedMs);
         }
 
-        private static async Task<(bool detected, double similarity, long elapsedMs)> DetectHiddenButton()
-        {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("剧情对话_隐藏按钮区域");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var template = TemplateManager.GetCachedTemplate("剧情对话_隐藏按钮");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                double threshold = ConfigManager.Get<StoryDialogueSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                bool detected = result != null && result.Similarity >= threshold;
-
-                if (detected)
-                {
-                    Debug.WriteLine($"【剧情对话】检测到隐藏按钮 匹配度: {result.Similarity * 100:F2}%");
-                }
-
-                return (detected, result?.Similarity ?? 0, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【剧情对话】检测异常: {ex.Message}");
-                return (false, 0, sw.ElapsedMilliseconds);
-            }
-        }
     }
 }

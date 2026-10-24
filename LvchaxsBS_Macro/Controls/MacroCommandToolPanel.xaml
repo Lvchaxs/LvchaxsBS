@@ -1,0 +1,48 @@
+<UserControl x:Class="LvchaxsBS_Macro.Controls.MacroCommandToolPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="300"
+             Background="Transparent">
+    <!--
+        ★ 宏指令「工具面板」：右侧列出**所有支持的指令**。
+          每条指令 = 名称 + 参数输入区 + 「复制」（复制整条指令到剪贴板）
+          +「插入」（贴到编辑器光标处）。
+        ★ 行是代码里动态生成的（每种指令参数不一样），所以这里只放容器。
+    -->
+    <Border Background="{DynamicResource CardBackgroundBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,0,1"
+                    Padding="10,7">
+                <StackPanel>
+                    <TextBlock Text="指令面板"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <TextBlock Text="使用指令右侧按钮：复制指令 / 插入指令到光标处"
+                               FontSize="10"
+                               Margin="0,2,0,0"
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="8,6,4,8">
+                <StackPanel x:Name="ItemsHost"/>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

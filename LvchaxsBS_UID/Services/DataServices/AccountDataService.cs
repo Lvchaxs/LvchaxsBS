@@ -45,6 +45,20 @@ namespace LvchaxsBS_UID.Services.DataServices
                             account.Nickname = AccountEncryptionService.Decrypt(account.Nickname);
                         }
 
+                        // 老数据（还没有 order 字段）按旧规则补一遍排序号，保证升级后顺序不变
+                        SortingService.EnsureAccountOrders(accounts);
+
+                        // ★ 一次性清理：老文件里每个账号还带着 createdTime / pinnedTime 两个日期字段。
+                        //   排序早就改用 order 了，这两个字段现在连属性都没有（反序列化时被忽略），
+                        //   但**文件里的旧内容不会自己消失** —— 检测到还在就立刻回写一次，
+                        //   下一次打开 accounts.enc.json 看到的就是干净的（幂等：回写后不再含这两个键）。
+                        if (json.IndexOf("\"createdTime\"", StringComparison.OrdinalIgnoreCase) >= 0
+                            || json.IndexOf("\"pinnedTime\"", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            DebugLog("检测到旧版日期字段（createdTime / pinnedTime），回写一次清理");
+                            SaveAccounts(accounts);
+                        }
+
                         DebugLog($"成功加载账号数量: {accounts.Count}");
                         LogFirstAccountInfo(accounts[0]);
                         return accounts;
@@ -80,9 +94,7 @@ namespace LvchaxsBS_UID.Services.DataServices
                     Level = legacy.Level,
                     Nickname = legacy.Nickname ?? "",
                     Username = legacy.Username ?? "",
-                    Password = legacy.Password ?? "",
-                    CreatedTime = DateTime.Now, // 设置创建时间为当前时间
-                    PinnedTime = null
+                    Password = legacy.Password ?? ""
                 }).ToList();
 
                 SaveAccounts(accounts);
@@ -102,13 +114,6 @@ namespace LvchaxsBS_UID.Services.DataServices
         {
             try
             {
-                // 确保所有账号都有创建时间
-                foreach (var account in accounts)
-                {
-                    if (account.CreatedTime == default)
-                        account.CreatedTime = DateTime.Now;
-                }
-
                 var dataToSave = accounts.Select(a => new
                 {
                     a.Id,
@@ -125,8 +130,15 @@ namespace LvchaxsBS_UID.Services.DataServices
                     a.EncryptedPassword,
                     a.IsMarked,
                     a.IsPinned,
-                    a.CreatedTime,
-                    a.PinnedTime,
+                    // 「账号或密码错误」标记：卡片红标签用它，编辑窗口的「清除异常」清掉它
+                    a.HasLoginError,
+                    // 红标签显示什么文案（空 = 账密错误时的默认文案）。★ 必须和 HasLoginError 一起落盘，
+                    // 否则重开程序「账号验证失效」会变回「账号或密码错误」
+                    a.LoginErrorText,
+                    // 自由排序号（拖动排序 / 置顶置底都会改它，必须一起落盘）
+                    // ★ 日期字段（createdTime / pinnedTime）已删除：排序只看这个编号，
+                    //   新账号默认排到最后（Order = 全局 max + 1），之后完全由用户自己排。
+                    a.Order,
                     Metadata = new
                     {
                         Version = "2.0",
@@ -147,21 +159,6 @@ namespace LvchaxsBS_UID.Services.DataServices
             }
         }
 
-        public static bool SaveAccountPinnedState(int accountId, bool isPinned, DateTime? pinnedTime = null)
-        {
-            var accounts = LoadAccounts();
-            var account = accounts.FirstOrDefault(a => a.Id == accountId);
-
-            if (account != null)
-            {
-                account.IsPinned = isPinned;
-                account.PinnedTime = isPinned ? pinnedTime ?? DateTime.Now : null;
-                return SaveAccounts(accounts);
-            }
-
-            return false;
-        }
-
         public static bool SaveAccount(Account account)
         {
             var accounts = LoadAccounts();
@@ -174,9 +171,6 @@ namespace LvchaxsBS_UID.Services.DataServices
             else
             {
                 account.Id = GetNextId();
-                // 确保新账号有创建时间
-                if (account.CreatedTime == default)
-                    account.CreatedTime = DateTime.Now;
                 accounts.Add(account);
             }
 
@@ -234,7 +228,12 @@ namespace LvchaxsBS_UID.Services.DataServices
             target.Avatar = source.Avatar;
             target.IsMarked = source.IsMarked;
             target.IsPinned = source.IsPinned;
-            target.PinnedTime = source.PinnedTime;
+            // ★ 这里漏了就会「编辑保存后标记被清掉」（和头像当初踩的是同一个坑）
+            target.HasLoginError = source.HasLoginError;
+            // ★ 红标签文案同理要一起搬（只搬 HasLoginError 会把「账号验证失效」丢掉）
+            target.LoginErrorText = source.LoginErrorText;
+            // 排序号也要搬过来，否则「编辑账号」保存后顺序被旧值覆盖
+            target.Order = source.Order;
         }
 
         private static void BackupLegacyFile()
@@ -256,7 +255,7 @@ namespace LvchaxsBS_UID.Services.DataServices
 
         private static void LogFirstAccountInfo(Account account)
         {
-            DebugLog($"第一个账号信息 - ID: {account.Id}, UID: {account.Uid}, 创建时间: {account.CreatedTime}");
+            DebugLog($"第一个账号信息 - ID: {account.Id}, UID: {account.Uid}");
         }
 
         private class LegacyAccount

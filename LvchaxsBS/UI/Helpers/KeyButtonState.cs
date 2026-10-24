@@ -24,5 +24,21 @@ namespace LvchaxsBS.UI.Helpers
 
         public static void SetOccupiedIcon(DependencyObject obj, ImageSource? value)
             => obj.SetValue(OccupiedIconProperty, value);
+
+        /// <summary>
+        /// 这个键"被谁占了"的显示名（如"蒙德"）。
+        /// 有值时模板会在按钮内底部画一行红色小字，让用户知道为什么点不了。
+        /// 空字符串 = 不显示（空 TextBlock 高度为 0，不会占位）。
+        /// </summary>
+        public static readonly DependencyProperty DisabledOwnerProperty =
+            DependencyProperty.RegisterAttached(
+                "DisabledOwner", typeof(string), typeof(KeyButtonState),
+                new FrameworkPropertyMetadata(string.Empty));
+
+        public static string GetDisabledOwner(DependencyObject obj)
+            => (string)obj.GetValue(DisabledOwnerProperty);
+
+        public static void SetDisabledOwner(DependencyObject obj, string value)
+            => obj.SetValue(DisabledOwnerProperty, value);
     }
 }

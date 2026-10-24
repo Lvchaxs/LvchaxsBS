@@ -247,13 +247,14 @@ namespace LvchaxsBS.UI.Pages
 
         /// <summary>
         /// 重置配置：把 Config 目录整体删除并重启，程序会按默认值重新生成配置文件。
-        /// 只影响配置，语音/壁纸/截图日志等数据不受影响。
+        /// 只影响设置，语音/壁纸/截图日志等数据不受影响；
+        /// <c>Config\Macro</c>（宏脚本、诊断日志）会被单独保留下来。
         /// </summary>
         private void ResetConfigBtn_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new ConfirmDialog(
                 "确认重置配置",
-                "确定要重置全部配置吗？\n\n将删除 Config 目录下的配置文件并重启程序，所有设置会恢复为默认值。\n\n（语音、壁纸、截图日志等数据不受影响）",
+                "确定要重置全部配置吗？\n\n将删除 Config 目录下的配置文件并重启程序，所有设置会恢复为默认值。\n\n（语音、壁纸、截图日志、自定义宏脚本不受影响）",
                 "确定", "取消")
             {
                 Owner = Window.GetWindow(this)
@@ -358,13 +359,21 @@ namespace LvchaxsBS.UI.Pages
 
             try
             {
-                ToastService.Show("更新", $"即将下载{channelName}并重启...");
+                // 通知只说在下载哪一版：测试版渠道显示「测试版本」，正式版渠道显示「最新版本」
+                string downloading = baseUrl == UpdateService.BETA_BASE_URL ? "测试版本" : "最新版本";
+
+                // ★ 不限时：下载多久就显示多久，中间不会自己消失（下一句提示才会把它顶掉）
+                ToastService.ShowSticky("更新", $"正在下载{downloading}...");
+
                 await UpdateService.PrepareAndLaunchAsync(baseUrl);
+
+                // ★ 走到这里说明文件都下齐了 —— 直接关程序，由 bat 复制覆盖再拉起来
                 Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
-                ToastService.Show("更新失败", ex.Message, false);
+                string msg = ex.GetBaseException().Message;
+                ToastService.Show(msg.Contains("远程仓库文件缺失") ? "无法安装" : "更新失败", msg, false);
                 System.Diagnostics.Debug.WriteLine($"更新失败：{ex}");
             }
         }

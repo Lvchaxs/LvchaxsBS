@@ -4,6 +4,8 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:controls="clr-namespace:LvchaxsBS_Macro.Controls"
+      xmlns:views="clr-namespace:LvchaxsBS_Macro.Views"
+      xmlns:converters="clr-namespace:LvchaxsBS_Macro.Converters"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="自定义宏"
@@ -11,31 +13,148 @@
 
     <!--
         ★★ 这一页的卡片**逐项照抄 UID 分组列表**（用户要求「一模一样」）：
-          · 卡片 = 70 高、圆角 8、Padding 16,0、ClipToBounds（右侧灰区靠负边距贴边，不裁剪会漏出去）
-          · 三列：图标（-16 抵消 padding，与首页卡片对齐）/ 标题+描述 / 右侧整块
-          · 右侧整块再分三列：四角星（32×32，右距 24）/ 操作按钮（编辑·删除）/ 排序手柄
-          · 灰区 = 跨「右侧整块」三列，Margin 34,0,-16,0（左接星右尖、右吃回 padding 贴卡片边），Opacity 0.06
-          · 灰区与四角星的显隐绑 **ShowStar**（纯界面标志），滑入/滑出由 code-behind 播动画 —— 同 UID
+          · 卡片 = 70 高、圆角 8、ClipToBounds
+          · 三列：图标 / 标题+描述 / 右侧整块（留空列 + 操作按钮 + 排序手柄）
+          · 置顶卡片 = 卡片左缘一条主题蓝细竖条（PinHighlightLayer），显隐绑 **ShowStar**（纯界面标志），
+            生长/收回由 code-behind 播动画 —— 同 UID
         ★ 底部那一排（添加宏 / 触发键 / 配置 / 返回 / 开关）由宿主配置容器页提供。
     -->
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
+        <!-- 卡片图标：头像名 → 图片（宿主资源包里的 角色头像） -->
+        <converters:AvatarImageConverter x:Key="AvatarImage"/>
+
+        <!-- 标题右侧的小标签：显示这条宏选了哪种触发方式 / 生效范围 / 触发条件。
+             ★ 三个标签各用一个色系（触发方式=蓝、生效范围=紫、触发条件=绿），和首页那些分辨率标签同一套画刷，
+               深浅主题都自动跟随。 -->
+        <Style x:Key="MacroOptionTagStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource TagBlueBgBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="5,1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextElement.FontSize" Value="10"/>
+            <Setter Property="TextElement.FontWeight" Value="SemiBold"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TagBlueFgBrush}"/>
+        </Style>
+
+        <!-- 生效范围标签：紫色系（同一套结构，只换画刷） -->
+        <Style x:Key="MacroScopeTagStyle" TargetType="Border" BasedOn="{StaticResource MacroOptionTagStyle}">
+            <Setter Property="Background" Value="{DynamicResource TagPurpleBgBrush}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TagPurpleFgBrush}"/>
+        </Style>
+
+        <!-- 触发条件标签：绿色系（同一套结构，只换画刷）
+             ★ 两种情况**不显示**：选了「无条件」（等于没条件）或生效范围是「全局生效」
+               （全局 = 任何地方都能触发，触发条件根本不参与判断）—— 显示出来只会让人以为它在生效。 -->
+        <Style x:Key="MacroConditionTagStyle" TargetType="Border" BasedOn="{StaticResource MacroOptionTagStyle}">
+            <Setter Property="Background" Value="{DynamicResource TagGreenBgBrush}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TagGreenFgBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ConditionIndex}" Value="0">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ScopeIndex}" Value="0">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- UID 用的是 ExponentialEaseOut；宿主里没有这个资源，这里用 CubicEase（曲线几乎一致） -->
         <CubicEase x:Key="SortEaseOut" EasingMode="EaseOut"/>
+
+        <!-- ============ 行内小按钮（触发键 / 编辑） ============
+             ★★ 完整照抄 UID 账号卡片那个「登录」按钮的 `CompactActionButtonStyle`
+                （Height 28 / MinWidth 50 / Padding 8,0 / FontSize 12 / 圆角 5 / 透明底 + 1px 边框）——
+                用户要求「卡片容器、按钮位置大小和 UID 账号列表一模一样」。
+             ⛔ 不能直接引用 uID 那个 key：它定义在 AccountManagerView.xaml 的 **Page.Resources** 里，
+                插件是反射加载的独立 dll，沿自己的逻辑树查不到（会退化成系统默认按钮）。
+             ★ 额外给「触发键」加一条：**已设置**时用主色描边（未设置是普通灰边框）。 -->
+        <Style x:Key="MacroRowButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="MinWidth" Value="50"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource Gray100Brush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource TextDisabledBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource BorderBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 触发键专用：已设置 ⇒ 主色底 + 主色描边（值来自 MacroItem.HasTriggerKey） -->
+        <Style x:Key="MacroTriggerKeyButtonStyle" TargetType="Button"
+               BasedOn="{StaticResource MacroRowButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasTriggerKey}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Gray100Brush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource PrimaryDarkBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
 
         <!-- ============ 排序手柄的图标（与 UID 分组/账号卡片**同一份几何**） ============
              左边「上下双向箭头 + 竖杆中间断开成一个点」，右边「三条横线」，全部圆头描边。 -->
         <StreamGeometry x:Key="SortHandleIconGeometry">M 1,4.8 L 3.2,2.2 L 5.4,4.8 M 3.2,3 L 3.2,6.6 M 3.2,7.9 L 3.2,8.05 M 3.2,9.4 L 3.2,13 M 1,11.2 L 3.2,13.8 L 5.4,11.2 M 8.2,3.2 H 16 M 8.2,8 H 16 M 8.2,12.8 H 16</StreamGeometry>
 
-        <!-- 排序手柄：24×24、悬停放大 1.2、按下即进入拖动（无长按延迟） -->
+        <!-- ============ 文件夹图标（与 UID 的 GroupFolderIconGeometry **一字不差**） ============
+             ★ 用户要求「和 uid 一样添加分组这里的矢量图文件夹需要一模一样」——
+               这份路径是从 LvchaxsBS_UID/Views/AccountManagerView.xaml 原样搬过来的，
+               Canvas 用同一块 42×31 画布、同样 2.5 描边 + Miter 折角 + 圆头线帽。
+             ⛔ 插件不引用宿主/UID，所以只能在这里自带一份；那边改了这里要跟着改。 -->
+        <StreamGeometry x:Key="FolderIconGeometry">M33.6,29 H2 V3.4 A2.2,2.2 0 0 1 4.2,1.2 H11.6 A1.6,1.6 0 0 1 13.2,2.8 V4 H32 A1,1 0 0 1 33,5 V8 M10.4,8.7 L39.6,8 L33.2,28.6 L3.5,28.6 Z</StreamGeometry>
+
+        <!-- ============ 图标框（= UID 分组卡片的 GroupIconBorderStyle） ============
+             48×48 圆、Margin 5,0,8,0、**不要灰底**（文件夹是线稿，垫灰圆会糊）。
+             ⛔ 插件拿不到 UID 里那个 Style（它是 UID 页内私有资源），所以这里照抄一份；
+                UID 改了要跟着改，否则两张卡片的图标位置会错开。 -->
+        <Style x:Key="MacroGroupIconBorderStyle" TargetType="Border">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+            <Setter Property="Margin" Value="5,0,8,0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 排序手柄：24×24、悬停放大 1.2、按下即进入拖动（无长按延迟）；常驻显示 -->
         <Style x:Key="SortHandleButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="24"/>
             <Setter Property="Height" Value="24"/>
             <!-- ★ 在手柄那一列里右移 6px（左 +6 / 右 −6 相抵，列宽仍是 29），同 UID -->
             <Setter Property="Margin" Value="11,0,-6,0"/>
-            <!-- ★ 和 UID 完全一致：**不要给底色**。铺的是透明命中区，
-                 置顶时后面那块灰底才能连贯地透过来（给不透明底色会在灰区里挖出一个方块）。 -->
+            <!-- ★ 和 UID 完全一致：**不要给底色**。铺的是透明命中区，不遮卡片自身的样子。 -->
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="ToolTip" Value="按住拖动排序"/>
@@ -43,7 +162,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <!-- ★★ 透明底铺满 = 命中区（三条杠是只有描边的线，缝隙里没有可命中的像素）
-                             ⛔ 必须 Transparent：给不透明底色会在置顶灰区里挖出一个方块。 -->
+                             ⛔ 必须 Transparent：不能盖住卡片本身的样子。 -->
                         <Border Background="Transparent"
                                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                             <Path x:Name="sortIcon"
@@ -102,22 +221,78 @@
         </Style>
     </Page.Resources>
 
-    <ScrollViewer Style="{DynamicResource CustomScrollViewer}">
-        <StackPanel Margin="5,4,0,0">
+    <!--
+        ★★ 2026-10-19 重构：这一页不再塞进宿主的「配置容器页」（那是带「快速传送」顶栏的通用工具页），
+           而是和 UID 账号管理页一样直接进内容区 —— 左/顶导航栏是固定头行，下面是本页。
+           所以原本由配置容器页提供的「添加宏 / 添加文件夹 / 返回」按钮，改由本页自己带一个底栏。
+           底栏 = 文件夹内才显示的「返回」 + 一个 AddMacroButton（它自己按视图切「添加文件夹 / 添加宏」）。
+    -->
+    <Grid Margin="5,-4,0,0">
+        <Grid.RowDefinitions>
+            <!-- ★★ 和 UID 账号页**逐像素对齐**（用户要求「容器位置大小布局一模一样」）：
+                 · 顶部行**不设** MinHeight（原来 48）：行高跟着 32 高的胶囊/按钮走。
+                   48 会多出 16 的空，导致「这行 → 第一张卡片」不是 8、这行距顶也不是 4。
+                   上下间距照首页基准 —— 首页第一张卡片距顶 4、卡片之间 8：
+                     · 行 Margin 上 8 − 外层 Grid 的 -4 = 距内容区顶 4
+                     · 行下 0 + 列表 StackPanel 上 8 = 距第一张卡片 8
+                 · 外层 Grid 的 Margin="5,-4,0,0" 复制自 UID 的根内容 Grid
+                   （左 5 与卡片左边对齐、上 -4 抵消宿主的页面留白）
+                 · 列表的 StackPanel 原来自己写了 Margin="5,4,…"，外层已经有 5 了，这里去掉，免得变成 10 -->
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
+        <!-- ★★ 上 8 必须写在 **ScrollViewer 自己** 上，不能写在滚动内容里：
+             · 上 8：写在 StackPanel 上会跟着一起滚走 ⇒ 卡片滚到紧贴统计行，看着像被它盖住
+               （用户反馈的就是这个：「往下滚动刚好上面被覆盖的位置就是『宏列表…』」）
+             ★★ 底部不再留 10（2026-10-21 改）：那 10 在**视口外**，滚到底时最后一张卡
+               贴着视口底、底下还空一截 ⇒ 用户报「底部流出了很高的空白区，应该最下面
+               刚好处于可视最底部」。参照**首页**（ScrollViewer 无 Margin）。
+               UID 那边的同一个 10（Border Padding 下）也一并去了，两页仍然一致。 -->
+        <ScrollViewer Grid.Row="1" Style="{DynamicResource CustomScrollViewer}" Margin="0,8,0,0"
+                      PreviewMouseWheel="MacroScrollViewer_PreviewMouseWheel">
+        <!-- ★ 内容自己**不要再留边距**：8 和 10 已由上面的 ScrollViewer 提供，
+             这里再留就等于双倍（滚动到底时最后一行的空白比 UID 多一截）。 -->
+        <StackPanel Margin="0">
+
+            <!-- ============ 宏列表（分组内，以及顶层下面挂的「未分组」宏） ============ -->
             <ItemsControl x:Name="MacroList">
+                <!-- ★★ 卡片间距 8 挪到**容器**（ContentPresenter）上：
+                     原来是卡片模板 Border 自带 Margin="0,0,0,8"（ModuleFunctionCardStyle）。
+                     但「滚到底时最后一张卡要贴视口底」要求把最后一项的下边距设 0 ——
+                     DataTemplate 里的卡片**不是面板的直接子元素**（中间隔着 ContentPresenter），
+                     从外面只能改到容器。间距放容器上后，改最后一个容器的 Margin 就够，
+                     也不会出现「容器 8 + 卡片 8 = 16」的双倍间距。 -->
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Margin" Value="0,0,0,8"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <!-- 关掉虚拟化：拖动排序要按「显示顺序」把卡片下标映射回数据项 -->
-                        <VirtualizingStackPanel IsVirtualizing="False"/>
+                        <!-- ★★ 必须用普通 StackPanel，**不要** VirtualizingStackPanel：
+                             · 两者都不做虚拟化（拖动排序要按「显示顺序」把卡片下标映射回数据项）
+                             · 但 VirtualizingStackPanel 即使 IsVirtualizing=False，集合 Move 时也会
+                               回收容器 ⇒ 胶囊开关被重建 ⇒ IsChecked 重新求值 ⇒ 滑块动画重播
+                               （「拖一个宏换个位置，那个宏的开关就重播一次」就是这个）
+                             · 普通 StackPanel 会**复用**容器，Move 之后容器还是原来那个，动画不会重播
+                             ★ 首页卡片用的就是默认的 StackPanel，这里对齐它 -->
+                        <StackPanel/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
 
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <!-- ★ Padding 16,0 + ClipToBounds：与 UID 分组卡片同一套（灰区负边距贴边要靠裁剪兜住） -->
+                        <!-- ★ 卡片不带 Padding：按钮和排序手柄直接贴到卡片右边缘（与 UID 账号卡一致） -->
+                        <!-- ★★ 和 UID 账号卡片一致：**不要 Padding**。
+                             图标本身的左边距由 MacroGroupIconBorderStyle 的 Margin=5,0,8,0 提供，
+                             没有 Padding 时右侧按钮自然贴到卡片边缘。 -->
+                        <!-- ★★ Margin="0" 必须显式写：ModuleFunctionCardStyle 自带 Margin="0,0,0,8"，
+                             不覆盖的话就是「容器 8（ItemContainerStyle）+ 卡片 8」= 16px 间距
+                             （探针实测行距 78 → 86）。间距只从容器出，最后一项由
+                             RefreshMacroCardSpacing 置 0 ⇒ 滚到底时最后一张卡底边贴视口底。 -->
                         <Border Style="{DynamicResource ModuleFunctionCardStyle}"
-                                Padding="16,0"
+                                Margin="0"
                                 ClipToBounds="True">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -126,29 +301,80 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- 图标（-11 = 5 − 16，抵消卡片 padding ⇒ 与首页卡片逐像素对齐）
-                                     点它 = 置顶 / 取消置顶（同 UID 点头像） -->
-                                <Border Grid.Column="0"
-                                        Style="{DynamicResource IconBorderStyle}"
-                                        Margin="-11,0,12,0"
-                                        VerticalAlignment="Center"
-                                        Cursor="Hand"
-                                        ToolTip="点击置顶 / 取消置顶"
-                                        MouseLeftButtonDown="MacroIcon_MouseLeftButtonDown">
-                                    <controls:MacroGlyph Width="30" Height="20"
-                                                         VerticalAlignment="Center"
-                                                         HorizontalAlignment="Center"/>
-                                </Border>
+                                <!-- 置顶标识：卡片左缘一条主题蓝细竖条 —— 卡片本身的底色和边框都不动。
+                                     ★ IsHitTestVisible=False 不吃点击，垫在最底层。
+                                     ★ RenderTransformOrigin 在竖条正中心，代码播 ScaleY 0→1 时从中心向上下同时展开，
+                                       收回时向中心缩回。由 MacroConfigPage 的 ApplyStarToggle 在置顶/取消置顶
+                                       的那一刻播，首次加载直接是终态。 -->
+                                <Grid x:Name="PinHighlightLayer"
+                                      Grid.ColumnSpan="3"
+                                      IsHitTestVisible="False"
+                                      Visibility="{Binding ShowStar, Converter={StaticResource BoolToVis}}">
+                                    <!-- 宽 2、上下各内缩 6、两端全圆角；Opacity 0.5 是它的浓度。
+                                         ★ SnapsToDevicePixels + UseLayoutRounding：2px 的条一经系统缩放
+                                           （125%/150%）就会落到半个物理像素上，边缘发虚、位置也像偏了半 px。
+                                           开这两个属性让它钉在物理像素边界，和账号卡片一样锐利。 -->
+                                    <Border x:Name="PinBar"
+                                            Width="2"
+                                            Margin="0,6"
+                                            CornerRadius="1"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Stretch"
+                                            Background="{DynamicResource PinBarBrush}"
+                                            SnapsToDevicePixels="True"
+                                            UseLayoutRounding="True"
+                                            RenderTransformOrigin="0.5,0.5"/>
+                                </Grid>
+
+                                <!-- 图标（= UID 账号卡 / 分组卡的头像位，48×48 圆、悬停 1.06）
+                                     点它 = 置顶 / 取消置顶（同 UID 点头像）
+                                     ★ Margin -16 抵消卡片 Padding ⇒ 图标与账号卡片逐像素对齐 -->
+                                <Button Grid.Column="0"
+                                        Style="{DynamicResource AccountAvatarButtonStyle}"
+                                        Tag="{Binding Id}"
+                                        Click="MacroIcon_Click">
+                                    <Border Style="{StaticResource MacroGroupIconBorderStyle}">
+                                        <Image Source="{Binding Avatar, Converter={StaticResource AvatarImage}}"
+                                               Width="48" Height="48"
+                                               Stretch="UniformToFill"/>
+                                    </Border>
+                                </Button>
 
                                 <!-- 标题 + 描述（格式同 UID 分组卡片：第一行名称 + 编辑/删除，第二行备注） -->
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Name}"
+                                        <TextBlock x:Name="MacroTitleText" Text="{Binding Name}"
                                                    FontSize="16" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                                    TextTrimming="CharacterEllipsis"
                                                    VerticalAlignment="Center"
-                                                   Margin="0,0,6,0"/>
+                                                   Margin="0,0,6,0"
+                                                   DataContextChanged="PinTitle_DataContextChanged">
+                                            <!-- 置顶时名称变主题蓝：基础态由 Style 给（容器重建/首进就是对的），
+                                                 过渡动画由 code-behind 播（和左侧蓝杠同时长、同时收）。
+                                                 ★ 画刷必须是「逐实例」的才能动画 —— 所以代码里发现还是主题
+                                                   共享实例时会换成一个新的（动画共享实例会污染全程序）。 -->
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ShowStar}" Value="True">
+                                                            <Setter Property="Foreground" Value="{DynamicResource PinNameBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <!-- 名称右侧三个标签：生效范围（紫）→ 触发方式（蓝）→ 触发条件（绿） -->
+                                        <Border Style="{StaticResource MacroScopeTagStyle}" Margin="0,0,4,0">
+                                            <TextBlock Text="{Binding ScopeName}"/>
+                                        </Border>
+                                        <Border Style="{StaticResource MacroOptionTagStyle}" Margin="0,0,4,0">
+                                            <TextBlock Text="{Binding ModeName}"/>
+                                        </Border>
+                                        <Border Style="{StaticResource MacroConditionTagStyle}" Margin="0,0,4,0">
+                                            <TextBlock Text="{Binding ConditionName}"/>
+                                        </Border>
 
                                         <!-- 标题右侧的编辑 / 删除：改的是**宏名称 + 描述**（同 UID 分组卡片的标题行） -->
                                         <Button Style="{DynamicResource IconEditButtonStyle}"
@@ -164,89 +390,94 @@
                                                 Click="DeleteMacro_Click"/>
                                     </StackPanel>
 
-                                    <!-- 描述行（没描述就整行隐藏） -->
-                                    <TextBlock Text="{Binding Description}"
-                                               Visibility="{Binding HasDescription, Converter={StaticResource BoolToVis}}"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                    <!-- 描述行：没有描述时显示「无描述」（次要色），整行始终占位 -->
+                                    <TextBlock FontSize="12"
                                                TextTrimming="CharacterEllipsis"
-                                               Margin="0,3,0,0"/>
+                                               Margin="0,3,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="无描述"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasDescription}" Value="True">
+                                                        <Setter Property="Text" Value="{Binding Description}"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </StackPanel>
 
-                                <!-- ★ 右侧整块拆成**三列**：星 / 操作按钮 / 手柄 —— 星永远不会压到按钮上（同 UID）
-                                     ★ 操作列给 MinWidth：保证灰区长度不随内容变化（UID 也是这么做的） -->
-                                <Grid Grid.Column="2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>   <!-- 四角星 -->
-                                        <ColumnDefinition Width="Auto" MinWidth="124"/>   <!-- 编辑 / 删除 -->
-                                        <ColumnDefinition Width="Auto"/>   <!-- 排序手柄 -->
-                                    </Grid.ColumnDefinitions>
+                                <!-- ★ 右侧整块拆成**三列**：留空列 / 操作按钮 / 手柄（同 UID）
+                                     ★ 操作列给 MinWidth：保证这一块的宽度不随内容变化（UID 也是这么做的）
+                                     ★★ 右边距 16（和**UID 账号卡片**完全同一套）：
+                                        排序手柄的样式自带 `Margin="11,0,-6,0"`，那 −6 是给「卡片内边距」留的位置 ——
+                                        宏卡片没有内边距（为了按钮贴边、和 UID 账号卡逐像素对齐），
+                                        不补这 16 的话手柄就真的探到卡片外面 6px，被 `ClipToBounds` 裁掉
+                                        （用户看到的就是「排序按钮贴着右边界、被切了一半」）。 -->
+                                <Grid Grid.Column="2" Margin="0,0,16,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>   <!-- 留空列（置顶不再占位），固定后面两列的下标 -->
+                                    <ColumnDefinition Width="Auto" MinWidth="140"/>   <!-- 编辑指令 -->
+                                    <!-- 排序手柄列：手柄常驻显示，这里恒定 29px -->
+                                    <ColumnDefinition Width="29"/>   <!-- 排序手柄 -->
+                                </Grid.ColumnDefinitions>
 
-                                    <!-- 置顶标识的底：从四角星右尖开始铺到卡片最右边的灰色区（照 UID 分组卡片）
-                                         ★ 透明度写在**这个父 Grid** 上（子元素各自带 Opacity 会在交界处叠出缝）
-                                         ★ 右 -16 吃回卡片 Padding，让灰区贴到卡片边缘；右圆角 7 = 卡片圆角 8 − 边框 1 -->
-                                    <Grid x:Name="PinnedArcLayer"
-                                          Grid.Column="0" Grid.ColumnSpan="3"
-                                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                          Margin="34,0,-16,0"
-                                          Opacity="0.06"
-                                          Visibility="{Binding ShowStar, Converter={StaticResource BoolToVis}}">
-                                        <Grid.RenderTransform>
-                                            <TranslateTransform X="0"/>
-                                        </Grid.RenderTransform>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="19.3"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <Path Grid.Column="0"
-                                              Stretch="Fill"
-                                              Fill="{DynamicResource TextPrimaryBrush}"
-                                              Data="M 19.3,0 C 17.5,7.1 14.8,17.8 12.5,21.3 C 8.9,24.9 5.9,28.2 0,28.5 C 5.9,28.8 8.9,32 12.5,35.6 C 14.8,39.1 17.5,49.8 19,56.9 Z"/>
-
-                                        <Border Grid.Column="1"
-                                                Margin="-0.5,0,0,0"
-                                                CornerRadius="0,7,7,0"
-                                                Background="{DynamicResource TextPrimaryBrush}"/>
-                                    </Grid>
-
-                                    <!-- 置顶标识：矢量四角星（上下左右四个尖角，尖角之间是往内凹的弧线）
-                                         ★ 右边距 24 留给灰区那段弧：弧宽 19.3，不能压到第一个按钮上 -->
-                                    <Path x:Name="PinnedStar"
-                                          Grid.Column="0"
-                                          Width="32" Height="32"
-                                          Margin="0,0,24,0"
-                                          Stretch="Uniform"
-                                          Fill="{DynamicResource TextPrimaryBrush}"
-                                          Opacity="0.06"
-                                          HorizontalAlignment="Left"
-                                          VerticalAlignment="Center"
-                                          Visibility="{Binding ShowStar, Converter={StaticResource BoolToVis}}"
-                                          Data="M12 2 C12.5 7 17 11.5 22 12 C17 12.5 12.5 17 12 22 C11.5 17 7 12.5 2 12 C7 11.5 11.5 7 12 2 Z">
-                                        <Path.RenderTransform>
-                                            <TranslateTransform X="0"/>
-                                        </Path.RenderTransform>
-                                    </Path>
-
-                                    <!-- 操作区：**「编辑宏指令」按钮**（位置 = UID 分组卡片的「打开」，在手柄左边）
-                                         ★ 它编辑的是这个宏的按键指令序列，不是名称/描述（名称在标题行那对图标里改）。
-                                         ★ 规格照 UID 的「打开」：文字按钮、高 28、Padding 10,0、MinWidth 60。
-                                         ★ 操作列 MinWidth=124（UID 是 140）：让灰区长度和 UID 一致。 -->
+                                    <!-- 操作区：和**首页卡片右侧**完全一致的三件套 ——
+                                         触发键按钮 / 编辑按钮 / 胶囊开关。
+                                         ★ 触发键用本页自带的 MacroTriggerKeyButtonStyle（宿主那个是 Page 级私有，插件拿不到）
+                                         ★ 和首页唯一不同：配置按钮这里叫「编辑」，点了直接进这个宏的指令编辑页。 -->
                                     <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                                HorizontalAlignment="Right" VerticalAlignment="Center">
-                                        <Button Content="编辑指令"
-                                                Style="{DynamicResource FlatButtonStyleRound6}"
-                                                Background="{DynamicResource CardBackgroundBrush}"
-                                                Foreground="{DynamicResource TextSecondaryBrush}"
-                                                BorderBrush="{DynamicResource BorderStrongBrush}"
-                                                Height="28" Padding="10,0" MinWidth="72" FontSize="11"
+                                                HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                Margin="0,0,0,0">
+
+                                        <!-- 触发键（尺寸/字号/圆角全部走 UID 那套 28 高 / 12 号字；组合键自动变宽） -->
+                                        <Button MinWidth="50" MaxWidth="150" Margin="0,0,5,0"
+                                                Style="{StaticResource MacroTriggerKeyButtonStyle}"
+                                                Tag="{Binding Id}"
+                                                ToolTip="点击设置这条宏的触发键"
+                                                Click="MacroTriggerKey_Click">
+                                            <!-- ★ 不要写死 Foreground / FontSize：让样式里那套（12 号、未设置灰 / 已设置主题色）生效 -->
+                                            <TextBlock Text="{Binding TriggerKey}"
+                                                       TextWrapping="NoWrap"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </Button>
+
+                                        <!-- 编辑（尺寸与 UID「登录」按钮同一套，只是文案不同） -->
+                                        <Button Content="编辑"
+                                                Margin="0,0,5,0"
+                                                Style="{StaticResource MacroRowButtonStyle}"
                                                 ToolTip="编辑这个宏的按键指令"
                                                 Tag="{Binding Id}"
                                                 Click="EditMacroCommands_Click"/>
+
+                                        <!-- 胶囊开关（这条宏自己的生效开关）
+                                             ★ 主程序「功能总开关」关掉时变灰（Opacity 0.4），和首页功能卡片一致。
+                                             ★★ 灰度必须**绑数据**（MasterSwitchOn），不能靠遍历可视树设 Opacity：
+                                                拖动排序结束时是 ObservableCollection.Move，那一行的容器会被
+                                                移除重建，重建出来的 CheckBox 默认 Opacity=1 ⇒ 灰度全丢。 -->
+                                        <CheckBox VerticalAlignment="Center"
+                                                  IsChecked="{Binding Enabled, Mode=TwoWay}"
+                                                  Tag="{Binding Id}"
+                                                  Loaded="MacroToggle_Loaded"
+                                                  Checked="MacroToggle_Changed"
+                                                  Unchecked="MacroToggle_Changed">
+                                            <CheckBox.Style>
+                                                <Style TargetType="CheckBox"
+                                                       BasedOn="{StaticResource ModuleToggleSwitchStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding MasterSwitchOn}" Value="False">
+                                                            <Setter Property="Opacity" Value="0.4"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </CheckBox.Style>
+                                        </CheckBox>
                                     </StackPanel>
 
-                                    <!-- 排序手柄（按住即拖，效果与首页 / UID 一致） -->
-                                    <Button Grid.Column="2"
+                                    <!-- 排序手柄：常驻显示，按住即拖（效果与首页 / UID 一致） -->
+                                    <Button x:Name="PART_SortHandle" Grid.Column="2"
                                             Style="{StaticResource SortHandleButtonStyle}"
                                             Tag="{Binding Id}"
                                             PreviewMouseLeftButtonDown="SortHandle_PreviewMouseLeftButtonDown"/>
@@ -257,13 +488,105 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- 空列表提示 -->
+            <!-- 空列表提示（★ 居中，不是顶在左上角 —— 和 UID 分组列表"还没有分组"一样） -->
             <TextBlock x:Name="EmptyHint"
-                       Text="还没有宏，点底部「添加宏」新建一个"
+                       Text="还没有宏，点顶部「添加宏」新建一个"
                        FontSize="13"
                        Foreground="{DynamicResource TextSecondaryBrush}"
-                       Margin="8,6,0,0"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       Margin="0,40,0,0"
                        Visibility="Collapsed"/>
         </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+
+        <!-- 顶部头行：左侧统计文案 + 右侧按钮（照 UID 账号页的「分组管理 / 添加账号」一行，删除搜索）。
+             ★ 统计文案：顶层「文件夹列表: 共N个文件夹 · M个宏文件」、文件夹内「文件夹: X· 共M个宏」（UpdateHeader 刷新）。
+             ★ 右侧按钮：返回（仅文件夹内显示）+ AddMacroButton（顶层「添加文件夹」/ 文件夹内「添加宏文件」）。
+             ★★ 右边距 6：列表用 CustomScrollViewer，右侧有一条 6px 的滚动条列，
+                卡片因此停在「距右边 6」处；这一行如果铺满整个宽度，右侧按钮就会比卡片
+                右边缘多出 6px（用户看到的「整行往右偏」另一半）。补上同样的 6 才对齐。 -->
+        <Grid Grid.Row="0" Margin="0,8,6,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 统计文案胶囊：照 UID 账号页 currentGroupLabel 的样式
+                 （HoverBackgroundBrush 底 + BorderBrush 边 + 圆角5 + Padding12,6 + 左侧文件夹图标） -->
+            <!-- ★ 与 UID 那一行**同一个高度**：胶囊 / 搜索框 / 右侧按钮统一 32。
+                 （原来 Padding 12,6 自适应约 31，和右侧 33 高的按钮并排就差出一截）
+                 ★ 左边距 0（原来 8）：外层 Grid 已经有 Margin 左 5（与卡片左边对齐），
+                   这里再加 8 就变成距页面左边 13，比卡片框多出 8px —— 用户看到的就是
+                   「统计胶囊这一行整体往右偏，和卡片左边不齐」。归零后两者同为 5。 -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource HoverBackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="5"
+                    Padding="12,0"
+                    Height="32"
+                    Margin="0"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Viewbox Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <Canvas Width="42" Height="31">
+                            <Path Data="{StaticResource FolderIconGeometry}"
+                                  Stroke="{DynamicResource TextSecondaryBrush}"
+                                  StrokeThickness="2.5"
+                                  Fill="Transparent"
+                                  StrokeLineJoin="Miter"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"/>
+                        </Canvas>
+                    </Viewbox>
+                    <!-- ★ 结构与 UID 的「账号列表：共计N个账号 · M个分组」**完全一致**：
+                         左边主文本（主色）+ 中间「·」（次要色）+ 右边次要文本（次要色），
+                         全部 FontSize=13 / SemiBold —— 两个页面看起来才是一个尺寸。 -->
+                    <TextBlock x:Name="HeaderStatsLeft"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+
+                    <TextBlock Text="·"
+                               FontSize="13"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               Margin="4,0,4,0"
+                               VerticalAlignment="Center"/>
+
+                    <TextBlock x:Name="HeaderStatsRight"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="BackButton"
+                        Style="{DynamicResource FlatButtonStyleRound6}"
+                        Background="{DynamicResource CardBackgroundBrush}"
+                        Foreground="{DynamicResource TextSecondaryBrush}"
+                        BorderBrush="{DynamicResource BorderStrongBrush}"
+                        Height="28" Padding="12,0" MinWidth="64" FontSize="11"
+                        Margin="0,0,8,0"
+                        Visibility="Collapsed"
+                        Click="BackButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Path Data="M 14,6 L 6,12 L 14,18"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.8"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Width="14" Height="14" Stretch="Uniform"
+                              Margin="0,0,4,0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="返回" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <controls:AddMacroButton />
+            </StackPanel>
+        </Grid>
+    </Grid>
 </Page>

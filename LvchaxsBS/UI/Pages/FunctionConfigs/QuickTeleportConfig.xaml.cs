@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using LvchaxsBS.Config;
@@ -57,13 +58,15 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             if (s.RightListScaleFactor != scaleFactor)
                 ConfigSync.Mutate<QuickTeleportSettings>(x => x.RightListScaleFactor = scaleFactor);
             RightListScaleFactorSpinBox.Value = scaleFactor;
-            RightListClickDelayCard.Value = s.RightListClickItemDelay_1;
+            RightListClickDelayCard.Value = s.RightListClickItemDelay_2;
             RightListFKeyDelaySlider.Value = s.RightListFKeyDelay;
             RightListAbyssFKeyDelaySlider.Value = s.RightListAbyssFKeyDelay;
 
             EnableListRecognition.IsChecked = s.EnableListRecognition;
             DisableAbyssFilter.IsChecked = s.DisableAbyssFilter;
             EnableRightClickCancel.IsChecked = s.EnableRightClickCancel;
+
+            LoadQuickMapKeys();
 
             _isLoading = false;
 
@@ -116,7 +119,7 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
         private void RightListClickDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoading) return;
-            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListClickItemDelay_1 = (int)e.NewValue);
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.RightListClickItemDelay_2 = (int)e.NewValue);
         }
 
         private void RightListFKeyDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -177,6 +180,154 @@ namespace LvchaxsBS.UI.Pages.FunctionConfigs
             ConfigSync.Mutate<HomePageSettings>(s => s.QuickTeleportKey = defaultKey);
 
             ToastService.Show("快速传送", $"右键已被取消传送功能占用，触发键已改回「{defaultKey}」");
+        }
+
+        // ============ 快速切图 ============
+
+        /// <summary>本页参与快速切图的地区 Id（按钮 Tag 就是它）。</summary>
+        private static readonly HashSet<string> QuickMapRegionIds = new()
+        {
+            "Mondstadt", "Liyue", "Inazuma", "Sumeru", "Fontaine", "Natlan", "NodKrai", "Snezhnaya",
+            "Enkanomiya", "Chasm", "SeaOfBygoneEras", "AncientSacredMountain",
+            "TempleOfTheVoid", "Frostmoon", "SereniteaPot", "StellarRealm",
+        };
+
+        /// <summary>地区 Id → 那个绑定按钮（首次用到时按 Tag 收集一次）。</summary>
+        private Dictionary<string, Button>? _quickMapButtons;
+
+        private Dictionary<string, Button> QuickMapButtons
+        {
+            get
+            {
+                if (_quickMapButtons != null) return _quickMapButtons;
+
+                var map = new Dictionary<string, Button>();
+                foreach (var btn in VisualTreeEx.FindChildren<Button>(this))
+                {
+                    if (btn.Tag is string id && QuickMapRegionIds.Contains(id))
+                        map[id] = btn;
+                }
+
+                _quickMapButtons = map;
+                return map;
+            }
+        }
+
+        private void LoadQuickMapKeys()
+        {
+            // 从触发键页返回时 Loaded 会再跑一次，这里回填值不能反过来写配置
+            _isLoading = true;
+
+            var s = ConfigManager.Get<QuickTeleportSettings>();
+
+            EnableQuickMapSwitch.IsChecked = s.EnableQuickMapSwitch;
+            EnableCutRecognition.IsChecked = s.EnableCutRecognition;
+            ApplyQuickMapEnabledVisual(s.EnableQuickMapSwitch);
+
+            QuickMapRegionDelayCard.Value = s.QuickMapRegionDelay;
+
+            var keys = s.QuickMapKeys;
+            foreach (var kv in QuickMapButtons)
+            {
+                string? key = null;
+                keys?.TryGetValue(kv.Key, out key);
+                SetButtonLabel(kv.Value, string.IsNullOrWhiteSpace(key) ? "未设置" : CompactKeyLabel(key));
+            }
+
+            _isLoading = false;
+        }
+
+        /// <summary>
+        /// 按钮上的键名用**紧凑写法**："左Ctrl+左Alt+1" → "Ctrl+Alt+1"。
+        /// <para>配置里存的仍是精确名（引擎靠它区分左右），只是这一列按钮太窄，显示时缩一下。</para>
+        /// </summary>
+        private static string CompactKeyLabel(string key)
+            => key.Replace("左Ctrl", "Ctrl")
+                  .Replace("左Alt", "Alt")
+                  .Replace("左Shift", "Shift");
+
+        /// <summary>
+        /// 写按钮文字：优先写进里面的 TextBlock（保留省略号截断），没有就直接当 Content。
+        /// </summary>
+        private static void SetButtonLabel(Button btn, string text)
+        {
+            if (btn.Content is TextBlock tb) tb.Text = text;
+            else btn.Content = text;
+        }
+
+        private void EnableQuickMapSwitch_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isLoading) return;
+
+            bool enabled = EnableQuickMapSwitch.IsChecked == true;
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.EnableQuickMapSwitch = enabled);
+            ApplyQuickMapEnabledVisual(enabled);
+        }
+
+        /// <summary>「启用切图识别」：勾选 = 按地区键先做 RGB 画面识别；不勾选 = 直接执行。</summary>
+        private void EnableCutRecognition_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isLoading) return;
+
+            bool enabled = EnableCutRecognition.IsChecked == true;
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.EnableCutRecognition = enabled);
+        }
+
+        /// <summary>
+        /// 关掉快速切图时把地区按钮也置灰（配置不动，重新勾上就恢复）。
+        /// ★ 宿主的按钮样式没有禁用态触发器，置灰只能靠 Opacity。
+        /// </summary>
+        private void ApplyQuickMapEnabledVisual(bool enabled)
+        {
+            foreach (var btn in QuickMapButtons.Values)
+                btn.Opacity = enabled ? 1.0 : 0.45;
+
+            // 总开关关着时「切图识别」也没有意义，一起置灰
+            EnableCutRecognition.Opacity = enabled ? 1.0 : 0.45;
+        }
+
+        private void QuickMapKey_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not string regionId) return;
+
+            // 总开关关着时不允许改键（按钮已置灰，双击也进不来）
+            if (EnableQuickMapSwitch.IsChecked != true) return;
+
+            // ★ 走容器的「触发键页」（和首页那个触发键按钮同一套），不再自己监听按键
+            var container = FindConfigContainer();
+            if (container == null)
+            {
+                ToastService.Show("快速切图", "请从首页进入该功能的配置页再设置触发键");
+                return;
+            }
+
+            container.ShowQuickMapKeyPage(regionId);
+        }
+
+        /// <summary>
+        /// 找到承载本页的 <see cref="ConfigContainerPage"/>。
+        /// <para>先走视觉父链；取不到再走逻辑父链（Page 被 Frame 托管时，某些导航模式下
+        /// 视觉父级在布局完成前是 null）。</para>
+        /// </summary>
+        private ConfigContainerPage? FindConfigContainer()
+        {
+            var byVisual = VisualTreeEx.FindAncestor<ConfigContainerPage>(this);
+            if (byVisual != null) return byVisual;
+
+            DependencyObject? node = this;
+            while (node != null)
+            {
+                if (node is ConfigContainerPage container) return container;
+                node = node is FrameworkElement fe ? fe.Parent : null;
+            }
+
+            return null;
+        }
+
+        private void QuickMapRegionDelayCard_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isLoading) return;
+            ConfigSync.Mutate<QuickTeleportSettings>(s => s.QuickMapRegionDelay = (int)Math.Round(e.NewValue));
         }
     }
 }

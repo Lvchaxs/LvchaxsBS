@@ -162,8 +162,10 @@
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- 悬停只把图标**提亮一档**，不用 TextPrimaryBrush：
+                             深色主题下那是纯白，从常态灰跳到纯白太刺眼（见主题里的 IconHoverFgBrush）。 -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource IconHoverFgBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

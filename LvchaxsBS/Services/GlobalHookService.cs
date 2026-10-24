@@ -27,6 +27,14 @@ namespace LvchaxsBS.Services
         public int X { get; set; }
         public int Y { get; set; }
         public int XButton { get; set; }
+
+        /// <summary>
+        /// 这个鼠标事件是不是**程序自己注入**的（<c>LLMHF_INJECTED</c>）——
+        /// 也就是 <c>mouse_event</c> / <c>SendInput</c> 发出来的模拟点击、模拟滚轮。
+        /// <para>★ 判断"是不是用户操作"要靠它，不能只靠 <c>SimulationService.IsSimulating</c>：
+        /// 低级钩子回调在消息循环里跑，模拟事件常在 <c>EndSimulation()</c> 之后才被回调处理。</para>
+        /// </summary>
+        public bool IsInjected { get; set; }
     }
 
     public static class GlobalMouseHookService
@@ -41,6 +49,15 @@ namespace LvchaxsBS.Services
         private const int WM_MOUSEWHEEL = 0x020A;
         private const int WM_XBUTTONDOWN = 0x020B;
         private const int WM_XBUTTONUP = 0x020C;
+
+        /// <summary>MSLLHOOKSTRUCT.flags 里的「事件是注入的（模拟点击 / 滚轮）」标志位。</summary>
+        private const uint LLMHF_INJECTED = 0x01;
+
+        /// <summary>
+        /// 「由**更低完整性级别**的进程注入」标志位。
+        /// <para>★ 同样是模拟输入（来源进程权限更低而已），不能当成用户真的点了鼠标。</para>
+        /// </summary>
+        private const uint LLMHF_LOWER_IL_INJECTED = 0x02;
 
         private static IntPtr _hookId = IntPtr.Zero;
         private static LowLevelMouseProc _proc;
@@ -155,8 +172,16 @@ namespace LvchaxsBS.Services
                     var args = new MouseEventArgs
                     {
                         X = hookStruct.pt.x,
-                        Y = hookStruct.pt.y
+                        Y = hookStruct.pt.y,
+                        // ★ LLMHF_INJECTED = 0x01 / LLMHF_LOWER_IL_INJECTED = 0x02：
+                        //   有其中任何一位，这次点击/滚轮就是程序灌进去的（模拟），不是用户点的。
+                        IsInjected = (hookStruct.flags & (LLMHF_INJECTED | LLMHF_LOWER_IL_INJECTED)) != 0
                     };
+
+                    // ★★ 2026-10-23 起：模拟的点击 / 滚轮**一律不往外发**（只让它作用于游戏本身）——
+                    //    模拟输入只能"执行"，不能反过来触发功能（比如宏里的一个左键点击触发了快速传送）。
+                    //    单靠 SimulationService.IsSimulating 挡不住：宏插件是独立 dll、另一份 SimulationService。
+                    if (args.IsInjected) return CallNextHookEx(_hookId, nCode, wParam, lParam);
 
                     switch (wParamInt)
                     {

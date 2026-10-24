@@ -38,6 +38,12 @@ namespace LvchaxsBS_UID.Views
         public delegate void ShowToastDelegate(string title, string message, bool isSuccess = true);
         public event ShowToastDelegate ShowToastRequested;
 
+        /// <summary>
+        /// 「清除异常」已经**即时落盘**时触发（参数是账号 Id）。
+        /// 账号列表那边订阅它用来刷新内存里那一份，免得用户点了清除、卡片上的红标签却还挂着。
+        /// </summary>
+        public event Action<int> AccountErrorCleared;
+
         public AddEditAccountWindow(Account account = null)
         {
             InitializeComponent();
@@ -54,7 +60,6 @@ namespace LvchaxsBS_UID.Views
             {
                 // 创建新账号
                 Account = new Account();
-                Account.CreatedTime = DateTime.Now;
             }
             else
             {
@@ -85,6 +90,11 @@ namespace LvchaxsBS_UID.Views
                 passwordBox.Password = Account.Password;
                 passwordTextBox.Text = Account.Password;
             }
+
+            // 「清除异常」只在编辑模式、且账号真挂了「账号或密码错误」红标签时显示
+            clearErrorButton.Visibility = (IsEditMode && Account.HasLoginError)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
 
             SetPasswordVisibility(false);
             UpdatePasswordStrength(IsEditMode ? Account.Password : "");
@@ -537,6 +547,32 @@ namespace LvchaxsBS_UID.Views
         private void CloseButton_Click(object sender, RoutedEventArgs e) => CloseWithAnimation(false);
         private void CancelButton_Click(object sender, RoutedEventArgs e) => CloseWithAnimation(false);
 
+        /// <summary>
+        /// 「清除异常」：清掉账号的「账号或密码错误」红标签。
+        /// 只在编辑模式 + 有标签时才看得到这个按钮。
+        /// <para>
+        /// ★★ **点了就真的清掉、立刻落盘**，不用再点「保存」（2026-10-14 改）。
+        ///    以前只改内存、要等点保存才写文件 —— 用户以为清了，关掉窗口后红标签还在。
+        /// </para>
+        /// <para>
+        /// 为什么可以安全地「只存这一项」：表单里的昵称/等级/密码等改动是
+        /// <see cref="SaveButton_Click"/> 才写回 <see cref="Account"/> 的，所以此刻 Account 上
+        /// 除 <c>HasLoginError</c> 之外都还是原值 —— 存下去的就是「原样 + 清掉红标签」，
+        /// 不会把用户还没点保存的编辑内容一并写进去。
+        /// </para>
+        /// </summary>
+        private void ClearErrorButton_Click(object sender, RoutedEventArgs e)
+        {
+            Account.HasLoginError = false;
+            clearErrorButton.Visibility = Visibility.Collapsed;
+
+            bool saved = AccountDataService.SaveAccount(Account);
+            // 通知账号列表同步刷新内存里那一份（即使后面点「取消」也已经生效了）
+            AccountErrorCleared?.Invoke(Account.Id);
+
+            ShowToast(saved ? "已清除「账号异常」标记" : "清除失败，请重试", saved);
+        }
+
         private void NumberOnlyTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             e.Handled = !char.IsDigit(e.Text, 0);
@@ -589,12 +625,6 @@ namespace LvchaxsBS_UID.Views
             // 头像：取选中的角色名；资源包缺失（列表为空）时回落到默认头像「空」
             Account.Avatar = (avatarListBox.SelectedItem as AvatarItem)?.Name
                              ?? Models.Account.DefaultAvatarName;
-
-            // 如果是新建账号，设置创建时间
-            if (!IsEditMode)
-            {
-                Account.CreatedTime = DateTime.Now;
-            }
 
             CloseWithAnimation(true);
         }

@@ -1,4 +1,5 @@
-﻿using LvchaxsBS.Config;
+﻿using System.Collections.Generic;
+using LvchaxsBS.Config;
 
 namespace LvchaxsBS.Config
 {
@@ -29,5 +30,13 @@ namespace LvchaxsBS.Config
         // 手柄拾取
         public bool ControllerPickup { get; set; } = false;
         public string ControllerPickupKey { get; set; } = "B";
+
+        /// <summary>
+        /// 功能卡片（以及顶部那一排功能图标）的显示顺序，存模块 Id（如 "QuickTeleport"）。
+        /// <para>★ 列表里没有的 Id = 后来新增的模块，按 <see cref="ModuleRegistry.All"/> 的默认顺序补在后面；
+        /// 多出来的（已删除的模块）忽略。⇒ 新增模块不必改这里。</para>
+        /// <para>★ 只有排序、没有置顶/置底（那是 UID 账号列表的逻辑，这里用不上）。</para>
+        /// </summary>
+        public List<string> ModuleOrder { get; set; } = new();
     }
 }

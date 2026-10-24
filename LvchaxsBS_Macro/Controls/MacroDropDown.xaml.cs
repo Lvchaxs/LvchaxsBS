@@ -44,16 +44,33 @@ namespace LvchaxsBS_Macro.Controls
         /// <summary>用户点了某一项（参数 = 新下标）。</summary>
         public event EventHandler<int>? SelectionChanged;
 
+        /// <summary>
+        /// 按钮模板里除文本以外的固定占位（DIP）：
+        /// <c>ContentPresenter Margin="8,0,4,0"</c> = 12 + 箭头列 <c>20</c> + 左右边框 <c>1+1</c> = 34，
+        /// 再加 1px 余量防字体 hinting 把最后一个字挤掉。
+        /// <para>★ 数值来自宿主 <c>UI/Styles/ComboBoxStyles.xaml</c> 的 <c>SimpleDropDownButtonStyle</c>，
+        /// 那边改了模板这里要跟着改。</para>
+        /// </summary>
+        private const double ChromeWidth = 35;
+
         private Popup? _popup;
 
         public MacroDropDown()
         {
             InitializeComponent();
+
+            // ★ 构造时样式（DynamicResource）可能还没套上，字体会回落到默认值、量出来偏窄；
+            //   Loaded 时再量一次 —— 那时 FontSize=13 与字体都已确定。
+            Loaded += (s, e) => UpdateAutoWidth();
         }
 
         private static void OnVisualChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is MacroDropDown c) c.UpdateSelectedText();
+            if (d is MacroDropDown c)
+            {
+                c.UpdateSelectedText();
+                c.UpdateAutoWidth();
+            }
         }
 
         private void UpdateSelectedText()
@@ -65,6 +82,44 @@ namespace LvchaxsBS_Macro.Controls
 
             int i = SelectedIndex;
             PART_SelectedText.Text = i >= 0 && i < arr.Length ? arr[i] : arr[0];
+        }
+
+        /// <summary>
+        /// 宽度跟着**选项里最长的那一项**走（不是跟着当前选中项）——
+        /// 否则选到长名字时会被裁掉，切回短名字又缩回去，宽度跳来跳去。
+        /// <para>
+        /// ★ 边界由 XAML 的 <c>MinWidth</c> / <c>MaxWidth</c> 控制（WPF 布局会自动钳制），
+        ///   这里只管把"内容需要多宽"算出来。超长的宏名会被 <c>TextTrimming</c> 显示成省略号。
+        /// </para>
+        /// </summary>
+        private void UpdateAutoWidth()
+        {
+            if (PART_SelectedText == null) return;
+
+            var arr = ItemsSource;
+            if (arr == null || arr.Length == 0) return;
+
+            double widest = 0;
+            foreach (string? item in arr)
+            {
+                if (string.IsNullOrEmpty(item)) continue;
+
+                var probe = new TextBlock
+                {
+                    FontFamily = PART_SelectedText.FontFamily,
+                    FontSize = PART_SelectedText.FontSize,
+                    FontStyle = PART_SelectedText.FontStyle,
+                    FontWeight = PART_SelectedText.FontWeight,
+                    FontStretch = PART_SelectedText.FontStretch,
+                    Text = item,
+                };
+                probe.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                if (probe.DesiredSize.Width > widest) widest = probe.DesiredSize.Width;
+            }
+
+            if (widest <= 0) return;
+
+            Width = Math.Ceiling(widest + ChromeWidth);
         }
 
         private void MainButton_Click(object sender, RoutedEventArgs e)

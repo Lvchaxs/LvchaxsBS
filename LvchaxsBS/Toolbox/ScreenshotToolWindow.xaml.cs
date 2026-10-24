@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using LvchaxsBS.Helpers;
+using LvchaxsBS.Services.Hooks;
 using WinColor = System.Windows.Media.Color;
 using WinPoint = System.Windows.Point;
 using WinRect = System.Windows.Shapes.Rectangle;
@@ -131,7 +134,6 @@ namespace LvchaxsBS.Toolbox
         private bool _isMouseDown = false;
 
         private CombinedGeometry _maskClipGeometry;
-        private bool _hasHole = false;
 
         private const int MAGNIFIER_COLS = 13;
         private const int MAGNIFIER_ROWS = 7;
@@ -156,9 +158,7 @@ namespace LvchaxsBS.Toolbox
         private readonly double _maskOffsetX;
         private readonly double _maskOffsetY;
 
-        private bool _isPreCaptured = false;
         private WinPoint _currentMousePosition;
-
         private bool _isDraggingSelection = false;
         private WinPoint _dragStartPoint;
         private WinPoint _dragStartSelectionPos;
@@ -175,6 +175,21 @@ namespace LvchaxsBS.Toolbox
         private CopyMode _currentCopyMode = CopyMode.Coordinate;
         private WinColor _currentPixelColor = WinColor.FromRgb(0, 0, 0);
 
+        /// <summary>
+        /// 坐标显示模式：<c>false</c> = 屏幕坐标（默认），<c>true</c> = 游戏窗口客户区坐标。
+        /// <para>★ 由 <c>SHIFT</c> 切换；坐标行、区域行、Z/X 复制的内容都跟着它走。</para>
+        /// </summary>
+        private bool _useClientCoords = false;
+
+        private const string ScreenCoordLabel = "屏幕坐标";
+        private const string ClientCoordLabel = "客户区坐标";
+
+        /// <summary>SHIFT 正按着吗（配合 <see cref="_lastShiftDownTicks"/> 去重）。</summary>
+        private bool _shiftDown;
+
+        /// <summary>上一次 SHIFT 按下的时刻（毫秒）。</summary>
+        private long _lastShiftDownTicks;
+
         private WinRect[,] _magnifierPixels;
         private bool _magnifierInitialized = false;
 
@@ -185,6 +200,21 @@ namespace LvchaxsBS.Toolbox
         private int _lastCursorY = -1;
 
         private bool _isKeyboardResizing = false;
+
+        /// <summary>
+        /// ★ 同时只开一个截图窗口：全局热键是**右 Shift**，而窗口里的 SHIFT 又是「切换坐标模式」，
+        ///   按住/连按会不断补发 KeyDown —— 没有这道闸口就会一叠一叠地弹截图窗口。
+        /// </summary>
+        private static int _openFlag;
+
+        /// <summary>
+        /// 占用「打开截图窗口」的名额。已经开着返回 false，调用方就不该再 new。
+        /// <para>★ 原子操作：热键回调在钩子线程，和 UI 线程（按钮入口）会同时来抢。</para>
+        /// </summary>
+        public static bool TryEnter() => Interlocked.CompareExchange(ref _openFlag, 1, 0) == 0;
+
+        /// <summary>释放名额（窗口关掉 / 打开失败时）。</summary>
+        public static void Leave() => Interlocked.Exchange(ref _openFlag, 0);
 
         public WriteableBitmap CapturedImage { get; private set; }
         public Rect SelectionRectInfo { get; private set; }
@@ -217,6 +247,7 @@ namespace LvchaxsBS.Toolbox
 
             this.Loaded += OnLoaded;
             this.PreviewKeyDown += OnKeyDown;
+            this.PreviewKeyUp += OnKeyUp;
             this.MouseMove += OnMouseMove;
             this.MouseDown += OnMouseDown;
             this.MouseUp += OnMouseUp;
@@ -269,8 +300,6 @@ namespace LvchaxsBS.Toolbox
             ));
             MaskPath.Data = fullScreenRect;
             MaskPath.Fill = new SolidColorBrush(WinColor.FromArgb(120, 0, 0, 0));
-
-            _hasHole = false;
         }
 
         private void UpdateMaskHole(double x, double y, double width, double height, bool showHole)
@@ -284,11 +313,8 @@ namespace LvchaxsBS.Toolbox
                     _maskHeight
                 ));
                 MaskPath.Data = fullScreenRect;
-                _hasHole = false;
                 return;
             }
-
-            _hasHole = true;
 
             var outerRect = new RectangleGeometry(new Rect(
                 _maskOffsetX,
@@ -409,8 +435,6 @@ namespace LvchaxsBS.Toolbox
             _screenCapture = bitmap;
             _pixelData = pixelData;
             _stride = stride;
-
-            _isPreCaptured = true;
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -473,19 +497,115 @@ namespace LvchaxsBS.Toolbox
 
         private void UpdateSelectionCoord()
         {
-            if (_hasSelection)
-            {
-                int x1 = LogicalToPhysicalX(Math.Min(_startPoint.X, _endPoint.X));
-                int y1 = LogicalToPhysicalY(Math.Min(_startPoint.Y, _endPoint.Y));
-                int x2 = LogicalToPhysicalX(Math.Max(_startPoint.X, _endPoint.X));
-                int y2 = LogicalToPhysicalY(Math.Max(_startPoint.Y, _endPoint.Y));
-                SelectionCoord.Text = $"({x1}, {y1}, {x2}, {y2})";
-            }
-            else
-            {
-                SelectionCoord.Text = "(--, --, --, --)";
-            }
+            SelectionCoord.Text = $"({GetSelectionCoordText()})";
         }
+
+        /// <summary>
+        /// 选区四角的文本（<b>已按当前坐标模式折算</b>）：
+        /// 屏幕模式给屏幕值；客户区模式下四角都减掉客户区左上角，
+        /// 鼠标不在客户区内 / 没有游戏窗口 ⇒ <c>--, --, --, --</c>。
+        /// <para>
+        /// ★ 放大镜第二行和<b>选区上方那块黑标签</b>都读它，保证两处永远一致
+        ///   （以前标签自己拼屏幕坐标，切到客户区模式也不跟着变）。
+        /// </para>
+        /// </summary>
+        private string GetSelectionCoordText()
+        {
+            if (!_hasSelection) return "--, --, --, --";
+
+            int x1 = LogicalToPhysicalX(Math.Min(_startPoint.X, _endPoint.X));
+            int y1 = LogicalToPhysicalY(Math.Min(_startPoint.Y, _endPoint.Y));
+            int x2 = LogicalToPhysicalX(Math.Max(_startPoint.X, _endPoint.X));
+            int y2 = LogicalToPhysicalY(Math.Max(_startPoint.Y, _endPoint.Y));
+
+            if (_useClientCoords)
+            {
+                if (!TryGetClientOrigin(out int left, out int top) || !MouseInClientNow())
+                    return "--, --, --, --";
+
+                return $"{x1 - left}, {y1 - top}, {x2 - left}, {y2 - top}";
+            }
+
+            return $"{x1}, {y1}, {x2}, {y2}";
+        }
+
+        /// <summary>
+        /// 刷新坐标行与区域行（切模式时用：像素网格不用重画，只换文本）。
+        /// </summary>
+        private void UpdateCoordTexts()
+        {
+            SetCoordText(LogicalToPhysicalX(_currentMousePosition.X),
+                         LogicalToPhysicalY(_currentMousePosition.Y));
+            UpdateSelectionCoord();
+
+            // ★ 选区上方那块黑标签（[x1, y1, x2, y2]  W × H）也走同一套取值，跟着模式一起换
+            UpdateMask();
+        }
+
+        /// <summary>
+        /// 写坐标行：前面带当前模式的名字（「屏幕坐标 (x, y)」/「客户区坐标 (x, y)」）。
+        /// </summary>
+        private void SetCoordText(int physX, int physY)
+        {
+            if (!_useClientCoords)
+            {
+                MagnifierCoord.Text = $"{ScreenCoordLabel} ({physX}, {physY})";
+                return;
+            }
+
+            // 客户区模式：给不出坐标时**写明原因**，免得看起来像「按了没反应」
+            if (!TryGetClientOrigin(out _, out _))
+            {
+                MagnifierCoord.Text = $"{ClientCoordLabel} (无游戏窗口)";
+                return;
+            }
+
+            MagnifierCoord.Text = TryToClient(physX, physY, out int cx, out int cy)
+                ? $"{ClientCoordLabel} ({cx}, {cy})"
+                : $"{ClientCoordLabel} (--, --)";
+        }
+
+        /// <summary>
+        /// 游戏窗口客户区左上角（屏幕坐标系）拿得到吗。
+        /// <para>★ 用的就是截图/识别那套屏幕坐标（<c>WindowFocusService.LastBounds</c>），
+        ///   与放大镜里的像素坐标同一坐标系 ⇒ 直接相减即可，不用再做 DPI 换算。</para>
+        /// </summary>
+        private static bool TryGetClientOrigin(out int left, out int top)
+        {
+            left = 0;
+            top = 0;
+
+            if (!WindowFocusService.IsWindowPresent) return false;
+
+            var bounds = WindowFocusService.LastBounds;
+            if (bounds.Width <= 0 || bounds.Height <= 0) return false;
+
+            left = bounds.Left;
+            top = bounds.Top;
+            return true;
+        }
+
+        /// <summary>
+        /// 屏幕（物理）坐标 → 游戏窗口客户区内的坐标；没有游戏窗口或**不在客户区里** ⇒ false。
+        /// </summary>
+        private static bool TryToClient(int physX, int physY, out int clientX, out int clientY)
+        {
+            clientX = 0;
+            clientY = 0;
+
+            if (!TryGetClientOrigin(out int left, out int top)) return false;
+
+            var bounds = WindowFocusService.LastBounds;
+            clientX = physX - left;
+            clientY = physY - top;
+
+            return clientX >= 0 && clientY >= 0 && clientX < bounds.Width && clientY < bounds.Height;
+        }
+
+        /// <summary>当前鼠标在客户区内吗（客户区模式才有意义）。</summary>
+        private bool MouseInClientNow()
+            => TryToClient(LogicalToPhysicalX(_currentMousePosition.X),
+                           LogicalToPhysicalY(_currentMousePosition.Y), out _, out _);
 
         private string GetCurrentCopyText()
         {
@@ -494,6 +614,11 @@ namespace LvchaxsBS.Toolbox
                 case CopyMode.Coordinate:
                     int physX = LogicalToPhysicalX(_currentMousePosition.X);
                     int physY = LogicalToPhysicalY(_currentMousePosition.Y);
+
+                    // 客户区模式复制的就是客户区坐标（鼠标在客户区外 ⇒ 给不出值）
+                    if (_useClientCoords)
+                        return TryToClient(physX, physY, out int cx, out int cy) ? $"{cx}, {cy}" : "--, --";
+
                     return $"{physX}, {physY}";
                 case CopyMode.Region:
                     if (_hasSelection)
@@ -502,6 +627,15 @@ namespace LvchaxsBS.Toolbox
                         int y1 = LogicalToPhysicalY(Math.Min(_startPoint.Y, _endPoint.Y));
                         int x2 = LogicalToPhysicalX(Math.Max(_startPoint.X, _endPoint.X));
                         int y2 = LogicalToPhysicalY(Math.Max(_startPoint.Y, _endPoint.Y));
+
+                        if (_useClientCoords)
+                        {
+                            if (!TryGetClientOrigin(out int left, out int top) || !MouseInClientNow())
+                                return "--, --, --, --";
+
+                            return $"{x1 - left}, {y1 - top}, {x2 - left}, {y2 - top}";
+                        }
+
                         return $"{x1}, {y1}, {x2}, {y2}";
                     }
                     return "--, --, --, --";
@@ -821,11 +955,73 @@ namespace LvchaxsBS.Toolbox
                 CopyCurrentContent();
                 e.Handled = true;
             }
+            else if (e.Key == Key.LeftShift || e.Key == Key.RightShift)
+            {
+                e.Handled = true;
+
+                long now = Environment.TickCount64;
+
+                // ★★ 去重**不看 e.IsRepeat**（按住 Shift 时窗口焦点一变就会丢 KeyUp，
+                //   之后系统一直把 KeyDown 标成 IsRepeat ⇒ Shift 从此彻底失效），
+                //   改用「上次按下的时间」自己判：
+                //   · 按住不放 ⇒ 自动重复间隔只有几十毫秒 ⇒ 一直 < 400ms ⇒ 只切一次；
+                //   · 松手后（KeyUp 把 _shiftDown 复位）再按 ⇒ 立刻生效；
+                //   · KeyUp 丢了也没关系：隔 400ms 以上再按就当新的一次。
+                if (_shiftDown)
+                {
+                    if (now - _lastShiftDownTicks < 400)
+                    {
+                        _lastShiftDownTicks = now;
+                        return;
+                    }
+                }
+
+                _shiftDown = true;
+                _lastShiftDownTicks = now;
+
+                ToggleCoordMode();
+            }
             else if (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right ||
                      e.Key == Key.W || e.Key == Key.A || e.Key == Key.S || e.Key == Key.D)
             {
                 HandleArrowKeyMove(e.Key);
                 e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// SHIFT 松开：把「正按着」的标志复位，下次按下才能再切一次。
+        /// </summary>
+        private void OnKeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.LeftShift || e.Key == Key.RightShift)
+                _shiftDown = false;
+        }
+
+        /// <summary>
+        /// SHIFT：屏幕坐标 ⇄ 客户区坐标。
+        /// <para>
+        /// ★ 客户区坐标 = 屏幕坐标 − 游戏窗口客户区左上角；**只有鼠标在客户区内才有值**
+        ///   （在客户区外显示 <c>(--, --)</c>，区域同理），没有游戏窗口时也一样。
+        /// </para>
+        /// </summary>
+        private void ToggleCoordMode()
+        {
+            _useClientCoords = !_useClientCoords;
+
+            TipShift.Text = _useClientCoords ? "SHIFT：切换到屏幕坐标" : "SHIFT：切换到客户区坐标";
+
+            try
+            {
+                // ★ 用**此刻真实的光标位置**刷新：模式一换就出新的数，不用等下一次鼠标移动
+                if (GetCursorPos(out POINT pt))
+                    _currentMousePosition = new WinPoint(PhysicalToLogicalX(pt.X), PhysicalToLogicalY(pt.Y));
+
+                UpdateCoordTexts();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[截图] 切换坐标模式后刷新失败：{ex.Message}");
             }
         }
 
@@ -1057,7 +1253,7 @@ namespace LvchaxsBS.Toolbox
         {
             if (_screenCapture == null || _pixelData == null)
             {
-                MagnifierCoord.Text = $"({x}, {y})";
+                SetCoordText(x, y);
                 MagnifierColor.Text = "RGB: (加载中...)";
                 return;
             }
@@ -1080,7 +1276,7 @@ namespace LvchaxsBS.Toolbox
 
                 _currentPixelColor = GetPixelFast(x, y);
 
-                MagnifierCoord.Text = $"({x}, {y})";
+                SetCoordText(x, y);
                 MagnifierColor.Text = $"RGB: ({_currentPixelColor.R}, {_currentPixelColor.G}, {_currentPixelColor.B})";
 
                 double selX1 = 0, selY1 = 0, selX2 = 0, selY2 = 0;
@@ -1255,13 +1451,11 @@ namespace LvchaxsBS.Toolbox
                 SelectionBorder.Width = width;
                 SelectionBorder.Height = height;
 
-                int physX1 = LogicalToPhysicalX(x1);
-                int physY1 = LogicalToPhysicalY(y1);
-                int physX2 = LogicalToPhysicalX(x2);
-                int physY2 = LogicalToPhysicalY(y2);
                 int physWidth = LogicalToPhysicalX((int)width);
                 int physHeight = LogicalToPhysicalY((int)height);
-                SizeText.Text = $"[{physX1}, {physY1}, {physX2}, {physY2}]  {physWidth} × {physHeight}";
+
+                // ★ 坐标部分与放大镜第二行同源（跟随屏幕/客户区模式）；宽高是差值，两种模式下一样
+                SizeText.Text = $"[{GetSelectionCoordText()}]  {physWidth} × {physHeight}";
 
                 SizeLabel.Visibility = Visibility.Visible;
                 SizeLabel.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
@@ -1398,8 +1592,12 @@ namespace LvchaxsBS.Toolbox
 
         protected override void OnClosed(EventArgs e)
         {
+            // ★ 双保险：窗口自己关掉时也把名额放掉（万一调用方没走 Leave）
+            Leave();
+
             this.Loaded -= OnLoaded;
             this.PreviewKeyDown -= OnKeyDown;
+            this.PreviewKeyUp -= OnKeyUp;
             this.MouseMove -= OnMouseMove;
             this.MouseDown -= OnMouseDown;
             this.MouseUp -= OnMouseUp;

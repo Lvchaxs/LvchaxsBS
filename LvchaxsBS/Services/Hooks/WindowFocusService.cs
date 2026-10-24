@@ -231,6 +231,34 @@ namespace LvchaxsBS.Services.Hooks
 
         public static bool IsTargetFocused => _lastFocused && _lastWindowExists;
 
+        /// <summary>
+        /// 纯查询：**此刻**的前台窗口是不是目标（游戏）窗口。
+        ///
+        /// <para>
+        /// ★★ 与 <see cref="IsTargetFocused"/> 的区别：那个读的是轮询缓存（非焦点时一秒才刷一次，
+        ///   可能滞后）。这个直接查 Win32，用于「用户刚把游戏切到前台就按触发键」这种时刻。
+        /// </para>
+        /// <para>
+        /// ★★ 而且它**不更新状态、不触发 <see cref="FocusChanged"/>、不碰 DispatcherTimer** ——
+        ///   所以在**键盘钩子回调那种非 UI 线程**里也能安全调用。
+        ///   ⛔ 别在这里改用 <see cref="Reevaluate"/>：那个会 raise 事件 + 操作 DispatcherTimer，
+        ///      从钩子线程调会跨线程抛异常。
+        /// </para>
+        /// </summary>
+        public static bool IsTargetFocusedNow()
+        {
+            try
+            {
+                IntPtr fg = GetForegroundWindow();
+                if (fg == IntPtr.Zero) return _lastFocused;   // 切换瞬间拿不到前台窗口 → 退回缓存
+                return IsTargetProcess(fg);
+            }
+            catch
+            {
+                return _lastFocused;
+            }
+        }
+
         public static bool IsWindowPresent => _lastWindowExists;
 
         /// <summary>

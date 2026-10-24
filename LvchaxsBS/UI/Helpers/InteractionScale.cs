@@ -66,8 +66,58 @@ namespace LvchaxsBS.UI.Helpers
         /// <summary>常态缩放值。</summary>
         private const double Neutral = 1.0;
 
+        /// <summary>判定「鼠标刚才动过」的时间窗（毫秒）。</summary>
+        private const double MouseActiveMs = 150;
+
+        /// <summary>
+        /// 最近一次鼠标输入（移动 / 按键 / 滚轮）的时间戳。
+        /// 用来区分两件事：**鼠标移到元素上** vs **元素自己跑到静止的鼠标下面**。
+        /// </summary>
+        private static long _lastMouseInputTicks;
+
+        static InteractionScale()
+        {
+            try
+            {
+                InputManager.Current.PreProcessInput += (_, e) =>
+                {
+                    if (e.StagingItem?.Input is MouseEventArgs)
+                        _lastMouseInputTicks = Environment.TickCount64;
+                };
+            }
+            catch
+            {
+                // 拿不到 InputManager（理论上不会）：退化成"总是播动画"，行为和改动前一致
+            }
+        }
+
+        /// <summary>
+        /// 鼠标是否刚刚动过（有真实的鼠标输入）。
+        /// false = 是**元素**自己跑到静止的鼠标下面（列表重排 / 容器重建 / 弹窗出现…），
+        /// 这种情况不该再播一次悬停动画 —— 否则"点头像置顶"会看到缩放动画被播了两遍。
+        /// </summary>
+        private static bool MouseMovedRecently()
+            => Environment.TickCount64 - _lastMouseInputTicks < MouseActiveMs;
+
         /// <summary>判定"数值没变"的容差，用来跳过无意义的动画。</summary>
         private const double Epsilon = 0.0005;
+
+        /// <summary>
+        /// 所有缩放动画共用的缓动曲线。
+        /// <para>
+        /// ★ 原来是每次 <see cref="AnimateTo"/> 都 <c>new CubicEase</c>（一次悬停进出 = 4 个动画 = 4 个对象）。
+        ///   <see cref="Freezable"/> 冻结后可以安全地被多条动画同时引用，这里做成静态只读，
+        ///   行为与曲线完全不变，只是不再往 GC 里丢垃圾。
+        /// </para>
+        /// </summary>
+        private static readonly IEasingFunction ScaleEase = CreateFrozenEase();
+
+        private static IEasingFunction CreateFrozenEase()
+        {
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            ease.Freeze();
+            return ease;
+        }
 
         // ============ 附加属性 ============
 
@@ -146,6 +196,7 @@ namespace LvchaxsBS.UI.Helpers
             owner.MouseLeave += state.OnMouseLeave;
             owner.PreviewMouseLeftButtonDown += state.OnMouseDown;
             owner.PreviewMouseLeftButtonUp += state.OnMouseUp;
+            owner.LostMouseCapture += state.OnLostMouseCapture;
             owner.Unloaded += state.OnUnloaded;
         }
 
@@ -159,6 +210,7 @@ namespace LvchaxsBS.UI.Helpers
             owner.MouseLeave -= state.OnMouseLeave;
             owner.PreviewMouseLeftButtonDown -= state.OnMouseDown;
             owner.PreviewMouseLeftButtonUp -= state.OnMouseUp;
+            owner.LostMouseCapture -= state.OnLostMouseCapture;
             owner.Unloaded -= state.OnUnloaded;
 
             state.Reset();
@@ -180,16 +232,37 @@ namespace LvchaxsBS.UI.Helpers
 
             public void OnMouseEnter(object sender, MouseEventArgs e)
             {
+                ClearStalePressed();
+
                 if (e.LeftButton == MouseButtonState.Pressed && _pressed)
                     return;   // 按下状态优先，别被进出的悬停动画顶掉
 
-                AnimateTo(GetHoverScale(_owner) > 0 ? GetHoverScale(_owner) : Neutral, HoverMs);
+                double hover = GetHoverScale(_owner) > 0 ? GetHoverScale(_owner) : Neutral;
+
+                // ★ 鼠标没动过 → 是元素自己跑到鼠标下面（列表重排后卡片换了位置），
+                //   直接落到悬停值、不播动画；不这么做的话，重排瞬间旧卡片 MouseLeave（缩回）
+                //   + 新卡片 MouseEnter（放大）会各播一次，看着就是"动画又来了一遍"。
+                if (!MouseMovedRecently())
+                {
+                    ApplyInstantly(hover);
+                    return;
+                }
+
+                AnimateTo(hover, HoverMs);
             }
 
             public void OnMouseLeave(object sender, MouseEventArgs e)
             {
+                ClearStalePressed();
+
                 if (_pressed)
                     return;   // 按住拖出时保持按下反馈，等松开再回弹
+
+                if (!MouseMovedRecently())
+                {
+                    ApplyInstantly(Neutral);   // 同 OnMouseEnter：元素挪走了就别再演一遍
+                    return;
+                }
 
                 AnimateTo(Neutral, HoverMs);
             }
@@ -221,6 +294,34 @@ namespace LvchaxsBS.UI.Helpers
                 AnimateTo(target, ReleaseMs);
             }
 
+            public void OnLostMouseCapture(object sender, MouseEventArgs e)
+            {
+                // 捕获丢了（弹窗/提示抢走、按钮被换掉…）→ 这一次按下已经结束了，
+                // 按"鼠标现在在哪"回弹，免得卡在按下态
+                ClearStalePressed();
+                if (_pressed) return;
+
+                AnimateTo(_owner.IsMouseOver && GetHoverScale(_owner) > 0
+                    ? GetHoverScale(_owner)
+                    : Neutral, ReleaseMs);
+            }
+
+            /// <summary>
+            /// 清掉「已经不成立的按下状态」。
+            /// <para>
+            /// ★ <see cref="OnMouseUp"/> 不一定收得到（复制后弹提示、按钮被换掉、捕获被抢…），
+            ///   漏一次 <c>_pressed</c> 就永远是 true，之后 <see cref="OnMouseLeave"/> 开头那句
+            ///   <c>if (_pressed) return;</c> 会把复位全部挡掉 ——
+            ///   表现就是「点一下之后图标一直是大号的，鼠标移开也不回去」。
+            ///   所以每次进出都以**鼠标按键的真实状态**为准：左键已经松开了，按下态就该结束。
+            /// </para>
+            /// </summary>
+            private void ClearStalePressed()
+            {
+                if (_pressed && Mouse.LeftButton != MouseButtonState.Pressed)
+                    _pressed = false;
+            }
+
             public void OnUnloaded(object sender, RoutedEventArgs e) => Reset();
 
             /// <summary>停掉动画并落回常态（元素卸载、行为被移除时调用）。</summary>
@@ -244,6 +345,29 @@ namespace LvchaxsBS.UI.Helpers
                 {
                     // 变换已被冻结（理论上不会走到，防御性兜底）：保持现状即可
                 }
+            }
+
+            /// <summary>
+            /// 不播动画、直接落到指定缩放值（元素被动挪到 / 挪出鼠标下方时用）。
+            /// 停掉在飞的动画再写值，否则动画的 HoldEnd 会把写进去的值顶掉。
+            /// </summary>
+            private void ApplyInstantly(double value)
+            {
+                var scale = EnsureScale();
+
+                try
+                {
+                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+                }
+                catch (InvalidOperationException)
+                {
+                    // 变换已冻结：写不了就算了，交互本身不受影响
+                }
+
+                scale.ScaleX = value;
+                scale.ScaleY = value;
+                _target = value;
             }
 
             // ===== 缩放目标 =====
@@ -330,17 +454,16 @@ namespace LvchaxsBS.UI.Helpers
 
                 _target = to;
 
-                var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
                 var duration = new Duration(TimeSpan.FromMilliseconds(durationMs));
 
                 // 不 Stop 旧动画、也不写 From：BeginAnimation 默认走 SnapshotAndReplace，
                 // 新动画以"当前实际值"为起点，所以快速打断也是平滑续播而不是从头跳。
-                BeginSafely(scale, ScaleTransform.ScaleXProperty, to, duration, ease);
-                BeginSafely(scale, ScaleTransform.ScaleYProperty, to, duration, ease);
+                BeginSafely(scale, ScaleTransform.ScaleXProperty, to, duration);
+                BeginSafely(scale, ScaleTransform.ScaleYProperty, to, duration);
             }
 
             private static void BeginSafely(Animatable target, DependencyProperty prop,
-                                            double to, Duration duration, IEasingFunction ease)
+                                            double to, Duration duration)
             {
                 try
                 {
@@ -348,7 +471,7 @@ namespace LvchaxsBS.UI.Helpers
                     {
                         To = to,
                         Duration = duration,
-                        EasingFunction = ease
+                        EasingFunction = ScaleEase
                     });
                 }
                 catch (InvalidOperationException)

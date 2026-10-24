@@ -3,10 +3,13 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
+      xmlns:controls="clr-namespace:LvchaxsBS_Macro.Controls"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Background="Transparent"
       Tag="FullScreen">
+
 
     <!--
         ★ Tag="FullScreen" 是给**宿主**配置容器页看的信号（字符串约定，不引用宿主类型）：
@@ -26,9 +29,17 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="255"/>
+        </Grid.ColumnDefinitions>
 
         <!-- ============ 顶栏 ============ -->
+        <!-- ★ 只跨前 2 列（编辑器 + 分隔条）：右侧「指令面板」那一列从**窗口最顶部**开始，
+             顶栏在面板左边让出来 ⇒ 面板顶部和「返回列表」那一排齐平。 -->
         <Border Grid.Row="0"
+                Grid.ColumnSpan="2"
                 Background="{DynamicResource CardBackgroundBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1"
@@ -38,39 +49,203 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <!-- ★ 右侧：主题切换在「返回列表」左边 -->
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- ★ 保存：矢量图标按钮（软盘），已保存灰显禁用、有改动才可点 -->
+                <Button x:Name="SaveButton"
+                        Width="28" Height="28"
+                        Padding="0" Cursor="Arrow"
+                        Style="{DynamicResource FlatButtonStyleRound6}"
+                        Click="SaveButton_Click">
+                    <Viewbox Width="19" Height="19" Stretch="Uniform">
+                        <Grid Width="16" Height="16">
+                            <!-- 软盘外框（圆角版：R1 圆角 + 圆头圆角连接） -->
+                            <Path Data="M 2.6,2.4 h 8.1 l 2.7,2.7 v 8.5 a 1,1 0 0 1 -1,1 h -9.8 a 1,1 0 0 1 -1,-1 v -10.2 a 1,1 0 0 1 1,-1 z"
+                                  Stroke="{Binding Foreground, ElementName=SaveButton}"
+                                  StrokeThickness="1.35" Fill="Transparent"
+                                  StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <!-- 顶部标签（圆角矩形） -->
+                            <Path Data="M 4.6,2.6 h 4.6 a 0.9,0.9 0 0 1 0.9,0.9 v 2.4 h -6.4 v -2.4 a 0.9,0.9 0 0 1 0.9,-0.9 z"
+                                  Stroke="{Binding Foreground, ElementName=SaveButton}"
+                                  StrokeThickness="1.35" Fill="Transparent"
+                                  StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <!-- 底部标签条（圆头横线） -->
+                            <Path Data="M 4.9,9.9 h 6.2"
+                                  Stroke="{Binding Foreground, ElementName=SaveButton}"
+                                  StrokeThickness="1.35" Fill="Transparent"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                        </Grid>
+                    </Viewbox>
+                </Button>
+
+                <Button x:Name="ThemeButton"
+                        Grid.Column="6"
+                        Width="28" Height="28"
+                        Margin="0,0,8,0"
+                        Padding="0" Cursor="Arrow"
+                        Style="{DynamicResource FlatButtonStyleRound6}"
+                        Click="ThemeButton_Click">
+                    <Grid Width="20" Height="20">
+                        <Viewbox x:Name="ThemeIconSun" Width="20" Height="20">
+                            <Grid Width="24" Height="24">
+                                <Ellipse Width="9" Height="9" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                         Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1.5" Fill="Transparent"/>
+                                <Path Data="M 12,2 L 12,5 M 12,22 L 12,19 M 2,12 L 5,12 M 22,12 L 19,12 M 5,5 L 7,7 M 19,19 L 17,17 M 19,5 L 17,7 M 5,19 L 7,17"
+                                      Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1.5"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            </Grid>
+                        </Viewbox>
+                        <Viewbox x:Name="ThemeIconMoon" Width="18" Height="18" Visibility="Collapsed">
+                            <Grid Width="24" Height="24">
+                                <Path Data="M 17,4 A 9,9 0 1 0 17,20 A 8,8 0 1 1 17,4 Z"
+                                      Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1.5"
+                                      StrokeLineJoin="Round" Fill="Transparent"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Path.RenderTransform>
+                                        <TransformGroup>
+                                            <RotateTransform Angle="-45" CenterX="12" CenterY="12"/>
+                                            <TranslateTransform X="-3" Y="0"/>
+                                        </TransformGroup>
+                                    </Path.RenderTransform>
+                                </Path>
+                            </Grid>
+                        </Viewbox>
+                    </Grid>
+                </Button>
+
+                <!-- ★ 中英转换：正方形图标按钮（和 UID 卡片图标按钮一样大），图标 = 中/英
+                     （「中」左上、「英」右下、中间一条斜杠分隔） -->
+                <Button x:Name="TranslateButton"
+                        Grid.Column="2"
+                        Width="28" Height="28"
+                        Margin="8,0,0,0"
+                        Padding="0"
+                        Cursor="Arrow"
+                        Style="{DynamicResource FlatButtonStyleRound6}"
+                        Click="TranslateButton_Click">
+                    <Viewbox Width="16" Height="16" Stretch="Uniform">
+                        <Grid Width="16" Height="16">
+                            <!-- 斜杠（分隔线） -->
+                            <Line X1="2" Y1="14" X2="14" Y2="2"
+                                  Stroke="{Binding Foreground, ElementName=TranslateButton}"
+                                  StrokeThickness="1.6"/>
+                            <!-- 左上「中」 -->
+                            <TextBlock Text="中" FontSize="7" FontWeight="SemiBold"
+                                       HorizontalAlignment="Left" VerticalAlignment="Top"
+                                       Margin="1,0,0,0"
+                                       Foreground="{Binding Foreground, ElementName=TranslateButton}"/>
+                            <!-- 右下「英」 -->
+                            <TextBlock Text="英" FontSize="7" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                       Margin="0,0,1,0"
+                                       Foreground="{Binding Foreground, ElementName=TranslateButton}"/>
+                        </Grid>
+                    </Viewbox>
+                </Button>
+
+                <!-- ★ 编辑区缩放：减号 + 百分比 + 加号（默认 100%，改的是编辑器字号，持久化） -->
+                <StackPanel Grid.Column="4"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="10,0,0,0">
+                    <Button x:Name="ZoomOutButton"
+                            Content="−" Width="22" Height="22"
+                            Padding="0" Cursor="Arrow"
+                            FontSize="14" FontWeight="Bold"
+                            Style="{DynamicResource FlatButtonStyleRound6}"
+                            Click="ZoomOut_Click"/>
+                    <TextBlock x:Name="ZoomLabel"
+                               Text="100%"
+                               MinWidth="42"
+                               TextAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    <Button x:Name="ZoomInButton"
+                            Content="＋" Width="22" Height="22"
+                            Padding="0" Cursor="Arrow"
+                            FontSize="14" FontWeight="Bold"
+                            Style="{DynamicResource FlatButtonStyleRound6}"
+                            Click="ZoomIn_Click"/>
+                </StackPanel>
+
+                <!-- ★★ 标题「指令编辑 · 宏名」做成**可点的下拉按钮**：
+                     点它 → 列出当前文件夹下**全部宏** → 选一条直接切过去编辑，
+                     不用退回列表页再点进来（用户要求）。
+                     有未保存改动时先弹「是否保存」，没改动直接切。 -->
+                <Button x:Name="TitleButton"
+                        Grid.Column="5"
+                        Height="28"
+                        MaxWidth="320"
+                        Padding="10,0"
+                        Cursor="Hand"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Style="{DynamicResource FlatButtonStyleRound6}"
+                        Click="TitleButton_Click">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="TitleText"
+                                   Text="指令编辑"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{Binding Foreground, ElementName=TitleButton}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center"/>
+                        <!-- ▾ 箭头：提示这是个下拉 -->
+                        <Path Data="M 0,0 L 4,4.5 L 8,0"
+                              Stroke="{Binding Foreground, ElementName=TitleButton}"
+                              StrokeThickness="1.3"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Fill="Transparent"
+                              Margin="6,0,0,0"
+                              VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- ★ 宏下拉列表的宿主容器（代码里填内容；默认隐藏） -->
+                <Popup x:Name="MacroMenuPopup"
+                       PlacementTarget="{Binding ElementName=TitleButton}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       AllowsTransparency="True"
+                       Focusable="False"
+                       PopupAnimation="Fade">
+                    <Border Background="{DynamicResource AppBackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="4"
+                            MinWidth="200"
+                            MaxHeight="360">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="MacroMenuList"/>
+                        </ScrollViewer>
+                    </Border>
+                </Popup>
+
                 <Button x:Name="BackButton"
-                        Content="返回列表"
+                        Grid.Column="7"
+                        Content="返回"
                         Style="{DynamicResource FlatButtonStyleRound6}"
                         Height="28" Padding="12,0"
                         FontSize="12"
-                        ToolTip="回到宏列表"
                         Click="BackButton_Click"/>
-
-                <TextBlock x:Name="TitleText"
-                           Grid.Column="1"
-                           Text="指令编辑"
-                           FontSize="14" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           TextTrimming="CharacterEllipsis"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
-                <Button x:Name="SaveButton"
-                        Grid.Column="2"
-                        Content="保存"
-                        Style="{DynamicResource SettingsButtonStyleRound6}"
-                        Height="28" MinWidth="64"
-                        FontSize="12"
-                        ToolTip="保存指令（Ctrl+S）"
-                        Click="SaveButton_Click"/>
             </Grid>
         </Border>
 
-        <!-- ============ 代码区：行号列 + 编辑框（撑满剩余全部高度） ============ -->
+        <!-- ============ 代码区：AvalonEdit 编辑器（撑满剩余全部高度） ============ -->
+        <!-- ★ AvalonEdit：自带行号 + 虚拟化 + 语法高亮，行数再多全选/滚动都顺，
+             根治原生 TextBox 大文本卡顿。 -->
         <Border Grid.Row="1"
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
                 Margin="0"
                 Background="{DynamicResource CardBackgroundBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
@@ -83,110 +258,87 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- ============ 编辑区（行号 | 灰线 | 代码） ============ -->
-                <Grid Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                        <!-- ★ 三列必须全定义：行号列 / 1px 灰线 / 代码区（漏一列元素就会被挤到错误位置） -->
-                        <ColumnDefinition Width="Auto"/>   <!-- 行号列 -->
-                        <ColumnDefinition Width="1"/>      <!-- 灰线 -->
-                        <ColumnDefinition Width="*"/>      <!-- 代码区 -->
-                    </Grid.ColumnDefinitions>
-
-                    <!-- 行号列（min-width 46、右对齐、随编辑区竖向滚动平移 —— 同 WebSim 的 sticky ln）
-                     ★★ 必须放在 Canvas 里：Canvas 用子元素 DesiredSize 排列（不约束高度），
-                        TextBlock 才能拿到**全部行的高度**；直接放 Border/Grid 里会被压成可视高度
-                        （只画出 21 行，往下滚也出不来 22、23…）。 -->
-                    <Border Grid.Column="0"
-                            Background="{DynamicResource CardBackgroundBrush}"
-                            MinWidth="46"
-                            ClipToBounds="True">
-                        <Canvas x:Name="LineNumbersCanvas">
-                            <!-- Canvas.Top=8 与编辑区 Padding 的上边 8 对齐（两边行高才同起点） -->
-                            <TextBlock x:Name="LineNumbers"
-                                       Canvas.Top="8"
-                                       Canvas.Right="10"
+                <!-- ============ 编辑器（AvalonEdit） ============ -->
+                <!-- ★ 水平滚动条：**Disabled = 关掉**（2026-10-20，用户决定）。
+                     为什么关：宿主的全局隐式 ScrollBar 样式只适配竖条（模板里 Grid/Track 写死 Width=6、
+                     Track 钉死 IsDirectionReversed=True），水平滚动条套上去整条轨道被压成 6px 宽，
+                     滑块按可视比例一算不足 6px ⇒ 右下角只剩一个白色小方块。
+                     与其为这一条滚动条去动全应用的共享样式（试过两次，都让别处观感变糟），不如直接不要它。
+                     ★ 需要横向看长行时用 **Shift + 滚轮**，或用方向键/光标移动。
+                     ★ 宿主全局样式保持原样，一个字节都没改。 -->
+                <avalonedit:TextEditor x:Name="Editor"
+                                       Grid.Row="0"
                                        FontFamily="Consolas"
                                        FontSize="13"
-                                       TextAlignment="Right"
-                                       Foreground="{DynamicResource TextDisabledBrush}">
-                                <TextBlock.RenderTransform>
-                                    <TranslateTransform x:Name="LineNumbersShift" Y="0"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Canvas>
-                    </Border>
+                                       Padding="8"
+                                       Background="Transparent"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       HorizontalScrollBarVisibility="Disabled"
+                                       VerticalScrollBarVisibility="Auto"
+                                       ShowLineNumbers="True"
+                                       WordWrap="False"
+                                       TextChanged="Editor_TextChanged"
+                                       PreviewKeyDown="Editor_PreviewKeyDown"/>
 
-                    <!-- 分隔线：行号列与代码区之间的一条灰线（1px 竖线，通到顶/底） -->
-                    <Border Grid.Column="1"
-                            Background="{DynamicResource BorderBrush}"
-                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <!-- ============ 底部状态条：左边报错、右边行列与指令数 ============ -->
+                <Border Grid.Row="1"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="0,1,0,0"
+                        Padding="10,5"
+                        Background="Transparent">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- 代码区：高亮层（下） + 编辑层（上，文字透明） -->
-                    <Grid Grid.Column="2">
+                        <TextBlock x:Name="ErrorText"
+                                   Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource DangerBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   HorizontalAlignment="Left"
+                                   Margin="0,0,12,0"/>
 
-                        <!-- ① 高亮层：显示**着色**后的文本，不接收输入。
-                             ★ 放在 Canvas 里（不压高度）⇒ 行数再多也画得出来；
-                             ★ Canvas.Left/Top = 12/8，与编辑层 Padding 完全对齐（否则文字会重影）。 -->
-                        <Canvas x:Name="HighlightCanvas" IsHitTestVisible="False">
-                            <TextBlock x:Name="Highlight"
-                                       Canvas.Left="12"
-                                       Canvas.Top="8"
-                                       FontFamily="Consolas"
-                                       FontSize="13"
-                                       TextWrapping="NoWrap"
-                                       Foreground="{DynamicResource TextPrimaryBrush}">
-                                <TextBlock.RenderTransform>
-                                    <TranslateTransform x:Name="HighlightShift" X="0" Y="0"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Canvas>
+                        <!-- ★ 行列挪到左下角（右下角只留 按下/抬起/条数/时长） -->
+                        <TextBlock x:Name="CaretText"
+                                   Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,12,0"/>
 
-                        <!-- ② 编辑层：文字设成透明（颜色交给高亮层），只留光标与选区。
-                             ★ 行高不用显式设 —— TextBox 不支持 LineHeight，让行号列和它一样
-                               用 Consolas 13 的**自然行高**（同字体同字号 ⇒ 行高必然一致）。 -->
-                        <TextBox x:Name="Editor"
-                                 FontFamily="Consolas"
-                                 FontSize="13"
-                                 Padding="12,8,16,8"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 Foreground="Transparent"
-                                 CaretBrush="{DynamicResource TextPrimaryBrush}"
-                                 TextWrapping="NoWrap"
-                                 AcceptsReturn="True"
-                                 AcceptsTab="True"
-                                 VerticalContentAlignment="Top"
-                                 VerticalScrollBarVisibility="Auto"
-                                 HorizontalScrollBarVisibility="Auto"
-                                 TextChanged="Editor_TextChanged"
-                                 KeyDown="Editor_KeyDown"
-                                 SelectionChanged="Editor_SelectionChanged"/>
-                        </Grid>
+                        <TextBlock x:Name="StatusText"
+                                   Grid.Column="2"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Right"/>
                     </Grid>
+                </Border>
+            </Grid>
+        </Border>
 
-                    <!-- ============ 底部状态条：左边报错、右边行列与指令数 ============ -->
-                    <Border Grid.Row="1"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="0,1,0,0"
-                            Padding="10,5"
-                            Background="Transparent">
-                        <Grid>
-                            <TextBlock x:Name="ErrorText"
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource DangerBrush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       HorizontalAlignment="Left"
-                                       Margin="0,0,12,0"/>
+        <!-- ============ 右侧：指令工具面板（可折叠 + 可拖宽） ============ -->
+        <GridSplitter Grid.Row="1"
+                      Grid.Column="1"
+                      Width="5"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Background="Transparent"
+                      ResizeDirection="Columns"
+                      ShowsPreview="True"/>
 
-                            <TextBlock x:Name="StatusText"
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       HorizontalAlignment="Right"/>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </Border>
-        </Grid>
+        <!-- ★ 面板从**窗口最顶部**开始（Row=0 跨 2 行），
+             这样面板顶部与「返回列表」那一排齐平；顶栏容器在面板左边让出来。 -->
+        <controls:MacroCommandToolPanel x:Name="ToolPanel"
+                                        Grid.Row="0"
+                                        Grid.RowSpan="2"
+                                        Grid.Column="2"
+                                        MinWidth="180"
+                                        Margin="5,0,0,0"/>
+    </Grid>
 </Page>

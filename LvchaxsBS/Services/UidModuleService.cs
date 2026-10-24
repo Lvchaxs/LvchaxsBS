@@ -32,8 +32,13 @@ namespace LvchaxsBS.Services
         /// <summary>约定入口方法：返回要嵌入宿主内容区的界面。</summary>
         private const string EntryMethodName = "GetAccountManagerView";
 
+        /// <summary>约定方法名（可选提供）：后台线程预读账号数据，见 <see cref="PreloadAccountData"/>。</summary>
+        private const string PreloadMethodName = "PreloadData";
+
         private static MethodInfo? _getView;
         private static MethodInfo? _showHelp;
+        private static MethodInfo? _preload;
+
         private static FrameworkElement? _view;
         private static bool _probed;
 
@@ -48,6 +53,26 @@ namespace LvchaxsBS.Services
 
         /// <summary>用户在模块的帮助窗里点了『关闭工具』（宿主要切回自己的页面）。</summary>
         public static event EventHandler? CloseToolRequested;
+
+        /// <summary>
+        /// 重新探测一次（<c>LvchaxsBS_uid.dll</c> 补上后热加载用）。
+        /// <para>
+        /// ★ 只在**之前没装**的情况下调：把探测标志和已取到的入口全部清掉重来。
+        ///   已经创建过的界面实例（<see cref="_view"/>）也一并丢弃 —— 它属于旧程序集/旧文件，
+        ///   和刚下载下来的那份不是同一份东西。
+        /// </para>
+        /// </summary>
+        public static void Reload()
+        {
+            _probed = false;
+            IsAvailable = false;
+            _getView = null;
+            _showHelp = null;
+            _preload = null;
+            _view = null;
+
+            Probe();
+        }
 
         /// <summary>
         /// 探测并载入模块。可重复调用，只真正执行一次。
@@ -90,6 +115,17 @@ namespace LvchaxsBS.Services
                 _getView = getView;
                 IsAvailable = true;
                 Debug.WriteLine("[UID] 模块加载成功");
+
+                // 「数据预热」入口（可选）：账号多时读盘 + 解密要好几秒，
+                // 主界面在打开 UID 前会先在后台线程调它，好让加载动画能流畅地转。
+                // 旧版 dll 没这个方法 → 拿不到 → 跳过，行为与以前完全一致。
+                var preload = type.GetMethod(
+                    PreloadMethodName, BindingFlags.Public | BindingFlags.Static);
+                if (preload != null && preload.GetParameters().Length == 0)
+                {
+                    _preload = preload;
+                    Debug.WriteLine("[UID] 已发现数据预热入口");
+                }
 
                 // 「使用说明」入口：模块页内那个「!」按钮已挪到宿主标题栏，
                 // 由宿主反射调用这里的 ShowHelp()（模块可选提供，没有就不给标题栏加按钮）。
@@ -188,11 +224,58 @@ namespace LvchaxsBS.Services
                 {
                     Debug.WriteLine("[UID] 模块未提供 SetHostFocusProvider，登录过程不会因失焦点暂停");
                 }
+
+                // 用户输入空闲时间也交给模块：登录后的常驻人数监控会按 ESC / Enter 自动回到聊天界面，
+                // 用户自己正在操作（翻背包、看地图、打字…）时按键会和他打架 —— 有了这个，
+                // 模块就能在"用户刚动过键鼠"的这段时间里只检测、不按键，把操作空间让出来。
+                // 数据来自 UserInputMonitor（复用键鼠钩子，模拟按键不算用户操作）。
+                var setUserInput = type.GetMethod("SetHostUserInputProvider", BindingFlags.Public | BindingFlags.Static);
+                if (setUserInput != null && setUserInput.GetParameters().Length == 1)
+                {
+                    setUserInput.Invoke(null, new object[]
+                    {
+                        new Func<int>(() => UserInputMonitor.IdleMs)
+                    });
+                    Debug.WriteLine("[UID] 已注入用户输入空闲时间");
+                }
+                else
+                {
+                    Debug.WriteLine("[UID] 模块未提供 SetHostUserInputProvider，监控按键不会给用户操作让路");
+                }
             }
             catch (Exception ex)
             {
                 IsAvailable = false;
                 Debug.WriteLine($"[UID] 模块加载失败：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 把账号数据（账号 + 分组）提前读进内存，供随后创建的界面直接取用。
+        ///
+        /// <para>
+        /// <b>必须在后台线程调用</b>：这一步是「读盘 + 逐条解密」，账号多时要几秒，
+        /// 放在 UI 线程上会把界面连同鼠标一起冻住。放到后台时 UI 线程是空的，
+        /// 加载覆盖层的动画才转得动。
+        /// </para>
+        /// <para>
+        /// 模块未提供该入口（旧版 dll）或读失败时静默返回 —— 界面随后会自己读一遍，
+        /// 只是没有预热那么快。
+        /// </para>
+        /// </summary>
+        public static void PreloadAccountData()
+        {
+            Probe();
+            if (!IsAvailable || _preload == null) return;
+
+            try
+            {
+                _preload.Invoke(null, null);
+            }
+            catch (Exception ex)
+            {
+                // 预热失败不影响主流程：界面自己会兜底读一次
+                Debug.WriteLine($"[UID] 数据预热失败（将回退到常规加载）：{ex.Message}");
             }
         }
 

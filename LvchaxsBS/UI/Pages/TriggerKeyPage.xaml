@@ -38,8 +38,40 @@
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        Margin="2"/>
-                                <ContentPresenter x:Name="contentPresenter"
-                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <ContentPresenter x:Name="contentPresenter" Grid.Row="0"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                    <!-- 禁用原因：这个键被谁占了（按钮内底部红色小字）。
+                                         没有文字时整条 Collapsed —— 普通键的排版和改动前完全一致。 -->
+                                    <TextBlock Grid.Row="1"
+                                               Text="{Binding Path=(helpers:KeyButtonState.DisabledOwner),
+                                                              RelativeSource={RelativeSource TemplatedParent}}"
+                                               FontSize="7.5"
+                                               FontWeight="Normal"
+                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"
+                                               HorizontalAlignment="Stretch"
+                                               TextAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               VerticalAlignment="Bottom"
+                                               Margin="1,0,1,2"
+                                               IsHitTestVisible="False">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -71,6 +103,30 @@
                                 <!-- 手型：这个键点一下会跳到占用它的功能（不是"禁止"） -->
                                 <Setter Property="Cursor" Value="Hand"/>
                                 <Setter TargetName="contentPresenter" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <!-- 共用：这个键已被其他宏占用，但宏之间允许共用同一个触发键 ——
+                                 观感同"禁用"（灰底红字 + 按钮底部占用者小字），但**可点**；
+                                 点中后 Tag 变 Selected，由上面的选中触发器接管配色。
+                                 放在 Occupied 之后：两者 Tag 互斥，不会同时命中。 -->
+                            <Trigger Property="Tag" Value="Shared">
+                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource Gray100Brush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Trigger>
+                            <!-- 组合键·未激活：看起来和"禁用"一样（红字灰底），但可点 -->
+                            <Trigger Property="Tag" Value="Combo">
+                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource Gray100Brush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Trigger>
+                            <!-- 组合键·已激活：与"当前选中键"完全同色（蓝底 + 蓝字 + 蓝边） -->
+                            <Trigger Property="Tag" Value="ComboActive">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PrimaryLightBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryDarkBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                <Setter Property="Cursor" Value="Hand"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

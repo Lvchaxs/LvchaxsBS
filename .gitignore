@@ -363,3 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 # WorkBuddy project memory
 .workbuddy/
+
+# 本地旁路编译临时目录（exe 在跑时编到这儿再拷回 bin）+ 一次性输出样例
+_buildtmp_host/
+_output/

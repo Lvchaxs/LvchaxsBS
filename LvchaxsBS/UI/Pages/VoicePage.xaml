@@ -115,10 +115,14 @@
             </StackPanel>
         </Border>
 
+        <!-- ★ PreviewMouseWheel：滚轮一格 = 一张角色卡片（和 UID 账号列表 / 首页功能卡 /
+             自定义宏列表统一手感）。本页卡片高度不一（空/荧固定 70、动态角色卡自适应高），
+             所以处理器是「吸附到卡片边界」而不是别处的写死 78px 一步。 -->
         <ScrollViewer Grid.Row="1"
                       Style="{StaticResource CustomScrollViewer}"
                       VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
+                      HorizontalScrollBarVisibility="Disabled"
+                      PreviewMouseWheel="VoiceScrollViewer_PreviewMouseWheel">
             <StackPanel>
 
                 <Border x:Name="KongCard"

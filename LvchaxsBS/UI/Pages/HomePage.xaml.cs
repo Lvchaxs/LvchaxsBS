@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,6 +12,7 @@ using System.Windows.Threading;
 using LvchaxsBS.Config;
 using LvchaxsBS.Core;
 using LvchaxsBS.Services;
+using LvchaxsBS.UI.Helpers;
 
 namespace LvchaxsBS.UI.Pages
 {
@@ -19,6 +21,27 @@ namespace LvchaxsBS.UI.Pages
         // 防止"加载时"触发 Toggle_Changed
         // （容器生成/绑定初始化会经过布局阶段，故延后到 ContextIdle 再放开）
         private bool _isLoading = false;
+
+        /// <summary>
+        /// 主程序「功能总开关」是否开启 —— **卡片上胶囊开关的灰度绑它**。
+        /// <para>
+        /// ★★ 必须走绑定，不能像原来那样"遍历卡片把 CheckBox 的 Opacity 改成 0.4"：
+        ///   拖动排序结束是 <c>ObservableCollection.Move</c>，WPF 会把那一行的容器移除重建，
+        ///   重建出来的 CheckBox 默认 Opacity=1 ⇒ 遍历设过的灰度全丢
+        ///   （用户看到「总开关是关的，排一下序就变亮了」就是这个）。
+        /// </para>
+        /// <para>★ 用页面级 DP 而不是给每张卡片加属性：改一个值，所有卡片（含之后重建的）自动正确。</para>
+        /// </summary>
+        public static readonly DependencyProperty MasterSwitchOnProperty =
+            DependencyProperty.Register(nameof(MasterSwitchOn), typeof(bool), typeof(HomePage),
+                new PropertyMetadata(true));
+
+        /// <summary>「功能总开关」是否开启（见 <see cref="MasterSwitchOnProperty"/>）。</summary>
+        public bool MasterSwitchOn
+        {
+            get => (bool)GetValue(MasterSwitchOnProperty);
+            set => SetValue(MasterSwitchOnProperty, value);
+        }
 
         public HomePage()
         {
@@ -30,7 +53,13 @@ namespace LvchaxsBS.UI.Pages
             //   第一次布局面对的是空列表，启动首屏就是「先空白、卡片随后补上」（2026-10-16）。
             //   放构造函数里，容器一生成就带数据，首帧即有内容。
             var settings = ConfigManager.Get<HomePageSettings>();
-            _modules = ModuleRegistry.Ordered(settings).Select(m => new ModuleCardItem(m, settings)).ToList();
+            // ★★ ShowOnHome=false 的模块（如自定义宏）**不在首页生成卡片** ——
+            //   它的入口只保留顶部「自定义宏」按钮，进配置页就是宏列表。
+            //   ⚠️ 但模块本身仍在 ModuleRegistry.All 里：触发键占用检测、按 KeyTag 查找都还要用它。
+            _modules = new ObservableCollection<ModuleCardItem>(
+                ModuleRegistry.Ordered(settings)
+                    .Where(m => m.ShowOnHome)
+                    .Select(m => new ModuleCardItem(m, settings)));
             ModuleList.ItemsSource = _modules;
 
             // 拖动途中被导航走 → 必须收尾，否则 Window 上的订阅一直挂着
@@ -53,7 +82,57 @@ namespace LvchaxsBS.UI.Pages
             {
                 ApplyMasterSwitchVisual(s.MasterSwitch);
                 _isLoading = false;
+                ScheduleModuleSpacingRefresh();
             }), DispatcherPriority.ContextIdle);
+        }
+
+        /// <summary>
+        /// 首页功能卡「最后一张贴视口底」：卡片间距已从卡片自身 Margin 挪到
+        /// <c>ItemContainerStyle</c>（ContentPresenter）上，这里把**最后一项容器**的下边距刷成 0
+        /// ⇒ 滚到底时最后一张卡底边正好贴视口底（与 UID 账号列表 / 自定义宏列表同一标准）。
+        /// <para>★ 首页列表是普通 StackPanel（没开虚拟化）⇒ 容器不回收，刷一次就稳定；
+        /// 但首次加载时容器要等布局才生成，所以外面走 <see cref="ScheduleModuleSpacingRefresh"/>
+        /// 重试等它。</para>
+        /// </summary>
+        private void RefreshModuleCardSpacing()
+        {
+            if (ModuleList == null || _modules.Count == 0) return;
+
+            // 页面级滚动容器（ModuleList 的祖先，拖动排序那里也是找的它）
+            var sv = _sortScroller ?? VisualTreeEx.FindAncestor<ScrollViewer>(ModuleList);
+
+            // ★★ 2026-10-21：margin 已由 ItemContainerStyle 上的 LastItemSpacingConverter **绑定**自动算
+            //   （见 HomePage.xaml）—— 容器一生成就带对的值，排序 Move / 换集合都自动重算。
+            //   ⛔ 这里**绝不能再写 fe.Margin**：本地值优先级高于样式绑定，
+            //      一写就永久覆盖，之后就不再更新了。
+            //   只剩一件兜底：内容高度变化时若正停在底部，把 Offset 重钉到新底部。
+            if (sv != null && sv.VerticalOffset >= sv.ScrollableHeight - 0.5)
+                sv.ScrollToVerticalOffset(sv.ScrollableHeight);
+        }
+
+        /// <summary>
+        /// 排一次首页卡片间距刷新，**看见容器才罢手**。
+        /// ★★ 2026-10-21：以前这类补刷直接 <c>BeginInvoke(Loaded)</c> —— 那个优先级跑在布局之前，
+        ///   容器还没生成 ⇒ 空转（UID 账号列表「首次不进、进过一次分组才好」就是这个原因）。
+        ///   现在按 Render 优先级重排，直到 ContainerFromIndex(0) 拿得到东西（或试满 12 次）。
+        /// </summary>
+        private void ScheduleModuleSpacingRefresh()
+        {
+            if (ModuleList == null || _modules.Count == 0) return;
+
+            int tries = 0;
+            void Attempt()
+            {
+                if (ModuleList == null || _modules.Count == 0) return;
+                bool ready = ModuleList.ItemContainerGenerator.ContainerFromIndex(0) != null;
+                if (ready || ++tries >= 12)
+                {
+                    RefreshModuleCardSpacing();
+                    return;
+                }
+                Dispatcher.BeginInvoke(new Action(Attempt), DispatcherPriority.Render);
+            }
+            Attempt();
         }
 
         // ============ 拖动排序（按住卡片图标即拖，与 UID 账号列表一致）============
@@ -70,7 +149,13 @@ namespace LvchaxsBS.UI.Pages
         //   ③ 卡片位置每帧**按实际布局去量**再补差，不要靠算 —— 没有反馈回路可言。
 
         /// <summary>当前的功能模块顺序（ItemsSource，元素是卡片数据项）。</summary>
-        private List<ModuleCardItem> _modules = new();
+        /// <summary>
+        /// 卡片数据（**ObservableCollection**：排序用 Move，只让被移动那一行的容器重建）。
+        /// <para>★★ 原来这里是 List + 排序后 `ItemsSource = null; ItemsSource = _modules`，
+        ///   等于**整张表重建** —— 每张卡片的胶囊开关都会被重建，于是所有胶囊的滑块动画一起重播，
+        ///   观感就是「拖动排序一下，全部卡片重新加载」。改成 Move 后只有移动的那一行会重建。</para>
+        /// </summary>
+        private ObservableCollection<ModuleCardItem> _modules = new();
 
         /// <summary>承载列表的滚动容器（拖动时靠它的视口做自动滚动）。</summary>
         private ScrollViewer? _sortScroller;
@@ -125,8 +210,25 @@ namespace LvchaxsBS.UI.Pages
         private Cursor? _sortPrevCursor;
 
         /// <summary>
+        /// 滚轮：一格 = **一张功能卡片**（UID 账号列表、自定义宏列表现在是同一个手感）。
+        /// <para>本页原来是物理滚动（ScrollViewer 默认 48px/格），比一张卡片矮一截，
+        ///      滚起来半张半张的。一步 78px = 卡片 70 + 卡片间距 8。</para>
+        /// </summary>
+        private void CardList_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is not ScrollViewer sv) return;
+            e.Handled = true;
+
+            sv.ScrollToVerticalOffset(sv.VerticalOffset + (e.Delta > 0 ? -CardRowPitch : CardRowPitch));
+        }
+
+        /// <summary>一张功能卡片占的高度：卡片 Height=70 + 卡片间距 8（与 UID / 宏列表一致）。</summary>
+        private const double CardRowPitch = 78;
+
+        /// <summary>
         /// 按下功能图标 → **立刻**进入拖动（和 UID 账号列表拖手柄一个手感，不设长按延迟）。
         /// <para>图标本身没有 Click 语义，所以不用跟什么抢：按下 = 抓起来，松手 = 落下。</para>
+        /// <para>★ 排序手柄按钮也走这个 handler（DataContext 同为 ModuleCardItem）。</para>
         /// </summary>
         private void Icon_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -141,7 +243,7 @@ namespace LvchaxsBS.UI.Pages
             _sortItem = item;
             _sortFrom = from;
             _sortTarget = from;
-            _sortScroller = FindAncestor<ScrollViewer>(ModuleList);
+            _sortScroller = VisualTreeEx.FindAncestor<ScrollViewer>(ModuleList);
             _sortCards.Clear();
             _sortTransforms.Clear();
             _sortShiftTargets.Clear();
@@ -378,12 +480,22 @@ namespace LvchaxsBS.UI.Pages
 
             to = Math.Clamp(to, 0, _modules.Count - 1);
             var moved = _modules[from];
-            _modules.RemoveAt(from);
-            _modules.Insert(to, moved);
 
-            // 这会儿已经松手、没有鼠标捕获了，重建容器是安全的
-            ModuleList.ItemsSource = null;
-            ModuleList.ItemsSource = _modules;
+            // ★★ 用 Move（而不是 RemoveAt+Insert + 重设 ItemsSource）：
+            //   后者会让**整张表**的容器重建 ⇒ 每个胶囊开关都重播一次 0.4s 滑块动画，
+            //   用户看到的就是「拖一个，所有卡片重新播放」。Move 只影响被移动的那一行。
+            _modules.Move(from, to);
+
+            // ★★ Move 之后那一行的容器会被重建，CheckBox 的 IsChecked 重新求值 ⇒
+            //   胶囊样式会把 0.4s 的滑块动画重播一次。这里在**布局完成之后**把滑块直接摆到终点。
+            //   ★ 连压 3 轮：容器重建有时跨一轮布局，只压一次可能扑空。
+            //   ★ 用 LayoutUpdated（布局末尾、渲染之前）而不是 DispatcherPriority.Loaded ——
+            //     后者可能早于容器生成。
+            SnapToggleThumbnailsAfterLayout();
+
+            // ★ 2026-10-21：排序换了「最后一张卡」的人选 ⇒ 重新算底部贴齐
+            //   （Move 之后被移动那行的容器会重建，新容器带的是 ItemContainerStyle 的 8）
+            ScheduleModuleSpacingRefresh();
 
             var s = ConfigManager.Get<HomePageSettings>();
             ModuleRegistry.SaveOrder(s, _modules.Select(m => m.Module));
@@ -427,26 +539,63 @@ namespace LvchaxsBS.UI.Pages
             return list;
         }
 
-        private static T? FindAncestor<T>(DependencyObject start) where T : DependencyObject
-        {
-            var current = start;
-            while (current != null)
-            {
-                if (current is T t) return t;
-                current = VisualTreeHelper.GetParent(current);
-            }
-            return null;
-        }
-
         // ============ 总开关视觉 ============
 
         /// <summary>
         /// 总开关关时，所有功能胶囊开关视觉置灰（配置值不变）
         /// </summary>
+        /// <summary>
+        /// 胶囊开关**第一次进入可视树**时，把滑块直接摆到当前状态该在的位置。
+        ///
+        /// <para>
+        /// ★★ 为什么必须挂在这里：胶囊样式里「选中」状态带一段 0.4s 的滑块动画，
+        ///   而新建容器时 <c>IsChecked</c> 是「从默认 false 变成 true」⇒ 动画必然播一次。
+        ///   用户看到的就是「开关本来是开的，切个页面回来先显示成关、然后自己滑到开」。
+        /// </para>
+        /// <para>
+        /// ★ <c>Loaded</c> 在**首次渲染之前**触发（此时绑定已经算完），在这里压掉动画，
+        ///   第一帧画出来就是终态，用户看不到那一下滑动。
+        /// </para>
+        /// </summary>
+        private void ModuleToggle_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is not CheckBox cb) return;
+
+            // ★ 立刻试一次；再排到布局后重试一次 ——
+            //   少数情况下 Loaded 早于模板应用，那时还拿不到滑块。
+            ToggleSwitchHelper.Snap(cb);
+            Dispatcher.BeginInvoke(new Action(() => ToggleSwitchHelper.Snap(cb)),
+                DispatcherPriority.Loaded);
+        }
+
         private void ApplyMasterSwitchVisual(bool masterOn)
         {
-            foreach (var cb in FindVisualChildren<CheckBox>(ModuleList))
-                cb.Opacity = masterOn ? 1.0 : 0.4;
+            // ★ 只改这一个值：卡片上的胶囊靠 DataTrigger 绑它，容器怎么重建都跟着走
+            //   （原来遍历 CheckBox 设 Opacity 的做法在拖动排序后会失效）。
+            MasterSwitchOn = masterOn;
+        }
+
+        /// <summary>
+        /// 连续几轮布局结束后，把胶囊开关的滑块直接摆到终点（跳过容器重建带来的动画回放）。
+        /// <para>
+        /// ★ 为什么连压几轮：<c>ObservableCollection.Move</c> 之后容器重建可能不是同一轮布局完成的，
+        ///   只压一次有可能遍历到还没换掉的旧容器。
+        /// </para>
+        /// ★ <c>LayoutUpdated</c> 在**布局末尾、渲染之前**触发 —— 压制后第一帧就是终态，用户看不到滑动。
+        /// </summary>
+        private void SnapToggleThumbnailsAfterLayout()
+        {
+            int rounds = 3;
+
+            EventHandler? handler = null;
+            handler = (_, _) =>
+            {
+                ToggleSwitchHelper.SnapThumbnails(ModuleList);
+
+                if (--rounds <= 0) ModuleList.LayoutUpdated -= handler;
+            };
+
+            ModuleList.LayoutUpdated += handler;
         }
 
         /// <summary>供 MainWindow 在总开关切换后调用，刷新本页开关视觉</summary>
@@ -495,6 +644,33 @@ namespace LvchaxsBS.UI.Pages
         /// </summary>
         public static void NavigateToModule(string moduleName, bool showTriggerKey)
         {
+            // ★ 自定义宏不走「配置容器页」（那是带「快速传送」顶栏的通用工具页），
+            //   而是和 UID 一样直接进内容区（固定头行 = 左侧导航栏，下面是文件夹/宏列表），
+            //   并且带页面记忆。所以这里特判一下，按「触发键 / 配置」分流。
+            if (string.Equals(moduleName, MacroModuleService.ModuleName, StringComparison.Ordinal))
+            {
+                var mw = Application.Current.MainWindow as UI.MainWindow;
+                if (mw == null) return;
+
+                if (showTriggerKey)
+                {
+                    // ★ 触发键按钮：打开宏的触发键设置页（用宿主配置容器页承载，
+                    //   这样能复用「被其它功能占用」检测、占用后跳转等通用能力）。
+                    var macroContainer = CreateContainerFor(moduleName);
+                    if (macroContainer != null)
+                    {
+                        macroContainer.ShowTriggerKeyPage();
+                        mw.MainFrame.Navigate(macroContainer);
+                    }
+                }
+                else
+                {
+                    // ★ 「打开」：直接进宏的内容区视图（复用同一个实例 ⇒ 回到上次的位置）。
+                    mw.ShowMacroView();
+                }
+                return;
+            }
+
             var container = CreateContainerFor(moduleName);
             if (container == null) return;
 
@@ -539,17 +715,6 @@ namespace LvchaxsBS.UI.Pages
         }
 
         // ============ 工具 ============
-
-        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T t) yield return t;
-                foreach (var c in FindVisualChildren<T>(child))
-                    yield return c;
-            }
-        }
     }
 
     /// <summary>
@@ -563,12 +728,26 @@ namespace LvchaxsBS.UI.Pages
             Module = module;
             IsChecked = module.IsEnabled(s);
 
+            ConfigButtonText = module.Name == MacroModuleService.ModuleName ? "打开" : "配置";
+
             string key = module.GetKey(s);
             HasKey = !string.IsNullOrEmpty(key) && key != "未设置";
             TriggerKeyText = HasKey ? key : "触发键";
             TriggerKeyTooltip = $"当前设置：{(HasKey ? key : "未设置")}";
 
             ShowTags = module.CreateTags != null;
+
+            // ★ 插件模块的标题行控件（「自定义宏」的 宏文件 N 个 + 编辑 按钮）。
+            //   给了它就用它替代分辨率标签；没给（或插件抛异常）就照旧什么都不显示。
+            try
+            {
+                TagExtension = module.CreateTagExtension?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[HomePage] 创建 {module.Name} 的标题行扩展失败：{ex.Message}");
+                TagExtension = null;
+            }
 
             // ★ 插件模块的第二行控件（「自定义宏」的两个下拉）。构造函数本来就跑在 UI 线程，
             //   这里建控件是安全的；插件内部抛异常也不能让首页崩 —— 只当它没有扩展行。
@@ -589,6 +768,18 @@ namespace LvchaxsBS.UI.Pages
         public string TriggerKeyText { get; }
         public string TriggerKeyTooltip { get; }
         public bool ShowTags { get; }
+
+        /// <summary>
+        /// 卡片右侧「配置」按钮的文案：自定义宏要叫「打开」（点它进内容区视图，
+        /// 且复用同一实例 ⇒ 回到上次浏览到的文件夹 / 滚动位置，即页面记忆）；
+        /// 其它模块保持「配置」。
+        /// </summary>
+        public string ConfigButtonText { get; }
+
+        /// <summary>卡片标题行右侧的插件控件（给了就替代分辨率标签；普通模块为 null）。</summary>
+        public FrameworkElement? TagExtension { get; }
+
+        public bool HasTagExtension => TagExtension != null;
 
         /// <summary>卡片第二行的扩展控件（插件模块用；普通模块为 null）。</summary>
         public FrameworkElement? CardExtension { get; }

@@ -18,6 +18,10 @@
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A0A0A0"/>
     <SolidColorBrush x:Key="TextDisabledBrush" Color="#6E6E6E"/>
+    <!-- 小图标按钮**悬停**时的图标色。
+         ★ 不能直接用 TextPrimaryBrush（深色下是纯白 #FFFFFF），常态灰 #A0A0A0 一悬停就跳到
+           纯白，反差太大、刺眼。这里取"比常态亮一档但不到纯白"的值，悬停反馈照样看得出来。 -->
+    <SolidColorBrush x:Key="IconHoverFgBrush" Color="#C8C8C8"/>
 
     <!-- ============ 边框层 ============ -->
     <SolidColorBrush x:Key="BorderBrush" Color="#3E3E42"/>
@@ -27,6 +31,13 @@
     <SolidColorBrush x:Key="PrimaryBrush" Color="#4FA3F7"/>
     <SolidColorBrush x:Key="PrimaryLightBrush" Color="#1E3A5F"/>
     <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#79BFFC"/>
+
+    <!-- 置顶卡片「名称」的字色：与置顶竖条同一个蓝色，浅色/深色主题一致。 -->
+    <SolidColorBrush x:Key="PinNameBrush" Color="#93C5FD"/>
+
+    <!-- 置顶竖条的颜色：**与浅色主题同一个值**（#93C5FD，不透明）。
+         半透明会跟深色卡片底色叠加变暗，两主题就不同色了。 -->
+    <SolidColorBrush x:Key="PinBarBrush" Color="#93C5FD"/>
 
     <!-- ============ 状态色 ============ -->
     <SolidColorBrush x:Key="SuccessBrush" Color="#4ADE80"/>

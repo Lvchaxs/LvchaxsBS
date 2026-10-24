@@ -42,6 +42,22 @@ namespace LvchaxsBS_UID
         }
 
         /// <summary>
+        /// 提前把账号数据（账号 + 分组）读进内存，供随后创建的界面直接取用。
+        ///
+        /// <para>
+        /// <b>给后台线程调用。</b>账号多时「读盘 + 逐条解密」要好几秒，原本这段是在
+        /// 界面 Loaded 里同步跑的，那几秒界面和鼠标会一起冻住。宿主现在会先铺加载覆盖层，
+        /// 再在后台线程调这里，把耗时挪到「转圈」那段时间里。
+        /// </para>
+        /// <para>宿主是反射找这个方法的（可选入口），旧版宿主不调用也完全正常。</para>
+        /// </summary>
+        public static void PreloadData()
+        {
+            Initialize();
+            Services.DataServices.DataPreload.Run();
+        }
+
+        /// <summary>
         /// 取（首次调用时创建）账号管理界面。
         ///
         /// <para>
@@ -140,6 +156,24 @@ namespace LvchaxsBS_UID
         public static void SetHostFocusProvider(Func<bool> provider)
         {
             Utils.UI.GameFocusProvider.SetProvider(provider);
+        }
+
+        /// <summary>
+        /// 宿主注入「用户有多久没动过键鼠」的查询（毫秒）。
+        ///
+        /// <para>
+        /// 登录后的常驻人数监控会按 ESC / Enter 自动回到聊天界面；用户自己正在操作时
+        /// 这些模拟按键会和他打架。有了这个，监控就能在用户刚动过键鼠的那段时间里
+        /// <b>只检测、不按键</b>，把操作空间让出来。
+        /// </para>
+        /// <para>
+        /// 宿主侧数据来自 <c>UserInputMonitor.IdleMs</c>（订阅键鼠钩子，**模拟按键不算**用户操作）。
+        /// 宿主没注入时按"一直很安静"处理（不因它推迟按键）。
+        /// </para>
+        /// </summary>
+        public static void SetHostUserInputProvider(Func<int> provider)
+        {
+            Utils.UI.UserInputProvider.SetProvider(provider);
         }
 
         /// <summary>

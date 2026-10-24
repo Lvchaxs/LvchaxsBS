@@ -100,11 +100,14 @@
                             ui:ButtonTip.Text="功能参数配置"
                             Click="ConfigBtn_Click"/>
 
+                    <!-- ★ 悬浮提示会在 MouseEnter 里再问一次内容页（兜底）；
+                         但主要靠内容页自己切视图时调 GetBackTip 刷新（见 MacroConfigPage.UpdateHostBackTip）。 -->
                     <Button x:Name="PART_BackBtn"
                             Content="返回"
                             Style="{StaticResource FlatButtonStyleRound6}"
                             Width="50" Height="28"
                             ui:ButtonTip.Text="返回主页"
+                            MouseEnter="BackBtn_MouseEnter"
                             Click="BackBtn_Click"/>
 
                     <CheckBox x:Name="PART_Toggle"

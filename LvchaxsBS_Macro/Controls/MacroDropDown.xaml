@@ -15,6 +15,10 @@
     <Button x:Name="PART_MainButton"
             Style="{DynamicResource SimpleDropDownButtonStyle}"
             Click="MainButton_Click">
-        <TextBlock x:Name="PART_SelectedText" VerticalAlignment="Center"/>
+        <!-- ★ TextTrimming：选项名太长时显示省略号（宽度上限由外部 MaxWidth 决定） -->
+        <TextBlock x:Name="PART_SelectedText"
+                   VerticalAlignment="Center"
+                   TextWrapping="NoWrap"
+                   TextTrimming="CharacterEllipsis"/>
     </Button>
 </UserControl>

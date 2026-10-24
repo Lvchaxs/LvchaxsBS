@@ -53,9 +53,38 @@ namespace LvchaxsBS.Services
             // 2) 停掉引擎，避免退出后钩子/检测线程继续驻留
             StopEngine();
 
+            // 2.5) ★ Config\Macro 里放的是宏相关文件（脚本 / 诊断日志），不是「设置」——
+            //      不能跟着重置一起没。删 Config 之前先把它挪到临时目录，删完再原样挪回来。
+            string macroDir = Path.Combine(configDir, "Macro");
+            string? backupRoot = null;
+
+            if (Directory.Exists(macroDir))
+            {
+                backupRoot = Path.Combine(Path.GetTempPath(),
+                                          "LvchaxsBS_Reset_" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(backupRoot);
+
+                try
+                {
+                    Directory.Move(macroDir, Path.Combine(backupRoot, "Macro"));
+                }
+                catch (Exception ex)
+                {
+                    // 备份不成功就别删 —— 宁可重置失败，也不能把用户写的宏弄丢
+                    throw new IOException($"备份宏目录失败，已取消重置：{macroDir}\n{ex.Message}");
+                }
+            }
+
             // 3) 删除 Config 目录
-            if (!TryDeleteDirectory(configDir, out string? deleteError) && Directory.Exists(configDir))
+            bool deleted = TryDeleteDirectory(configDir, out string? deleteError);
+            if (!deleted && Directory.Exists(configDir))
+            {
+                // 没删掉 ⇒ 把宏原样放回去，再报错（否则宏就凭空消失了）
+                if (backupRoot != null) RestoreMacro(configDir, backupRoot);
                 throw new IOException($"删除配置目录失败：{configDir}\n{deleteError}");
+            }
+
+            if (backupRoot != null) RestoreMacro(configDir, backupRoot);
 
             // 4) 立刻拉起新实例（新实例启动时会重新生成默认配置）
             Process.Start(new ProcessStartInfo
@@ -69,6 +98,34 @@ namespace LvchaxsBS.Services
             //    不用 Application.Current.Shutdown()：它要等 Dispatcher 收尾，
             //    一旦被后台线程/浮层窗口拖住就会卡在后台（这正是上一版失效的原因）。
             Environment.Exit(0);
+        }
+
+        /// <summary>
+        /// 把临时目录里的宏目录放回 <c>Config\Macro</c>。
+        /// <para>★ 失败只记日志：走到这里时配置已经重置完了，不能因为这一步失败就中断重启。</para>
+        /// </summary>
+        private static void RestoreMacro(string configDir, string backupRoot)
+        {
+            string src = Path.Combine(backupRoot, "Macro");
+            if (!Directory.Exists(src)) return;
+
+            try
+            {
+                Directory.CreateDirectory(configDir);
+
+                string dest = Path.Combine(configDir, "Macro");
+                if (Directory.Exists(dest)) Directory.Delete(dest, true);
+
+                Directory.Move(src, dest);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ResetService] 恢复宏目录失败：{ex.Message}");
+            }
+            finally
+            {
+                try { Directory.Delete(backupRoot, true); } catch { /* 临时目录，清不掉也无所谓 */ }
+            }
         }
 
         /// <summary>停止引擎的各路后台活动；任何一步失败都不影响后续步骤。</summary>

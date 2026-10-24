@@ -18,6 +18,8 @@
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#000000"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#6B7280"/>
     <SolidColorBrush x:Key="TextDisabledBrush" Color="#9CA3AF"/>
+    <!-- 小图标按钮**悬停**时的图标色：浅色下就是主文字色（灰 → 黑，加深一档）。 -->
+    <SolidColorBrush x:Key="IconHoverFgBrush" Color="#000000"/>
 
     <!-- ============ 边框层 ============ -->
     <SolidColorBrush x:Key="BorderBrush" Color="#E5E7EB"/>
@@ -27,6 +29,14 @@
     <SolidColorBrush x:Key="PrimaryBrush" Color="#3B82F6"/>
     <SolidColorBrush x:Key="PrimaryLightBrush" Color="#DBEAFE"/>
     <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#1D4ED8"/>
+
+    <!-- 置顶卡片「名称」的字色：与置顶竖条同一个蓝色，浅色/深色主题一致。 -->
+    <SolidColorBrush x:Key="PinNameBrush" Color="#93C5FD"/>
+
+    <!-- 置顶竖条的颜色：**不透明、浅深两主题同一个值**。
+         ★ 以前杠用 PrimaryBrush + Opacity 0.5 —— 半透明会跟卡片底色叠加，
+           加上主色本身浅/深就不同值，两种主题下看到的蓝差距很大。 -->
+    <SolidColorBrush x:Key="PinBarBrush" Color="#93C5FD"/>
 
     <!-- ============ 状态色 ============ -->
     <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E"/>

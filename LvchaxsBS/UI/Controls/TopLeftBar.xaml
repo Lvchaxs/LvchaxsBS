@@ -20,9 +20,6 @@
                     ui:ButtonTip.Text="快速传送"
                     Click="FunctionButton_Click"
                     Canvas.Left="0" Canvas.Top="2">
-                <Button.RenderTransform>
-                    <TranslateTransform x:Name="TfQuickTeleport" X="0"/>
-                </Button.RenderTransform>
                 <Image Source="/UI/Assets/Images/快速传送.png" Width="33" Height="28"/>
             </Button>
 
@@ -32,9 +29,6 @@
                     ui:ButtonTip.Text="快速拾取"
                     Click="FunctionButton_Click"
                     Canvas.Left="43" Canvas.Top="2">
-                <Button.RenderTransform>
-                    <TranslateTransform x:Name="TfQuickPickup" X="0"/>
-                </Button.RenderTransform>
                 <Image Source="/UI/Assets/Images/快速拾取.png" Width="33" Height="28"/>
             </Button>
 
@@ -44,9 +38,6 @@
                     ui:ButtonTip.Text="剧情对话"
                     Click="FunctionButton_Click"
                     Canvas.Left="86" Canvas.Top="2">
-                <Button.RenderTransform>
-                    <TranslateTransform x:Name="TfStoryDialogue" X="0"/>
-                </Button.RenderTransform>
                 <Image Source="/UI/Assets/Images/剧情对话.png" Width="33" Height="28"/>
             </Button>
 
@@ -56,9 +47,6 @@
                     ui:ButtonTip.Text="自动烹饪"
                     Click="FunctionButton_Click"
                     Canvas.Left="129" Canvas.Top="2">
-                <Button.RenderTransform>
-                    <TranslateTransform x:Name="TfAutoCook" X="0"/>
-                </Button.RenderTransform>
                 <Image Source="/UI/Assets/Images/自动烹饪.png" Width="33" Height="28"/>
             </Button>
 
@@ -68,9 +56,6 @@
                     ui:ButtonTip.Text="钓鱼辅助"
                     Click="FunctionButton_Click"
                     Canvas.Left="172" Canvas.Top="2">
-                <Button.RenderTransform>
-                    <TranslateTransform x:Name="TfFishingAssist" X="0"/>
-                </Button.RenderTransform>
                 <Image Source="/UI/Assets/Images/钓鱼辅助.png" Width="33" Height="28"/>
             </Button>
 
@@ -80,9 +65,6 @@
                     ui:ButtonTip.Text="自动伐木"
                     Click="FunctionButton_Click"
                     Canvas.Left="215" Canvas.Top="2">
-                <Button.RenderTransform>
-                    <TranslateTransform x:Name="TfAutoLumber" X="0"/>
-                </Button.RenderTransform>
                 <Image Source="/UI/Assets/Images/自动伐木.png" Width="33" Height="28"/>
             </Button>
 
@@ -92,11 +74,15 @@
                     ui:ButtonTip.Text="手柄拾取"
                     Click="FunctionButton_Click"
                     Canvas.Left="258" Canvas.Top="2">
-                <Button.RenderTransform>
-                    <TranslateTransform x:Name="TfControllerPickup" X="0"/>
-                </Button.RenderTransform>
                 <Image Source="/UI/Assets/Images/手柄拾取.png" Width="33" Height="28"/>
             </Button>
+
+            <!--
+                自定义宏不再出现在这一排功能图标里（2026-10-19 重构）：
+                它改成和 UID 一样，入口挪到**左侧主导航栏**（见 TopCenterBar.xaml 的 ButtonMacro），
+                因此这里不再注册它的图标，也不参与这一排的排序。
+                首页卡片仍由 ModuleRegistry 提供（不影响其它卡片排序），只是不再进顶部功能图标行。
+            -->
 
         </Canvas>
     </Border>

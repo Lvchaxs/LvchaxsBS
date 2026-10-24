@@ -659,7 +659,7 @@ namespace LvchaxsBS.Core
 
                                 Debug.WriteLine($"【快速传送-右侧列表】点击坐标: ({clickX}, {clickY}) 类型: {rightListBestSource}");
 
-                                int clickDelay = settings.RightListClickItemDelay_1;
+                                int clickDelay = settings.RightListClickItemDelay_2;
                                 if (clickDelay > 0)
                                 {
                                     if (!SpinWait.SpinUntil(() => false, clickDelay))

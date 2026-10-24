@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Loader;
 using LvchaxsBS.Config;
 using LvchaxsBS.Core;
 using LvchaxsBS.Services.Hooks;
@@ -32,8 +33,37 @@ namespace LvchaxsBS.Services
     {
         private const string AssemblyFileName = "LvchaxsBS_Resources.dll";
 
-        /// <summary>共享组件是否可用（纯文件探测，不触碰它的任何类型）。</summary>
-        public static bool IsAvailable { get; } = Probe();
+        /// <summary>
+        /// 兜住「dll 是**启动过程中才补进** exe 目录的」这种情况。
+        /// <para>
+        /// ★★ 默认加载上下文只在 TPA 列表里找程序集，而 TPA 是**进程启动时扫一遍目录**定下来的 ——
+        ///   启动自检（缺件自动下载）后补进来的 dll 不在列表里，于是 JIT 解析共享类型时
+        ///   抛 <c>FileNotFoundException</c>：文件明明躺在 exe 旁边，运行时却说"找不到"。
+        ///   这里注册 Resolving：默认解析失败时，只要 exe 目录里有同名 dll 就按路径加载。
+        /// </para>
+        /// <para>反射加载的那几个插件（uid / macro）不走默认上下文，本来就不受这个影响。</para>
+        /// </summary>
+        static SharedComponent()
+        {
+            AssemblyLoadContext.Default.Resolving += (ctx, name) =>
+            {
+                if (string.IsNullOrEmpty(name.Name)) return null;
+
+                string path = Path.Combine(AppContext.BaseDirectory, name.Name + ".dll");
+                return File.Exists(path) ? ctx.LoadFromAssemblyPath(path) : null;
+            };
+        }
+
+        /// <summary>
+        /// 共享组件是否可用（纯文件探测，不触碰它的任何类型）。
+        /// <para>★ dll 补上之后会调 <see cref="Reload"/> 重新探测 + 重新注入，不用重启。</para>
+        /// </summary>
+        public static bool IsAvailable => _isAvailable;
+
+        private static bool _isAvailable = Probe();
+
+        /// <summary><see cref="Register"/> 是否已经跑过（避免重复订阅 <c>WindowFocusService.BoundsChanged</c>）。</summary>
+        private static bool _registered;
 
         private static bool Probe()
         {
@@ -48,11 +78,40 @@ namespace LvchaxsBS.Services
         }
 
         /// <summary>
+        /// 运行中装上资源包后热加载：重新探测 → 重新注入。
+        /// <para>
+        /// ★ 走的是「启动时缺文件 ⇒ 整条注入链没跑过」这条路，所以这里调用等于**第一次**初始化，
+        ///   不会重复订阅事件。
+        /// </para>
+        /// </summary>
+        /// <returns>热加载后是否可用。</returns>
+        public static bool Reload()
+        {
+            _isAvailable = AssetLocator.Reload();   // 真正把程序集加载进来 + 算好 pack 前缀
+            if (!_isAvailable) return false;
+
+            try
+            {
+                Register();
+                Debug.WriteLine("【共享组件】热加载成功（图片 / 识别 / 模拟输入已可用）");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"【共享组件】热加载注入失败：{ex.GetBaseException().Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
         /// 把宿主侧的信息注入共享库：截图模式 / 资源包是否可用 / 窗口客户区变化。
         /// 只能在 <see cref="IsAvailable"/> 为 true 时调用。
         /// </summary>
         public static void Register()
         {
+            if (_registered) return;      // 幂等：热加载会再调一次
+            _registered = true;
+
             // 截图模式：注册成 lambda，设置页改完立刻生效，不会读到旧值
             CaptureSettings.CaptureModeProvider = () => ConfigManager.Get<AppSettings>().CaptureMode;
 

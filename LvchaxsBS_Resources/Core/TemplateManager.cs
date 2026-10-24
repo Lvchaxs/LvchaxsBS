@@ -279,6 +279,16 @@ namespace LvchaxsBS.Core
                 // 其他模版：多个功能共用
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/主界面.png"));
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/点击进入.png"));
+                // ★ 点「点击进入」进游戏后可能弹出的月卡领取界面（两个模板任中一个）
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/空月祝福1.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/空月祝福2.png"));
+                // ★「连接已断开」：游戏**进行中**随时可能突然弹出的提示（登录大厅不会弹），两个模板任中一个。
+                //   ① 连接服务器失败 = 网络故障 → 彻底结束登录；
+                //   ② 账号在另一处重复登录 = 被顶号 → 按 ESC 退回登录界面 / 自动换下一个账号。
+                //   key 由路径推导：其他模版_连接服务器失败 / 其他模版_账号在另一处重复登录
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/连接服务器失败.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/账号在另一处重复登录.png"));
+
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/ESC菜单.png"));
 
                 // 登录账号流程：从用户中心退出到登录界面之后的登录步骤
@@ -286,6 +296,107 @@ namespace LvchaxsBS.Core
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/登录其他账号.png"));
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/进入游戏.png"));
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/同意登录.png"));
+
+                // 「登录或退出区域」：登录大厅右下角那个按钮。检测到 = 当前没账号在线，点它直接到输入界面；
+                // 检测不到、但「点击进入」检测得到 = 已有账号在线（此时要点它走退出流程，不能直接点进游戏）。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/登录账号.png"));
+                // 「是否保留登录记录区域」：点了「登录或退出区域」之后弹的退出确认窗。
+                // ★ 文件在「退出游戏」子目录里，**不在**「登录账号」下 ——
+                //   key 由路径推导，所以这里是「其他模版_退出游戏_是否保留登录记录」。
+                // ★ 这是窗口里的小复选框图标；2026-10-14 曾因旧图失真匹配不上，重做 23×23 后正常。
+                //   （曾用同窗口的横向标题「退出登录」替代过，现已确认此处可用，那套已删除。）
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/是否保留登录记录.png"));
+
+                // 「账号密码出错区域」的四个模板：检测到任意一个 = 账密没输进去 / 输错了
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/请输入密码.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/请输入手机号邮箱.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/账号格式错误.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/账号或密码错误.png"));
+                // 「欢迎进入游戏区域」：同意之后没报错才会出现，看到它就是登录成功了
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/欢迎进入游戏.png"));
+
+                // ★★「验证身份」：账密提交后弹出「您的账号存在安全风险…请先验证身份后再登录」= 此设备验证失效。
+                //    检测到说明这个账号在这台机器上不能继续登录（要点「取消验证」关掉弹窗结束流程），
+                //    并给账号打红标签「账号验证失效」。区域 = "验证身份"，关窗点坐标 = "取消验证"。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/登录账号/验证身份.png"));
+
+                // ---- 登录成功之后的「附加动作」（PostLoginActions）用到的模板 ----
+
+                // 聊天界面：主界面按 Enter 打开聊天，右下角出现「消息发送」按钮即为已打开。
+                // 区域 = "消息发送"；key = 其他模版_聊天界面_消息发送
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/消息发送.png"));
+
+                // 联机大厅：主界面按 F2 打开。里面「世界权限」有三种状态，任意一个命中就说明在联机大厅了。
+                // 区域 = "世界权限"；key = 其他模版_联机状态_世界权限XXX
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/世界权限不允许加入.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/世界权限直接加入.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/世界权限确认后可加入.png"));
+
+                // 区域 = "联机队友"（主界面右侧那一竖条）；key = 其他模版_联机状态_NP队友
+                // ★ 三张图各代表一个队友槽位：命中几张 = 当前有几个队友（人数 = 队友数 + 自己）
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/2P队友.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/3P队友.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/4P队友.png"));
+
+                // 区域 = "自己消息" / "队友消息"（聊天界面里每条消息前面的那个 P 标记）：
+                // ★★ 2026-10-18 用户重做了**聊天界面专用**的一套，放在 Template/其他模版/聊天界面/ 下：
+                //    自己 = 1P，队友 = 2P / 3P / 4P。
+                //    聊天里**不再借用**「联机状态」那几张（1P地主 / 2P队友…）—— 那几张只留给「数人」用。
+                // ⚠️ `2p.png` 文件名是**小写 p**，key 就是 `其他模版_聊天界面_2p`；
+                //    改文件名要同步 PostLoginActions 里的 OwnMsgTemplateKeys / ChatTeammateTemplateKeys。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/1P.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/2p.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/3P.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/4P.png"));
+
+                // 区域 = 「最新消息内容」（**动态区域**：从最新那条队友消息的位置往下 200 / 1080 基准）：
+                // ★ 把队友常说的几句话本身做成模板 —— 认出是哪一句就回对应的话
+                //   （PostLoginActions.ReplyTextFor：救命⇒菜就多练！/ 开始挑战吧⇒加油！/ 你好⇒你好NP /
+                //    谢谢⇒不用谢！/ 真是精彩⇒真是精彩！）。
+                // ⚠️ 文件名里的感叹号**有全角也有半角**（「真是精彩!」是**半角** !），key 是按文件名现推的，
+                //    改文件名就要同步改 PostLoginActions 里的 MsgContent*Key。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/救命！.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/开始挑战吧！.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/你好！.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/谢谢！.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/真是精彩!.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/世界权限.png"));
+
+                // 队友**点名要某个权限**的三张（认到就真的去改，不只是回一句话）：
+                // 不允许加入 ⇒ 改不允许加入 / 直接加入 ⇒ 改直接加入（已是它只回「当前已经是直接加入」）/
+                // 确认后可加入 ⇒ 改确认后可加入。见 PostLoginActions.HandlePermissionRequestAsync。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/不允许加入.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/直接加入.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/确认后可加入.png"));
+
+                // 队友发「换号」⇒ 播报「我去换号了下一个是「名字：UID」」→（必要时）先改权限改成确认后可加入
+                // → 交给上层换下一个账号。见 PostLoginActions.HandleSwitchRequestAsync。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/换号.png"));
+
+                // 队友发「下一个」⇒ 只回答下一个号是谁（「下一个「名字：UID」」），**不换号**。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/下一个.png"));
+
+                // 队友发「申请权限」⇒ 没权限的拒；有权限的开 5 秒窗口招人（给 1 个人批权限，UI 勾选同步）。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/申请权限.png"));
+
+                // 队友发表情包「指指点点」⇒ 回「反弹！」。★ 它不是白字，PostLoginActions 里走
+                // `EmojiContentKeys` 白名单，跳过白字几何校验。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/聊天界面/队友消息/指指点点.png"));
+
+                // 区域 = "多人模式"（主界面左上角那个联机状态图标）；**只在主界面时检测**。
+                // ★ 四张模板表达「当前世界的联机状态」：
+                //   · 多人模式 → 在自己的世界里开着多人模式；
+                //   · 他人世界2P/3P/4P → 在联机中，但站在**别人**的世界里；
+                //   · 四个都检测不到 → 单人世界。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/多人模式.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/他人世界2P.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/他人世界3P.png"));
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/他人世界4P.png"));
+
+                // 区域 = "当前队伍"：聊天界面里那个"当前队伍"频道按钮（**只有联机时才有**）。
+                // ★ 用来把聊天频道切到多人模式的公共大厅：检测到它说明列表顶上是"当前队伍"频道；
+                //   再配合「选择当前队伍」那个点的颜色（(65,72,86) = 该频道被选中的背景色）判断有没有选上。
+                AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/联机状态/当前队伍.png"));
 
                 // 退出游戏流程：模板放在子目录里，key 会带上子目录名 —— 其他模版_退出游戏_xxx
                 AddTemplateFromPath(ResourcePaths.Pack("Template/其他模版/退出游戏/退出至登录界面.png"));

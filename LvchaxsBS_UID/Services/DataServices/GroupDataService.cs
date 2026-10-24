@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -38,19 +38,22 @@ namespace LvchaxsBS_UID.Services.DataServices
 
                 var groups = JsonSerializer.Deserialize<List<AccountGroup>>(json, JsonOptions) ?? new List<AccountGroup>();
 
-                // 确保每个分组都有必要的数据结构
                 foreach (var group in groups)
-                {
                     group.AccountIds ??= new List<int>();
-                    group.AccountAddTimes ??= new Dictionary<int, DateTime>();
-                    group.MarkedTimes ??= new Dictionary<int, DateTime>();
 
-                    // 如果创建时间为默认值，设置为当前时间
-                    if (group.CreatedTime == default)
-                        group.CreatedTime = DateTime.Now;
+                // 老数据迁移：markedTimes（账号 → 置底时间）→ markedAccountIds（只要编号）
+                bool migrated = MigrateMarkedTimes(groups, json);
 
-                    DebugLog($"分组: {group.Name}, ID: {group.Id}, 账号数: {group.AccountCount}, 标记数: {group.MarkedTimes.Count}");
-                }
+                // 老数据（还没有 order 字段）按旧规则补一遍排序号，保证升级后顺序不变
+                SortingService.EnsureGroupOrders(groups);
+
+                foreach (var group in groups)
+                    DebugLog($"分组: {group.Name}, ID: {group.Id}, 账号数: {group.AccountCount}, 标记数: {group.MarkedAccountIds?.Count ?? 0}");
+
+                // ★ 迁移过的文件立刻回写一次：这样用户打开 groups.json 看到的就是干净的新格式，
+                //   不必等下一次"编辑分组 / 移入账号"之类的操作才顺带刷新。
+                if (migrated)
+                    SaveGroups(groups);
 
                 DebugLog($"成功加载分组数量: {groups.Count}");
                 return groups;
@@ -73,9 +76,6 @@ namespace LvchaxsBS_UID.Services.DataServices
             }
             else
             {
-                // 确保新分组有创建时间
-                if (group.CreatedTime == default)
-                    group.CreatedTime = DateTime.Now;
                 groups.Add(group);
             }
 
@@ -89,12 +89,7 @@ namespace LvchaxsBS_UID.Services.DataServices
                 foreach (var group in groups)
                 {
                     group.AccountIds ??= new List<int>();
-                    group.AccountAddTimes ??= new Dictionary<int, DateTime>();
-                    group.MarkedTimes ??= new Dictionary<int, DateTime>();
-
-                    // 确保每个分组都有创建时间
-                    if (group.CreatedTime == default)
-                        group.CreatedTime = DateTime.Now;
+                    group.MarkedAccountIds ??= new List<int>();
                 }
 
                 string json = JsonSerializer.Serialize(groups, JsonOptions);
@@ -110,7 +105,7 @@ namespace LvchaxsBS_UID.Services.DataServices
             }
         }
 
-        public static bool SaveGroupPinnedState(int groupId, bool isPinned, DateTime? pinnedTime = null)
+        public static bool SaveGroupPinnedState(int groupId, bool isPinned)
         {
             var groups = LoadGroups();
             var group = groups.FirstOrDefault(g => g.Id == groupId);
@@ -118,7 +113,6 @@ namespace LvchaxsBS_UID.Services.DataServices
             if (group != null)
             {
                 group.IsPinned = isPinned;
-                group.PinnedTime = isPinned ? pinnedTime ?? DateTime.Now : null;
                 return SaveGroups(groups);
             }
 
@@ -138,10 +132,10 @@ namespace LvchaxsBS_UID.Services.DataServices
             return groups.Any() ? groups.Max(g => g.Id) + 1 : 1;
         }
 
-        // 标记相关方法（现在直接保存在分组对象中）
+        // 置底相关方法（现在直接保存在分组对象中）
         public static bool SaveGroupMarks(AccountGroup group)
         {
-            // 标记时间现在直接保存在分组对象的MarkedTimes字段中
+            // 已置底的账号编号直接保存在分组对象的 MarkedAccountIds 字段中
             // 所以只需保存整个分组即可
             return SaveGroup(group);
         }
@@ -151,12 +145,69 @@ namespace LvchaxsBS_UID.Services.DataServices
             var groups = LoadGroups();
             var group = groups.FirstOrDefault(g => g.Id == groupId);
 
-            if (group != null && group.MarkedTimes != null)
+            if (group != null && group.MarkedAccountIds != null)
             {
-                return group.MarkedTimes.Keys.ToList();
+                return group.MarkedAccountIds.ToList();
             }
 
             return new List<int>();
+        }
+
+        /// <summary>
+        /// 一次性迁移：老文件里的 <c>markedTimes</c> 是「账号 → 置底时间」的字典，
+        /// 那个时间从来没被读过（界面只关心在不在集合里），所以这里只把**键**（账号编号）
+        /// 搬进 <see cref="AccountGroup.MarkedAccountIds"/>。
+        /// ★ 幂等：只在「新字段为空 且 老字段存在」时改；迁移完回写后老字段就没了，下次不再触发。
+        /// ★ 反序列化时老字段没有对应属性，会被自动忽略 —— 所以必须直接从原始 json 里取。
+        /// </summary>
+        private static bool MigrateMarkedTimes(List<AccountGroup> groups, string rawJson)
+        {
+            if (groups == null || groups.Count == 0 || string.IsNullOrWhiteSpace(rawJson))
+                return false;
+
+            bool changed = false;
+
+            try
+            {
+                using var doc = JsonDocument.Parse(rawJson);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array) return false;
+
+                int i = 0;
+                foreach (var element in doc.RootElement.EnumerateArray())
+                {
+                    var group = i < groups.Count ? groups[i] : null;
+                    i++;
+                    if (group == null) break;
+
+                    // 新格式已经有了就跳过（老数据里 markedAccountIds 不存在 → 反序列化后是空表）
+                    if (group.MarkedAccountIds != null && group.MarkedAccountIds.Count > 0) continue;
+
+                    if (element.ValueKind != JsonValueKind.Object) continue;
+                    if (!element.TryGetProperty("markedTimes", out var markedTimes)) continue;
+                    if (markedTimes.ValueKind != JsonValueKind.Object) continue;
+
+                    var ids = new List<int>();
+                    foreach (var prop in markedTimes.EnumerateObject())
+                    {
+                        if (int.TryParse(prop.Name, out int id))
+                            ids.Add(id);
+                    }
+
+                    if (ids.Count > 0)
+                    {
+                        group.MarkedAccountIds = ids;
+                        changed = true;
+                        DebugLog($"迁移分组「{group.Name}」的置底记录：{ids.Count} 条（已去掉时间值）");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugLog($"迁移 markedTimes 失败: {ex.Message}");
+                return false;
+            }
+
+            return changed;
         }
 
         // 辅助方法
@@ -165,11 +216,9 @@ namespace LvchaxsBS_UID.Services.DataServices
             target.Name = source.Name;
             target.TagNote = source.TagNote ?? "";
             target.AccountIds = source.AccountIds ?? new List<int>();
-            target.AccountAddTimes = source.AccountAddTimes ?? new Dictionary<int, DateTime>();
-            target.MarkedTimes = source.MarkedTimes ?? new Dictionary<int, DateTime>();
+            target.MarkedAccountIds = source.MarkedAccountIds ?? new List<int>();
             target.IsPinned = source.IsPinned;
-            target.PinnedTime = source.PinnedTime;
-            DebugLog($"更新分组: {source.Name}, 标记数: {source.MarkedTimes?.Count ?? 0}");
+            DebugLog($"更新分组: {source.Name}, 标记数: {source.MarkedAccountIds?.Count ?? 0}");
         }
 
         private static void DebugLog(string message)

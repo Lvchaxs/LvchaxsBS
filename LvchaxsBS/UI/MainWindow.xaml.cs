@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using System.Security.Principal;
 using LvchaxsBS.Config;
 using LvchaxsBS.Core;
 using LvchaxsBS.Services;
@@ -79,6 +80,11 @@ namespace LvchaxsBS.UI
             UidModuleService.Probe();
             TopLeft.SetUidVisible(UidModuleService.IsAvailable);
             UidModuleService.CloseToolRequested += UidModuleService_CloseToolRequested;
+
+            // 自定义宏模块（可选插件：exe 同目录有 LvchaxsBS_macro.dll 才显示左侧按钮）
+            TopLeft.MacroClicked += TopLeft_MacroClicked;
+            MacroModuleService.Probe();
+            TopLeft.SetMacroVisible(MacroModuleService.IsAvailable);
 
             // 全局模态遮罩层：宿主的弹窗和 UID 模块的页内模态框都用它压暗整个窗口
             ModalOverlayService.Attach(ModalLayer, ModalMask, ModalHost);
@@ -168,10 +174,45 @@ namespace LvchaxsBS.UI
                 // 兜底：万一首页的 Loaded 没来（异常/被切走），首帧渲染完也要把窗口露出来，
                 // 免得程序起来了却看不见窗口。
                 if (MainFrame.Content != null) RevealWindow();
+
+                // ★ 非管理员启动 ⇒ 红色提示（模拟输入发不进以管理员运行的游戏）
+                NotifyNonAdminStartup();
+
                 if (_initialWallpaperFadeDone) return;
                 _initialWallpaperFadeDone = true;
                 ApplyWallpaper(WallpaperTransition.Startup);
             };
+        }
+
+        /// <summary>「非管理员」提示只在本次运行弹一次（ContentRendered 可能来多次）。</summary>
+        private bool _nonAdminNotified;
+
+        /// <summary>
+        /// 启动时不是管理员 ⇒ 弹一条**红色**提示：模拟输入（SendInput 那套）在非管理员下
+        /// 会被以管理员运行的游戏挡掉，功能看着都在、按下去却没反应，必须让用户知道。
+        /// </summary>
+        private void NotifyNonAdminStartup()
+        {
+            if (_nonAdminNotified) return;
+            _nonAdminNotified = true;
+
+            if (IsRunningAsAdmin()) return;
+
+            ShowToast("非管理员启动，模拟输入部分将无法生效。", false);
+        }
+
+        /// <summary>本进程是不是以管理员身份运行（判断不了时按「是」处理，避免误报）。</summary>
+        private static bool IsRunningAsAdmin()
+        {
+            try
+            {
+                using var identity = WindowsIdentity.GetCurrent();
+                return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         /// <summary>
@@ -251,6 +292,9 @@ namespace LvchaxsBS.UI
                 else
                     WallpaperImage.Source = null;
 
+                // 壁纸整个关掉时也把（半径为 0 的）模糊效果摘掉，彻底不占离屏通道
+                ApplyWallpaperBlurEffect(false);
+
                 return;
             }
 
@@ -280,7 +324,13 @@ namespace LvchaxsBS.UI
             double opacity = Math.Clamp(p.WallpaperOpacity, 0, 100) / 100.0;
 
             // 模糊：实时 Effect，直接改半径即生效
-            WallpaperBlurEffect.Radius = Math.Clamp(p.WallpaperBlur, 0, 100) / 100.0 * MaxWallpaperBlurRadius;
+            double blurRadius = Math.Clamp(p.WallpaperBlur, 0, 100) / 100.0 * MaxWallpaperBlurRadius;
+            WallpaperBlurEffect.Radius = blurRadius;
+
+            // ★ 半径为 0 时把 Effect 整个摘掉。BlurEffect 即使 Radius=0 也会让这张铺满窗口的图
+            //   走一遍离屏渲染再合成（本窗口是 AllowsTransparency，纯软件渲染，代价尤其明显）；
+            //   摘掉后画面与半径为 0 完全一致，但少一次全窗口离屏通道。
+            ApplyWallpaperBlurEffect(blurRadius > 0);
 
             // 缩放（50 = 1.0x）、旋转、位移：拖这些滑块时带过渡，其它情况直接落值
             bool smooth = transition == WallpaperTransition.Smooth;
@@ -315,6 +365,24 @@ namespace LvchaxsBS.UI
                 _wallpaperFadingOut = false;
                 WallpaperImage.Opacity = opacity;
                 WallpaperImage.BeginAnimation(OpacityProperty, null);
+            }
+        }
+
+        /// <summary>
+        /// 按需把模糊效果挂到壁纸图上 / 从壁纸图上摘掉（摘掉时视觉与 Radius=0 完全一致）。
+        /// <para>壁纸被换掉（<see cref="WallpaperImage.Source"/> 变）时 Effect 跟着元素走，不用重挂。</para>
+        /// </summary>
+        private void ApplyWallpaperBlurEffect(bool withBlur)
+        {
+            bool attached = ReferenceEquals(WallpaperImage.Effect, WallpaperBlurEffect);
+
+            if (withBlur)
+            {
+                if (!attached) WallpaperImage.Effect = WallpaperBlurEffect;
+            }
+            else if (attached)
+            {
+                WallpaperImage.Effect = null;
             }
         }
 
@@ -546,9 +614,10 @@ namespace LvchaxsBS.UI
 
         // ============ Toast ============
 
-        public void ShowToast(string message, bool isSuccess = true)
+        /// <param name="durationMs">显示时长；<c>&lt;= 0</c> = 不限时（常驻，直到下一次提示把它顶掉）。</param>
+        public void ShowToast(string message, bool isSuccess = true, int durationMs = 5000)
         {
-            TitleBarToast?.Show(message, isSuccess);
+            TitleBarToast?.Show(message, isSuccess, durationMs);
         }
 
         // ============ 页面导航 ============
@@ -574,6 +643,13 @@ namespace LvchaxsBS.UI
 
             TopLeft.SetUidActive(isUidPage);
             SetUidTitleMode(isUidPage);
+
+            // 内容区是不是自定义宏页面？是就保持高亮（与 UID 同逻辑：直接 Navigate 同一实例 → 页面记忆）
+            bool isMacroPage = MacroModuleService.IsAvailable
+                               && e.Content != null
+                               && ReferenceEquals(e.Content, MacroModuleService.CurrentView);
+
+            TopLeft.SetMacroActive(isMacroPage);
 
             // 兜底：直接 Navigate 到别处（不经过配置容器页）时，全屏状态必须还原 ——
             // 否则从编辑页跳走后，窗口会一直缺着文字标题行和顶部按钮栏。
@@ -667,6 +743,26 @@ namespace LvchaxsBS.UI
             TopLeft.SetUidActive(true);
             SetUidTitleMode(true);         // 标题变成「Lvchaxs伴生_UID」并显示「使用说明」入口
         }
+
+        /// <summary>
+        /// 把自定义宏配置界面显示到内容区（由插件 LvchaxsBS_macro.dll 提供）。
+        /// <para>
+        /// 和 UID 一样：用 <see cref="System.Windows.Controls.ContentControl.Content"/> 直接赋值 / Navigate
+        /// 复用同一个实例（<see cref="MacroModuleService.CurrentView"/>），保住用户上次浏览到的文件夹 / 滚动位置；
+        /// 导航高亮交给 <see cref="MainFrame_Navigated"/> 统一处理。
+        /// </para>
+        /// </summary>
+        public void ShowMacroView()
+        {
+            var view = MacroModuleService.CurrentView ?? MacroModuleService.GetMacroConfigView();
+            if (view == null) return;
+
+            // 已经停在宏页面就不再重复 Navigate（避免 Loaded 反复重跑 Reload）
+            if (!ReferenceEquals(MainFrame.Content, view))
+                MainFrame.Navigate(view);
+        }
+
+        private void TopLeft_MacroClicked(object? sender, EventArgs e) => ShowMacroView();
 
         /// <summary>
         /// 标题栏的「UID 模式」外观：进入账号管理时把标题后缀显示成 <c>_UID</c>，
@@ -764,6 +860,16 @@ namespace LvchaxsBS.UI
 
         private void TopCenter_FunctionClicked(object? sender, string functionName)
         {
+            // ★ 自定义宏不走「配置容器页」（带「快速传送」顶栏的通用工具页），
+            //   改走和 UID 一样的内容区视图（固定头行 + 内容区 + 页面记忆）。
+            //   首页卡片的「打开宏文件夹」按钮也是走这个方法，所以这里统一拦截，
+            //   让文件夹按钮和「配置」按钮落到同一个新宏视图（不再带那个顶栏）。
+            if (string.Equals(functionName, MacroModuleService.ModuleName, StringComparison.Ordinal))
+            {
+                ShowMacroView();
+                return;
+            }
+
             string keepCategory = "";
             if (MainFrame.Content is Pages.ConfigContainerPage current)
                 keepCategory = current.CurrentCategory;
@@ -797,21 +903,68 @@ namespace LvchaxsBS.UI
             }
         }
 
+        /// <summary>
+        /// 补上 <c>LvchaxsBS_Resources.dll</c> 之后调：重建当前页，让所有图片重新解析。
+        /// <para>
+        /// ★ 启动时缺资源包 ⇒ 页面上那些 `pack://…/LvchaxsBS_Resources;…` 的图全是空白的，
+        ///   而且 **WPF 不会自己重试**。重建一次页面，图片就能重新加载出来。
+        /// ★ 只重建有**无参构造**的页（首页 / 设置 / 个性化 / 语音都符合）；
+        ///   配置容器页需要参数、指令编辑页是全屏页 —— 都跳过，用户切一次页面自然就好了。
+        /// </para>
+        /// </summary>
+        public void ReloadCurrentPageForResource()
+        {
+            try
+            {
+                if (MainFrame.Content is not Page page) return;
+                if ((page.Tag as string) == "FullScreen") return;
+
+                var ctor = page.GetType().GetConstructor(Type.EmptyTypes);
+                if (ctor == null) return;
+
+                MainFrame.Navigate((Page)ctor.Invoke(null));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"重建当前页失败（资源热加载）：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 可选组件补上后热加载：让顶部这一排立刻反映出新装的模块。
+        /// <para>
+        /// ★ 首页卡片不用管 —— <c>HomePage</c> 每次进入都会重建，自然会按新的
+        ///   <c>ModuleRegistry.All</c> 生成卡片和标题行标签。
+        /// </para>
+        /// </summary>
+        public void RefreshOptionalModules()
+        {
+            try
+            {
+                TopLeft.SetUidVisible(UidModuleService.IsAvailable);
+                TopLeft.SetMacroVisible(MacroModuleService.IsAvailable);
+                TopCenter.RefreshOptionalModules();
+                SyncFunctionButtonOrder(animate: false);
+
+                // ★★ 首页卡片是**构造 HomePage 时**按 ModuleRegistry.All 生成的 ——
+                //    当前正显示首页的话必须重建，否则新装的模块卡片要等用户重新点一次「首页」
+                //    才会出现（看起来就像"根本没热加载"）。
+                if (MainFrame.Content is Pages.HomePage)
+                    MainFrame.Navigate(new Pages.HomePage());
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"刷新可选模块失败：{ex.Message}");
+            }
+        }
+
         // ============ 右侧栏事件 ============
 
         private void TopRight_ThemeToggleClicked(object? sender, EventArgs e)
         {
-            if (ThemeFog == null)
-            {
-                ThemeService.Toggle();
-                return;
-            }
-
-            // 迷雾从主题按钮处扩散（两个方向共用同一套雾色）
-            var origin = TopRight.GetThemeButtonCenter(ThemeFog);
-
-            if (!ThemeFog.Play(origin, ThemeService.Toggle))
-                return;   // 动画播放中，忽略本次点击
+            // 主题切换的过渡就是「每个主题色自己渐变到新色」（见 ThemeService.Apply），整窗一起过渡。
+            // 连点也不会打架：后一次会先把前一次落定，再从当前中间色接着渐变。
+            ThemeService.Toggle();
         }
 
         private void TopRight_ToggleClicked(object? sender, EventArgs e)
@@ -824,6 +977,17 @@ namespace LvchaxsBS.UI
             {
                 container.RefreshMasterSwitchVisual();
             }
+            else if (MainFrame.Content != null)
+            {
+                // ★★ 插件页面（如「自定义宏」的宏列表）也要跟随总开关变灰。
+                //   约定：公开的**无参**方法 RefreshMasterSwitchVisual（和首页 / 配置容器页同名）。
+                //   ★ 用反射而不是加接口：宿主不能引用插件类型（插件是反射加载的可选 dll）。
+                MainFrame.Content.GetType()
+                    .GetMethod("RefreshMasterSwitchVisual",
+                               System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance,
+                               null, Type.EmptyTypes, null)
+                    ?.Invoke(MainFrame.Content, null);
+            }
 
             // 应用总开关状态：关闭时停止全部功能 + 暂停界面检测 + 隐藏图标窗口
             IconService.ApplyMasterSwitchState(TopRight.IsToggleOn);
@@ -833,6 +997,10 @@ namespace LvchaxsBS.UI
 
         private void TopRight_ScreenshotClicked(object? sender, EventArgs e)
         {
+            // 已经开着（比如刚按了右 Shift 热键）就别再叠一个
+            if (!ScreenshotToolWindow.TryEnter())
+                return;
+
             try
             {
                 ModalOverlayService.ShowModalDialog(new ScreenshotToolWindow());
@@ -840,6 +1008,10 @@ namespace LvchaxsBS.UI
             catch (Exception ex)
             {
                 ShowToast($"打开截图工具失败: {ex.Message}", false);
+            }
+            finally
+            {
+                ScreenshotToolWindow.Leave();
             }
         }
 
@@ -930,20 +1102,38 @@ namespace LvchaxsBS.UI
             UpdateRootBorderClip();
         }
 
+        /// <summary>
+        /// 外层圆角裁剪用的几何。
+        /// <para>
+        /// ★ 只建一次、改 <see cref="RectangleGeometry.Rect"/>：<see cref="RootBorder_SizeChanged"/>
+        ///   在拖窗口边缘时每帧都会来，原来每次都 new 一个 <see cref="RectangleGeometry"/> 换上去，
+        ///   等于每帧一次分配 + 一次裁剪重建。复用同一个实例后视觉完全一致，但不再产生垃圾。
+        /// </para>
+        /// </summary>
+        private RectangleGeometry? _rootClipGeometry;
+
         private void UpdateRootBorderClip()
         {
             if (RootBorder == null) return;
+
             double radius = RootBorder.CornerRadius.TopLeft;
-            if (radius > 0 && RootBorder.ActualWidth > 0 && RootBorder.ActualHeight > 0)
-            {
-                RootBorder.Clip = new RectangleGeometry(
-                    new Rect(0, 0, RootBorder.ActualWidth, RootBorder.ActualHeight),
-                    radius, radius);
-            }
-            else
+            double w = RootBorder.ActualWidth;
+            double h = RootBorder.ActualHeight;
+
+            if (radius <= 0 || w <= 0 || h <= 0)
             {
                 RootBorder.Clip = null;
+                return;
             }
+
+            _rootClipGeometry ??= new RectangleGeometry();
+            _rootClipGeometry.RadiusX = radius;
+            _rootClipGeometry.RadiusY = radius;
+            _rootClipGeometry.Rect = new Rect(0, 0, w, h);
+
+            // 只在还没挂上（或曾被摘掉）时赋值，避免每帧都触发一次 Clip 变更通知
+            if (!ReferenceEquals(RootBorder.Clip, _rootClipGeometry))
+                RootBorder.Clip = _rootClipGeometry;
         }
 
         private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)

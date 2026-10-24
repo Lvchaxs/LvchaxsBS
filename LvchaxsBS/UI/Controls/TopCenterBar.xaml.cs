@@ -18,6 +18,9 @@ namespace LvchaxsBS.UI.Controls
         /// <summary>UID 账号管理按钮点击（模块未加载时该按钮隐藏，不会触发）。</summary>
         public event EventHandler? UidClicked;
 
+        /// <summary>自定义宏按钮点击（模块未加载时该按钮隐藏，不会触发）。</summary>
+        public event EventHandler? MacroClicked;
+
         // ============ 导航页标识 ============
         // 唯一来源：SetXxxActive 写入、RefreshActiveVisual 读取，两边必须用同一套常量，
         // 否则就会出现"记的是 A、刷的是 B"这类对不上的高亮残留。
@@ -27,6 +30,7 @@ namespace LvchaxsBS.UI.Controls
         private const string PageVoice = "Voice";
         private const string PageSettings = "Settings";
         private const string PageUid = "Uid";
+        private const string PageMacro = "Macro";
 
         /// <summary>当前高亮的导航页标识；空串表示哪个导航项都不该亮。</summary>
         private string _activePage = "";
@@ -55,6 +59,7 @@ namespace LvchaxsBS.UI.Controls
             //   以前漏了这一行，导致"UID 页切主题后 UID 还亮着上个主题的旧色、
             //   而 _activePage 里记着的上一个页面反倒被重新点亮"。
             SetUidActive(_activePage == PageUid);
+            SetMacroActive(_activePage == PageMacro);
         }
 
         private void ButtonHome_Click(object sender, RoutedEventArgs e)
@@ -71,6 +76,9 @@ namespace LvchaxsBS.UI.Controls
 
         private void ButtonUid_Click(object sender, RoutedEventArgs e)
             => UidClicked?.Invoke(this, EventArgs.Empty);
+
+        private void ButtonMacro_Click(object sender, RoutedEventArgs e)
+            => MacroClicked?.Invoke(this, EventArgs.Empty);
 
         private void CenterButton1_Click(object sender, RoutedEventArgs e)
             => OfficialServerClicked?.Invoke(this, EventArgs.Empty);
@@ -103,6 +111,15 @@ namespace LvchaxsBS.UI.Controls
         }
 
         /// <summary>
+        /// 控制「自定义宏」按钮显隐。只有 exe 同目录存在可用的 LvchaxsBS_macro.dll 时才显示。
+        /// </summary>
+        public void SetMacroVisible(bool visible)
+        {
+            if (ButtonMacro != null)
+                ButtonMacro.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>
         /// UID 页面是否为当前页（和「首页 / 设置」等导航项一样高亮）。
         /// </summary>
         public void SetUidActive(bool active)
@@ -114,6 +131,20 @@ namespace LvchaxsBS.UI.Controls
                                             : ThemeBrushProvider.TextSecondaryBrush();
 
             ApplyNavFrame(ButtonUid, active);
+        }
+
+        /// <summary>
+        /// 自定义宏页面是否为当前页（和「首页 / 设置」等导航项一样高亮）。
+        /// </summary>
+        public void SetMacroActive(bool active)
+        {
+            RememberActivePage(active, PageMacro);
+
+            if (MacroText != null)
+                MacroText.Foreground = active ? ThemeBrushProvider.PrimaryBrush()
+                                             : ThemeBrushProvider.TextSecondaryBrush();
+
+            ApplyNavFrame(ButtonMacro, active);
         }
 
         // ============ 当前页高亮 ============

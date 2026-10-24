@@ -15,6 +15,10 @@ namespace LvchaxsBS.UI.Controls
             InitializeComponent();
         }
 
+        /// <param name="durationMs">
+        /// 显示时长（毫秒）。<c>&lt;= 0</c> 表示**不限时**：只播入场动画，一直挂着不淡出，
+        /// 直到下一次 Show 把它顶掉（用来覆盖"整个过程什么时候结束不确定"的等待场景）。
+        /// </param>
         public void Show(string message, bool isSuccess = true, int durationMs = 5000)
         {
             if (PART_Message == null || PART_Container == null) return;
@@ -62,33 +66,43 @@ namespace LvchaxsBS.UI.Controls
             Storyboard.SetTarget(fadeIn, PART_Container);
             Storyboard.SetTargetProperty(fadeIn, new PropertyPath(UIElement.OpacityProperty));
 
-            var slideOut = new DoubleAnimation
+            // 不限时时只播入场：不加淡出动画，通知就一直停在屏幕上
+            if (durationMs > 0)
             {
-                From = 0,
-                To = -20,
-                BeginTime = TimeSpan.FromMilliseconds(durationMs),
-                Duration = TimeSpan.FromMilliseconds(250),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-            };
-            Storyboard.SetTarget(slideOut, PART_Container);
-            Storyboard.SetTargetProperty(slideOut, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.Y)"));
+                var slideOut = new DoubleAnimation
+                {
+                    From = 0,
+                    To = -20,
+                    BeginTime = TimeSpan.FromMilliseconds(durationMs),
+                    Duration = TimeSpan.FromMilliseconds(250),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+                };
+                Storyboard.SetTarget(slideOut, PART_Container);
+                Storyboard.SetTargetProperty(slideOut, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.Y)"));
 
-            var fadeOut = new DoubleAnimation
+                var fadeOut = new DoubleAnimation
+                {
+                    From = 1,
+                    To = 0,
+                    BeginTime = TimeSpan.FromMilliseconds(durationMs),
+                    Duration = TimeSpan.FromMilliseconds(250),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+                };
+                Storyboard.SetTarget(fadeOut, PART_Container);
+                Storyboard.SetTargetProperty(fadeOut, new PropertyPath(UIElement.OpacityProperty));
+
+                _storyboard = new Storyboard();
+                _storyboard.Children.Add(slideIn);
+                _storyboard.Children.Add(fadeIn);
+                _storyboard.Children.Add(slideOut);
+                _storyboard.Children.Add(fadeOut);
+            }
+            else
             {
-                From = 1,
-                To = 0,
-                BeginTime = TimeSpan.FromMilliseconds(durationMs),
-                Duration = TimeSpan.FromMilliseconds(250),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-            };
-            Storyboard.SetTarget(fadeOut, PART_Container);
-            Storyboard.SetTargetProperty(fadeOut, new PropertyPath(UIElement.OpacityProperty));
-
-            _storyboard = new Storyboard();
-            _storyboard.Children.Add(slideIn);
-            _storyboard.Children.Add(fadeIn);
-            _storyboard.Children.Add(slideOut);
-            _storyboard.Children.Add(fadeOut);
+                _storyboard = new Storyboard();
+                _storyboard.Children.Add(slideIn);
+                _storyboard.Children.Add(fadeIn);
+            }
 
             _storyboard.Begin();
         }

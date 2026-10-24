@@ -29,6 +29,47 @@
                   VerticalAlignment="Center"/>
         </Button>
 
+        <!-- 自定义宏（由 exe 同目录的 LvchaxsBS_macro.dll 提供；没有该 dll 时隐藏）
+             尺寸 / 样式与左侧「首页 / 个性化 / 字幕设置 / 设置」保持一致，紧挨 UID 按钮 -->
+        <Button x:Name="ButtonMacro"
+                Width="28" Height="28"
+                MinWidth="28"
+                Margin="0,0,4,0"
+                Padding="0"
+                Visibility="Collapsed"
+                Style="{StaticResource ImageButtonStyleRound6}"
+                ui:ButtonTip.Text="自定义宏"
+                Click="ButtonMacro_Click">
+            <TextBlock x:Name="MacroText"
+                       Text="&lt;/&gt;"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       FontFamily="Consolas, Menlo, Monaco, 'Courier New', monospace"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Button>
+
+        <!-- UID 账号管理（由 exe 同目录的 LvchaxsBS_uid.dll 提供；没有该 dll 时隐藏）
+             尺寸 / 样式与左侧「首页 / 个性化 / 字幕设置 / 设置」保持一致 -->
+        <Button x:Name="ButtonUid"
+                Width="28" Height="28"
+                MinWidth="28"
+                Margin="0,0,4,0"
+                Padding="0"
+                Visibility="Collapsed"
+                Style="{StaticResource ImageButtonStyleRound6}"
+                ui:ButtonTip.Text="UID 账号管理"
+                Click="ButtonUid_Click">
+            <TextBlock x:Name="UidText"
+                       Text="UID"
+                       FontSize="10"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Button>
+
         <!-- 个性化 -->
         <Button x:Name="ButtonPersonalization"
                 Width="28" Height="28"
@@ -119,26 +160,6 @@
                           StrokeEndLineCap="Round"/>
                 </Grid>
             </Viewbox>
-        </Button>
-
-        <!-- UID 账号管理（由 exe 同目录的 LvchaxsBS_uid.dll 提供；没有该 dll 时隐藏）
-             尺寸 / 样式与左侧「首页 / 个性化 / 字幕设置 / 设置」保持一致 -->
-        <Button x:Name="ButtonUid"
-                Width="28" Height="28"
-                MinWidth="28"
-                Margin="0,0,4,0"
-                Padding="0"
-                Visibility="Collapsed"
-                Style="{StaticResource ImageButtonStyleRound6}"
-                ui:ButtonTip.Text="UID 账号管理"
-                Click="ButtonUid_Click">
-            <TextBlock x:Name="UidText"
-                       Text="UID"
-                       FontSize="10"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"/>
         </Button>
 
         <!-- 设置 -->

@@ -26,7 +26,6 @@ namespace LvchaxsBS_UID.Views
             {
                 // 创建新分组
                 Group = new AccountGroup();
-                Group.CreatedTime = DateTime.Now;
             }
             else
             {
@@ -130,12 +129,6 @@ namespace LvchaxsBS_UID.Views
 
             Group.Name = groupNameTextBox.Text.Trim();
             Group.TagNote = tagNoteTextBox.Text.Trim();
-
-            // 如果是新建分组，设置创建时间
-            if (!IsEditMode)
-            {
-                Group.CreatedTime = DateTime.Now;
-            }
 
             CloseWithAnimation(true);
         }

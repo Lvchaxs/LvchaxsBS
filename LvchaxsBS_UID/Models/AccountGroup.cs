@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
@@ -11,11 +11,10 @@ namespace LvchaxsBS_UID.Models
         private string _name = "";
         private string _tagNote = "";
         private List<int> _accountIds = new List<int>();
-        private Dictionary<int, DateTime> _accountAddTimes = new Dictionary<int, DateTime>();
-        private Dictionary<int, DateTime> _markedTimes = new Dictionary<int, DateTime>(); //标记时间
+        /// <summary>该分组里**已置底**的账号编号集合。★ 只记编号、不记时间 —— 排序由 <see cref="Order"/> 决定。</summary>
+        private List<int> _markedAccountIds = new List<int>();
         private bool _isPinned = false;
-        private DateTime _createdTime;
-        private DateTime? _pinnedTime;
+        private int _order;
 
         [JsonPropertyName("id")]
         public int Id
@@ -64,25 +63,21 @@ namespace LvchaxsBS_UID.Models
             }
         }
 
-        [JsonPropertyName("accountAddTimes")]
-        public Dictionary<int, DateTime> AccountAddTimes
+        /// <summary>
+        /// 该分组里**已置底**的账号编号（「清除置底」按钮与卡片计数都读它）。
+        /// ★ 以前这里是 <c>Dictionary&lt;int, DateTime&gt; MarkedTimes</c>（键=账号、值=置底时间），
+        ///   但那个时间**从来没被读过** —— 界面只关心"在不在集合里"，排序也早就改用 order 了。
+        ///   于是去掉时间值，退化成纯编号列表，json 里不再出现任何日期。
+        ///   ★ 老文件里的 <c>markedTimes</c> 由 <see cref="Services.DataServices.GroupDataService"/> 加载时迁移过来。
+        /// </summary>
+        [JsonPropertyName("markedAccountIds")]
+        public List<int> MarkedAccountIds
         {
-            get => _accountAddTimes;
+            get => _markedAccountIds;
             set
             {
-                _accountAddTimes = value ?? new Dictionary<int, DateTime>();
-                OnPropertyChanged(nameof(AccountAddTimes));
-            }
-        }
-
-        [JsonPropertyName("markedTimes")]
-        public Dictionary<int, DateTime> MarkedTimes
-        {
-            get => _markedTimes;
-            set
-            {
-                _markedTimes = value ?? new Dictionary<int, DateTime>();
-                OnPropertyChanged(nameof(MarkedTimes));
+                _markedAccountIds = value ?? new List<int>();
+                OnPropertyChanged(nameof(MarkedAccountIds));
             }
         }
 
@@ -100,25 +95,19 @@ namespace LvchaxsBS_UID.Models
             }
         }
 
-        [JsonPropertyName("createdTime")]
-        public DateTime CreatedTime
+        /// <summary>
+        /// 手动排序号（「自由排序」）：**取代了按创建时间 / 置顶时间排序**，数字越小越靠前。
+        /// 置顶分组与普通分组各自独立按它排（和账号的 <see cref="Account.Order"/> 同一套规则）。
+        /// ★ 0 是合法值；老数据没有排序号时按整批全 0 判断，见 <see cref="SortingService.EnsureGroupOrders"/>。
+        /// </summary>
+        [JsonPropertyName("order")]
+        public int Order
         {
-            get => _createdTime;
+            get => _order;
             set
             {
-                _createdTime = value;
-                OnPropertyChanged(nameof(CreatedTime));
-            }
-        }
-
-        [JsonPropertyName("pinnedTime")]
-        public DateTime? PinnedTime
-        {
-            get => _pinnedTime;
-            set
-            {
-                _pinnedTime = value;
-                OnPropertyChanged(nameof(PinnedTime));
+                _order = value;
+                OnPropertyChanged(nameof(Order));
             }
         }
 
@@ -135,18 +124,14 @@ namespace LvchaxsBS_UID.Models
         // 构造函数
         public AccountGroup()
         {
-            _createdTime = DateTime.Now;
-            _accountAddTimes = new Dictionary<int, DateTime>();
-            _markedTimes = new Dictionary<int, DateTime>();
         }
 
-        // 添加账号到分组并记录时间
+        // 添加账号到分组
         public void AddAccount(int accountId)
         {
             if (!_accountIds.Contains(accountId))
             {
                 _accountIds.Add(accountId);
-                _accountAddTimes[accountId] = DateTime.Now;
                 OnPropertyChanged(nameof(AccountIds));
                 OnPropertyChanged(nameof(AccountCount));
             }
@@ -158,14 +143,7 @@ namespace LvchaxsBS_UID.Models
             if (_accountIds.Contains(accountId))
             {
                 _accountIds.Remove(accountId);
-                if (_accountAddTimes.ContainsKey(accountId))
-                {
-                    _accountAddTimes.Remove(accountId);
-                }
-                if (_markedTimes.ContainsKey(accountId))
-                {
-                    _markedTimes.Remove(accountId);
-                }
+                _markedAccountIds.Remove(accountId);
                 OnPropertyChanged(nameof(AccountIds));
                 OnPropertyChanged(nameof(AccountCount));
             }
@@ -174,81 +152,40 @@ namespace LvchaxsBS_UID.Models
         // 批量添加账号
         public void AddAccounts(List<int> accountIds)
         {
-            var now = DateTime.Now;
             foreach (var accountId in accountIds)
             {
                 if (!_accountIds.Contains(accountId))
                 {
                     _accountIds.Add(accountId);
-                    _accountAddTimes[accountId] = now;
                 }
             }
             OnPropertyChanged(nameof(AccountIds));
             OnPropertyChanged(nameof(AccountCount));
         }
 
-        // 获取账号移入时间
-        public DateTime GetAccountAddTime(int accountId)
-        {
-            if (_accountAddTimes.ContainsKey(accountId))
-            {
-                return _accountAddTimes[accountId];
-            }
-            // 如果没有记录时间，返回当前时间
-            return DateTime.Now;
-        }
-
-        // 标记账号（记录标记时间）
+        // 置底账号
         public void MarkAccount(int accountId)
         {
-            if (!_markedTimes.ContainsKey(accountId))
-            {
-                _markedTimes[accountId] = DateTime.Now;
-            }
-            else
-            {
-                // 更新标记时间
-                _markedTimes[accountId] = DateTime.Now;
-            }
+            if (!_markedAccountIds.Contains(accountId))
+                _markedAccountIds.Add(accountId);
         }
 
-        // 取消标记账号
+        // 取消置底
         public void UnmarkAccount(int accountId)
         {
-            if (_markedTimes.ContainsKey(accountId))
-            {
-                _markedTimes.Remove(accountId);
-            }
+            _markedAccountIds.Remove(accountId);
         }
 
-        // 获取账号标记时间
-        public DateTime? GetMarkedTime(int accountId)
-        {
-            if (_markedTimes.ContainsKey(accountId))
-            {
-                return _markedTimes[accountId];
-            }
-            return null;
-        }
-
-        // 检查账号是否被标记
+        // 检查账号是否已置底
         public bool IsAccountMarked(int accountId)
         {
-            return _markedTimes.ContainsKey(accountId);
+            return _markedAccountIds.Contains(accountId);
         }
 
-        // 设置置顶时间
+        // 置顶 / 取消置顶（排序号由调用方按自由排序规则改，见 SortingService.AssignGroupPinOrder）
         public void SetPinned(bool isPinned)
         {
             IsPinned = isPinned;
-            if (isPinned)
-            {
-                PinnedTime = DateTime.Now;
-            }
-            else
-            {
-                PinnedTime = null;
-            }
         }
     }
 }

@@ -19,31 +19,49 @@ namespace LvchaxsBS.Services
         public static void Initialize(object? host = null) { }
 
         public static void Show(string message, bool isSuccess = true)
-            => Dispatch(message, isSuccess);
+            => Dispatch(message, isSuccess, DefaultDurationMs);
 
         public static void Show(string title, string message, bool isSuccess = true)
-            => Dispatch(string.IsNullOrEmpty(title) ? message : $"{title}: {message}", isSuccess);
+            => Dispatch(string.IsNullOrEmpty(title) ? message : $"{title}: {message}",
+                        isSuccess, DefaultDurationMs);
 
         public static void ShowWithTitle(string title, string message, bool isSuccess = true)
             => Show(title, message, isSuccess);
 
+        /// <summary>
+        /// 不限时通知：一直挂在标题栏上不淡出，直到下一次 <see cref="Show"/> 把它顶掉。
+        /// <para>用于"要等多久不确定"的等待场景（比如下载更新）—— 普通通知固定几秒就没了。</para>
+        /// </summary>
+        public static void ShowSticky(string message, bool isSuccess = true)
+            => Dispatch(message, isSuccess, Sticky);
+
+        public static void ShowSticky(string title, string message, bool isSuccess = true)
+            => Dispatch(string.IsNullOrEmpty(title) ? message : $"{title}: {message}",
+                        isSuccess, Sticky);
+
         public static void Cleanup() { }
 
-        private static void Dispatch(string message, bool isSuccess)
+        /// <summary>普通通知的默认显示时长（毫秒）。</summary>
+        private const int DefaultDurationMs = 5000;
+
+        /// <summary>传给 Toast 控件的"不限时"标记：&lt;= 0 时不排淡出动画。</summary>
+        private const int Sticky = -1;
+
+        private static void Dispatch(string message, bool isSuccess, int durationMs)
         {
             var app = Application.Current;
             if (app == null) return;
 
             if (app.Dispatcher.CheckAccess())
-                ShowCore(message, isSuccess);
+                ShowCore(message, isSuccess, durationMs);
             else
-                app.Dispatcher.BeginInvoke(new Action(() => ShowCore(message, isSuccess)));
+                app.Dispatcher.BeginInvoke(new Action(() => ShowCore(message, isSuccess, durationMs)));
         }
 
-        private static void ShowCore(string message, bool isSuccess)
+        private static void ShowCore(string message, bool isSuccess, int durationMs)
         {
             if (Application.Current?.MainWindow is LvchaxsBS.UI.MainWindow mw)
-                mw.ShowToast(message, isSuccess);
+                mw.ShowToast(message, isSuccess, durationMs);
         }
     }
 }

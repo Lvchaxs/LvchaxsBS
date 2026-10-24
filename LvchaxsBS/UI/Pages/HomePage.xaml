@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:ui="clr-namespace:LvchaxsBS.UI.Controls"
       xmlns:pages="clr-namespace:LvchaxsBS.UI.Pages"
+      xmlns:conv="clr-namespace:Lvchaxs.Converters"
       mc:Ignorable="d"
       d:DesignHeight="450" d:DesignWidth="800"
       Title="HomePage"
@@ -12,6 +13,11 @@
 
     <Page.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <!-- ★★ 列表容器间距：「最后一项下边距 0、其余 8」—— 滚到底时最后一张卡底边贴视口底。
+             用绑定而不是代码刷：代码刷总比容器生成晚一步（首进 / 排序后新建的容器都会漏），
+             UID 账号列表「首次打开滚到底有空白、打开一次分组再返回才正常」就是这个坑。
+             绑在容器自己身上 ⇒ 生成即正确，排序 Move / 换集合自动重算。 -->
+        <conv:LastItemSpacingConverter x:Key="LastItemSpacing"/>
 
         <!-- 触发键按钮：未设置（灰）/ 已设置（主题色），画刷全部 DynamicResource，切主题自动生效 -->
         <Style x:Key="ModuleTriggerButtonStyle" TargetType="Button" BasedOn="{StaticResource FlatButtonStyleRound6}">
@@ -27,22 +33,127 @@
             </Style.Triggers>
         </Style>
 
+        <!-- ============ 排序手柄（与 UID 账号/分组卡片、自定义宏卡片**同一份几何**） ============
+             24×24、悬停放大 1.2、按下即进入拖动（无长按延迟），复用 Icon_PreviewMouseLeftButtonDown。
+             ★ 常驻显示，没有开关、也没有显隐动画。
+             ★ 宿主没有 ExponentialEaseOut 资源，悬停动画用 CubicEase（曲线几乎一致）。 -->
+        <StreamGeometry x:Key="SortHandleIconGeometry">M 1,4.8 L 3.2,2.2 L 5.4,4.8 M 3.2,3 L 3.2,6.6 M 3.2,7.9 L 3.2,8.05 M 3.2,9.4 L 3.2,13 M 1,11.2 L 3.2,13.8 L 5.4,11.2 M 8.2,3.2 H 16 M 8.2,8 H 16 M 8.2,12.8 H 16</StreamGeometry>
+
+        <Style x:Key="SortHandleButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <!-- ★ 与 UID 一致：在手柄那一列里右移 6px（左 +6 / 右 −6 相抵，列宽仍是 29） -->
+            <Setter Property="Margin" Value="11,0,-6,0"/>
+            <!-- ★ 和 UID 完全一致：不要给底色（透明命中区）—— 这里是普通卡片，给底色会多出一个方块 -->
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="ToolTip" Value="按住拖动排序"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                            <Path x:Name="sortIcon"
+                                  Data="{StaticResource SortHandleIconGeometry}"
+                                  Stroke="{DynamicResource TextDisabledBrush}"
+                                  StrokeThickness="1.8"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Stretch="Uniform"
+                                  Width="16" Height="16"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <ScaleTransform x:Name="sortScale" ScaleX="1" ScaleY="1"/>
+                                </Path.RenderTransform>
+                            </Path>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="sortIcon" Property="Stroke" Value="{DynamicResource TextSecondaryBrush}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1.2" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1.2" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="sortScale"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="1" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
     </Page.Resources>
 
     <!-- 卡片数据来自 ModuleRegistry（ModuleCardItem），新增模块无需改本页 -->
-    <ScrollViewer Style="{StaticResource CustomScrollViewer}">
+    <!-- ★ PreviewMouseWheel：滚轮一格 = 一张功能卡片（48px 的物理滚动太碎，
+         和 UID 账号列表 / 自定义宏列表统一成 70+8=78px 一步）。 -->
+    <ScrollViewer Style="{StaticResource CustomScrollViewer}"
+                  PreviewMouseWheel="CardList_PreviewMouseWheel">
         <StackPanel Margin="5,4,0,0">
 
         <ItemsControl x:Name="ModuleList">
+            <!-- ★ 2026-10-21：卡片间距从「卡片自身 Margin」（ModuleFunctionCardStyle 自带 0,0,0,8）
+                 挪到**容器**上，这样代码才能把最后一项的下边距刷成 0 ⇒ 滚到底时最后一张卡
+                 底边贴视口底（与 UID 账号列表 / 自定义宏列表同一标准，用户明确要求）。
+                 ⛔ 不能去改 ModuleFunctionCardStyle 本身 —— 那个样式被 7 个页面共用
+                 （配置页 / 快速传送 / 手柄触发键页…），一改全应用跟着变。
+                 所以只在这里两处局部处理：模板根 Border 显式 Margin="0" 盖掉样式自带的 8，
+                 间距统一由下面的 ItemContainerStyle（ContentPresenter）出。 -->
+            <ItemsControl.ItemContainerStyle>
+                <!-- ★★ 2026-10-21：间距改成**绑定**算（见 LastItemSpacingConverter）：
+                     最后一项容器自动 0，其余 8 —— 滚到底时最后一张卡底边正好贴视口底。
+                     ⛔ 别再写代码去设容器 Margin：本地值会覆盖这个绑定，之后排序/换集合就不更新了。 -->
+                <Style TargetType="ContentPresenter">
+                    <Setter Property="Margin">
+                        <Setter.Value>
+                            <MultiBinding Converter="{StaticResource LastItemSpacing}">
+                                <Binding RelativeSource="{RelativeSource Self}" Path="DataContext"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=ItemsControl}" Path="Items"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType=ItemsControl}" Path="ItemsSource"/>
+                            </MultiBinding>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ItemsControl.ItemContainerStyle>
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type pages:ModuleCardItem}">
 
-                    <Border Style="{StaticResource ModuleFunctionCardStyle}">
-                        <Grid>
+                    <!-- ★ ClipToBounds：排序手柄滑出时要往卡片右缘外走一截，不裁就会看到手柄跑到卡片外面。
+                         与自定义宏 / UID 两张卡片同一套（它们都是为这个开的裁剪）。 -->
+                    <Border Style="{StaticResource ModuleFunctionCardStyle}" Margin="0" ClipToBounds="True">
+                        <!-- ★ 右边距 16：与自定义宏卡片右侧块、UID 账号/分组卡片完全同一套 ——
+                             排序手柄样式自带 Margin="11,0,-6,0"，那 −6 是给「卡片内边距」留的位置；
+                             首页卡片没有内边距，不补这 16 的话手柄就真的探到卡片外面 6px，
+                             （用户看到的就是「排序按钮挂在卡片边沿上、位置不对」）。
+                             补上 16 之后手柄位置与自定义宏逐像素一致。 -->
+                        <Grid Margin="0,0,16,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <!-- 排序手柄列：手柄常驻显示，这里恒定 29px -->
+                                <ColumnDefinition Width="29"/>
                             </Grid.ColumnDefinitions>
 
                             <!-- 功能图标：按住不放就能拖动整张卡片调顺序（与 UID 账号列表同手感），
@@ -51,11 +162,14 @@
                                    是首页卡片与配置页卡片的统一位置，改了两边就对不齐了。 -->
                             <Border x:Name="PART_IconGrab"
                                     Grid.Column="0"
-                                    Style="{StaticResource IconBorderStyle}"
                                     VerticalAlignment="Center"
-                                    Cursor="SizeAll"
-                                    PreviewMouseLeftButtonDown="Icon_PreviewMouseLeftButtonDown"
-                                    ToolTip="拖动调整顺序">
+                                    PreviewMouseLeftButtonDown="Icon_PreviewMouseLeftButtonDown">
+                                <Border.Style>
+                                    <Style TargetType="Border" BasedOn="{StaticResource IconBorderStyle}">
+                                        <Setter Property="Cursor" Value="SizeAll"/>
+                                        <Setter Property="ToolTip" Value="拖动调整顺序"/>
+                                    </Style>
+                                </Border.Style>
                                 <Image Source="{Binding Module.IconPath}"
                                        Width="60" Height="60" Stretch="Uniform"/>
                             </Border>
@@ -65,8 +179,17 @@
                                     <TextBlock Text="{Binding Module.Name}" FontSize="16" FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0"/>
 
+                                    <!-- 插件模块自己的标题行控件（2026-10-19）：
+                                         「自定义宏」这里是 「宏文件 N 个」蓝标签 + 「编辑」按钮
+                                         （点了直接打开当前选中宏的指令编辑页）。
+                                         给了它就顶掉下面那排分辨率标签。 -->
+                                    <ContentPresenter Content="{Binding TagExtension}"
+                                                      VerticalAlignment="Center"
+                                                      Visibility="{Binding HasTagExtension, Converter={StaticResource BoolToVis}}"/>
+
                                     <!-- 通用分辨率标签（无标签模块自动隐藏，如手柄拾取） -->
-                                    <StackPanel Orientation="Horizontal"
+                                    <StackPanel x:Name="PART_ResolutionTags"
+                                                Orientation="Horizontal"
                                                 Visibility="{Binding ShowTags, Converter={StaticResource BoolToVis}}">
                                         <Border Style="{StaticResource TagLabelBlueStyle}" Width="35">
                                             <TextBlock Text="16:9" FontSize="10" FontWeight="SemiBold"
@@ -100,23 +223,59 @@
                                            TextTrimming="WordEllipsis" TextWrapping="NoWrap" Margin="0,2,0,0"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                <Button Width="50" Height="28" FontSize="11" Margin="0,0,10,0"
+                            <!-- 按钮行：右边距与自定义宏对齐（那边是 0，间距由手柄列自带Margin出） -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,0">
+                                <!-- 触发键按钮：宽度自适应（组合键如"左Ctrl+左Alt+Space"能完整显示）。
+                                     MinWidth 保证单键/未设置时仍是原来的 50 宽，观感不变；
+                                     MaxWidth 兜底，超长组合键用省略号（完整内容在悬停提示里）。 -->
+                                <Button MinWidth="50" MaxWidth="150" Height="28" Margin="0,0,10,0"
                                         Style="{StaticResource ModuleTriggerButtonStyle}"
-                                        Content="{Binding TriggerKeyText}"
                                         ui:ButtonTip.Text="{Binding TriggerKeyTooltip}"
-                                        Click="TriggerKeyButton_Click"/>
-                                <Button Content="配置" Width="50" Height="28" Margin="0,0,10,0"
+                                        Click="TriggerKeyButton_Click">
+                                    <TextBlock Text="{Binding TriggerKeyText}"
+                                               FontSize="11"
+                                               TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Button>
+                                <Button Content="{Binding ConfigButtonText}" Width="50" Height="28" Margin="0,0,10,0"
                                         Style="{StaticResource FlatButtonStyleRound6}"
                                         Click="ConfigButton_Click"/>
-                                <CheckBox Style="{StaticResource ModuleToggleSwitchStyle}"
-                                          VerticalAlignment="Center"
+                                <CheckBox VerticalAlignment="Center"
                                           IsChecked="{Binding IsChecked}"
-                                          Checked="Toggle_Changed" Unchecked="Toggle_Changed"/>
+                                          Loaded="ModuleToggle_Loaded"
+                                          Checked="Toggle_Changed" Unchecked="Toggle_Changed">
+                                    <!-- ★ 主程序「功能总开关」关掉时变灰（Opacity 0.4）。
+                                         ★★ 必须绑**页面级 DP**：拖动排序会 Move 集合 ⇒ 卡片容器被重建，
+                                            重建出来的 CheckBox 默认 Opacity=1，遍历设的灰度会全丢。 -->
+                                    <CheckBox.Style>
+                                        <Style TargetType="CheckBox"
+                                               BasedOn="{StaticResource ModuleToggleSwitchStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Value="False"
+                                                             Binding="{Binding MasterSwitchOn,
+                                                                       RelativeSource={RelativeSource AncestorType=pages:HomePage}}">
+                                                    <Setter Property="Opacity" Value="0.4"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </CheckBox.Style>
+                                </CheckBox>
                             </StackPanel>
+
+                            <!-- 排序手柄：与 UID 账号/分组卡片、自定义宏卡片同一份几何，常驻显示；
+                                 拖动逻辑复用 Icon_PreviewMouseLeftButtonDown（DataContext 同为 ModuleCardItem）。 -->
+                            <Button x:Name="PART_SortHandle" Grid.Column="3"
+                                    Style="{StaticResource SortHandleButtonStyle}"
+                                    PreviewMouseLeftButtonDown="Icon_PreviewMouseLeftButtonDown"/>
                         </Grid>
                     </Border>
 
+                    <!-- 插件给了标题行控件（如「自定义宏」）⇒ 分辨率标签让位 -->
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding HasTagExtension}" Value="True">
+                            <Setter TargetName="PART_ResolutionTags" Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>

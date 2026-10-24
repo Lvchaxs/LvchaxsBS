@@ -334,13 +334,13 @@
                         <StackPanel>
                             <TextBlock Text="账号管理"
                                        Style="{StaticResource FeatureTitleStyle}"/>
-                            <TextBlock Text="• 添加、编辑、删除、置顶、置底、分组、查看原神账号"
+                            <TextBlock Text="• 添加、编辑、删除、排序、置顶、置底、分组、复制"
                                        Style="{StaticResource BulletPointStyle}"/>
-                            <TextBlock Text="• 自动加密存储账号密码信息"
+                            <TextBlock Text="• 自动加密存储账号密码信息本地无明文"
                                        Style="{StaticResource BulletPointStyle}"/>
                             <TextBlock Text="• 支持UID、冒险等级、昵称、账号和密码的完整信息查看和管理"
                                        Style="{StaticResource BulletPointStyle}"/>
-                            <TextBlock Text="• 账号支持官服与国际服登录框可输入的格式：手机号、邮箱"
+                            <TextBlock Text="• 此功能纯本地运行数据不会上传到任何网络服务器"
                                        Style="{StaticResource BulletPointStyle}"/>
                         </StackPanel>
                     </Border>
@@ -375,13 +375,15 @@
                             Focusable="False"
                             FocusVisualStyle="{x:Null}">
                         <StackPanel>
-                            <TextBlock Text="本地加密存储"
+                            <TextBlock Text="自动登录"
                                        Style="{StaticResource FeatureTitleStyle}"/>
-                            <TextBlock Text="• 所有账号密码信息均在本机加密存储"
+                            <TextBlock Text="• 通过图像识别自动退出当前账号并登录已选择账号/退出账号使用从设置用户中心退出账号"
                                        Style="{StaticResource BulletPointStyle}"/>
-                            <TextBlock Text="• 使用加密算法保护敏感信息"
+                            <TextBlock Text="• 普通登录:账号列表中选择账号并登录到游戏主界面则结束登录"
                                        Style="{StaticResource BulletPointStyle}"/>
-                            <TextBlock Text="• 完全本地运行没有联网功能数据不会上传到任何服务器"
+                            <TextBlock Text="• 自动切换挂机地:锄地中资源小号的别称，此功能作者自用需要两台电脑设备，主电脑游玩另一台电脑负责登录并切换资源账号，具体使用教程询问作者"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 选四人联机，检测到多人模式且人数达到4人时记录已达标，随后从4人变成1人即地主时触发退出当前账号登录分组内下一个账号，支持监控游戏内聊天通过发送消息进行命令地主提前换号/更改地主元素角色/更改世界权限等。"
                                        Style="{StaticResource BulletPointStyle}"/>
                         </StackPanel>
                     </Border>
@@ -398,9 +400,32 @@
                         <StackPanel>
                             <TextBlock Text="快捷操作"
                                        Style="{StaticResource FeatureTitleStyle}"/>
-                            <TextBlock Text="• 置顶：常用账号分组可始终置顶在最上方"
+                            <TextBlock Text="• 置顶：账号过多时可点击账号头像将此账号置顶到最上方，也可直接长按排序按钮排序/分组列表一样的操作"
                                        Style="{StaticResource BulletPointStyle}"/>
-                            <TextBlock Text="• 置底：分组内账号今日已登录并完成任务后始终置底在最下方"
+                            <TextBlock Text="• 置底：只有分组内的账号列表点击头像时是置顶到最底部代表已完成此号的一些登录任务，所以置底的账号无法进行登录需要取消置底才能恢复登录"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 账号异常 -->
+                    <Border Background="#FFFBEB" 
+                            BorderBrush="#FDE68A" 
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,0,8"
+                            Focusable="False"
+                            FocusVisualStyle="{x:Null}">
+                        <StackPanel>
+                            <TextBlock Text="账号异常"
+                                       Style="{StaticResource FeatureTitleStyle}"/>
+                            <TextBlock Text="• 此异常为执行自动登录时检测到账号密码错误验证失效等的异常"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 账号或密码错误：账密提交后服务器校验未通过，同一账号最多重试 2 次仍报错就会打上红标签，之后不再自动登录"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 账号验证失效：登录时弹出“您的账号存在安全风险，请先验证身份后再登录”，说明本机设备验证已过期"
+                                       Style="{StaticResource BulletPointStyle}"/>
+                            <TextBlock Text="• 打上标签的账号无法登录，需要打开该账号的编辑窗口点击“清除异常”后才会恢复正常，标签也会跟着消失"
                                        Style="{StaticResource BulletPointStyle}"/>
                         </StackPanel>
                     </Border>

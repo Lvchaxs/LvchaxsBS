@@ -510,7 +510,7 @@ namespace LvchaxsBS.Core
 
                 Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    SubtitleOverlayService.HideSubtitle();
+                    SubtitleOverlayService.HideSubtitle(SubtitleOverlayService.SubtitleOwner.AutoLumber);
                 }));
 
                 // 通知外部：功能已结束（含自然结束、超时结束、异常结束）
@@ -520,235 +520,58 @@ namespace LvchaxsBS.Core
 
         #region 检测方法
 
-        private static (bool detected, double similarity, long elapsedMs) DetectWangShuRuiYouSync()
+        // 这 6 个方法原来各自抄了一遍「判缓存 → 截图 → 取模板 → 匹配」的 40 行，
+        // 只有区域键 / 模板键 / 日志文案不同。现在流水线只留一份（Core/TemplateProbe.cs），
+        // 这里只做参数绑定 + 保持原来的返回值形状，上层调用与解构一行都不用改。
+
+        private static (bool detected, double similarity, long elapsedMs) DetectWangShuRuiYouSync(bool logHit = false)
+            => DetectPair("自动伐木_王树瑞佑区域", "自动伐木_王树瑞佑", "王树瑞佑", logHit);
+
+        private static Task<(bool detected, double similarity, long elapsedMs)> DetectWangShuRuiYou()
+            => Task.FromResult(DetectWangShuRuiYouSync(logHit: true));
+
+        private static Task<(bool detected, double similarity, long elapsedMs)> DetectHuoDe()
+            => Task.FromResult(DetectPair("自动伐木_获得区域", "自动伐木_获得", "获得"));
+
+        private static Task<(bool detected, double similarity, long elapsedMs)> DetectExitGame()
+            => Task.FromResult(DetectPair("派蒙菜单区域", "其他模版_ESC菜单", "退出游戏"));
+
+        private static Task<(bool detected, double similarity, long elapsedMs, int x, int y)> DetectExitToLogin()
+            => Task.FromResult(DetectWithPoint("退出至登录界面", "其他模版_退出游戏_退出至登录界面", "退出至登录界面"));
+
+        private static Task<(bool detected, double similarity, long elapsedMs, int x, int y)> DetectClickEnter()
+            => Task.FromResult(DetectWithPoint("点击进入区域", "其他模版_点击进入", "点击进入"));
+
+        /// <summary>返回「命中 / 匹配度 / 耗时」三件套。</summary>
+        private static (bool detected, double similarity, long elapsedMs) DetectPair(
+            string rectKey, string templateKey, string label, bool logHit = true)
         {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds);
+            bool detected = TemplateProbe.TryRun(
+                rectKey, templateKey, LumberThreshold, "自动伐木", label,
+                out double similarity, out long elapsedMs, out _, out _, logHit);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("自动伐木_王树瑞佑区域");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var template = TemplateManager.GetCachedTemplate("自动伐木_王树瑞佑");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                double threshold = ConfigManager.Get<AutoLumberSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                return (result != null && result.Similarity >= threshold, result?.Similarity ?? 0, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【自动伐木】王树瑞佑检测异常: {ex.Message}");
-                return (false, 0, sw.ElapsedMilliseconds);
-            }
+            return (detected, similarity, elapsedMs);
         }
 
-        private static async Task<(bool detected, double similarity, long elapsedMs)> DetectWangShuRuiYou()
+        /// <summary>
+        /// 返回「命中 / 匹配度 / 耗时 / 命中点屏幕坐标」。
+        /// ★ 未命中时匹配度按原实现返回 0（这三条是点击类检测，上层不拿分数做判断）。
+        /// </summary>
+        private static (bool detected, double similarity, long elapsedMs, int x, int y) DetectWithPoint(
+            string rectKey, string templateKey, string label)
         {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds);
+            bool detected = TemplateProbe.TryRun(
+                rectKey, templateKey, LumberThreshold, "自动伐木", label,
+                out double similarity, out long elapsedMs, out int x, out int y,
+                computeClickPoint: true);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("自动伐木_王树瑞佑区域");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var template = TemplateManager.GetCachedTemplate("自动伐木_王树瑞佑");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                double threshold = ConfigManager.Get<AutoLumberSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                bool detected = result != null && result.Similarity >= threshold;
-                if (detected)
-                {
-                    Debug.WriteLine($"【自动伐木】检测到王树瑞佑 匹配度: {result.Similarity * 100:F2}%");
-                }
-
-                return (detected, result?.Similarity ?? 0, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【自动伐木】王树瑞佑检测异常: {ex.Message}");
-                return (false, 0, sw.ElapsedMilliseconds);
-            }
+            return detected
+                ? (true, similarity, elapsedMs, x, y)
+                : (false, 0, elapsedMs, 0, 0);
         }
 
-        private static async Task<(bool detected, double similarity, long elapsedMs)> DetectHuoDe()
-        {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("自动伐木_获得区域");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var template = TemplateManager.GetCachedTemplate("自动伐木_获得");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                double threshold = ConfigManager.Get<AutoLumberSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                bool detected = result != null && result.Similarity >= threshold;
-                if (detected)
-                {
-                    Debug.WriteLine($"【自动伐木】检测到获得 匹配度: {result.Similarity * 100:F2}%");
-                }
-
-                return (detected, result?.Similarity ?? 0, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【自动伐木】获得检测异常: {ex.Message}");
-                return (false, 0, sw.ElapsedMilliseconds);
-            }
-        }
-
-        private static async Task<(bool detected, double similarity, long elapsedMs)> DetectExitGame()
-        {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("派蒙菜单区域");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var template = TemplateManager.GetCachedTemplate("其他模版_ESC菜单");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                double threshold = ConfigManager.Get<AutoLumberSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                bool detected = result != null && result.Similarity >= threshold;
-                if (detected)
-                {
-                    Debug.WriteLine($"【自动伐木】检测到退出游戏 匹配度: {result.Similarity * 100:F2}%");
-                }
-
-                return (detected, result?.Similarity ?? 0, sw.ElapsedMilliseconds);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【自动伐木】退出游戏检测异常: {ex.Message}");
-                return (false, 0, sw.ElapsedMilliseconds);
-            }
-        }
-
-        private static async Task<(bool detected, double similarity, long elapsedMs, int x, int y)> DetectExitToLogin()
-        {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("退出至登录界面");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-
-                var template = TemplateManager.GetCachedTemplate("其他模版_退出游戏_退出至登录界面");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-
-                double threshold = ConfigManager.Get<AutoLumberSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                bool detected = result != null && result.Similarity >= threshold;
-                if (detected)
-                {
-                    Debug.WriteLine($"【自动伐木】检测到退出至登录界面 匹配度: {result.Similarity * 100:F2}%");
-                    double capScale = ImageRecognition.GetCaptureScale();
-                    int clickX = matchRect.Rect.X1 + (int)((result.X + template.Width / 2.0) / capScale);
-                    int clickY = matchRect.Rect.Y1 + (int)((result.Y + template.Height / 2.0) / capScale);
-                    return (true, result.Similarity, sw.ElapsedMilliseconds, clickX, clickY);
-                }
-
-                return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【自动伐木】退出至登录界面检测异常: {ex.Message}");
-                return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-            }
-        }
-
-        private static async Task<(bool detected, double similarity, long elapsedMs, int x, int y)> DetectClickEnter()
-        {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("点击进入区域");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-
-                var template = TemplateManager.GetCachedTemplate("其他模版_点击进入");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-
-                double threshold = ConfigManager.Get<AutoLumberSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                bool detected = result != null && result.Similarity >= threshold;
-                if (detected)
-                {
-                    Debug.WriteLine($"【自动伐木】检测到点击进入 匹配度: {result.Similarity * 100:F2}%");
-                    double capScale = ImageRecognition.GetCaptureScale();
-                    int clickX = matchRect.Rect.X1 + (int)((result.X + template.Width / 2.0) / capScale);
-                    int clickY = matchRect.Rect.Y1 + (int)((result.Y + template.Height / 2.0) / capScale);
-                    return (true, result.Similarity, sw.ElapsedMilliseconds, clickX, clickY);
-                }
-
-                return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"【自动伐木】点击进入检测异常: {ex.Message}");
-                return (false, 0, sw.ElapsedMilliseconds, 0, 0);
-            }
-        }
+        /// <summary>本功能的识别阈值（每次现取，用户改了配置立刻生效 —— 与原实现一致）。</summary>
+        private static double LumberThreshold => ConfigManager.Get<AutoLumberSettings>().DetectThreshold;
 
         private static void ClickExitGamePosition()
         {

@@ -519,7 +519,7 @@ namespace LvchaxsBS.Core
                 Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     StopCountdownTimer();
-                    SubtitleOverlayService.HideSubtitle();
+                    SubtitleOverlayService.HideSubtitle(SubtitleOverlayService.SubtitleOwner.AutoCook);
                 }), DispatcherPriority.Normal);
 
                 Stopped?.Invoke();
@@ -943,52 +943,21 @@ namespace LvchaxsBS.Core
         }
 
         private static string? SavePerfectRegionDebugImage(Bitmap source, Bitmap binarized, int leftX, int rightX, int top, int bottom, int judgeX)
-        {
-            try
-            {
-                int width = binarized.Width;
-                int height = binarized.Height;
-                int totalHeight = height * 2 + 1;
-
-                using var annotated = new Bitmap(width, totalHeight, PixelFormat.Format32bppArgb);
-                using (var g = Graphics.FromImage(annotated))
-                {
-                    g.DrawImage(source, 0, 0, width, height);
-                    g.DrawImage(binarized, 0, height + 1, width, height);
-
-                    using var pen = new Pen(Color.Red, 1);
-
-                    int rectW = rightX - leftX + 1;
-                    int rectH = bottom - top + 1;
-                    if (rectW < 1) rectW = 1;
-                    if (rectH < 1) rectH = 1;
-
-                    int offsetY = height + 1;
-                    g.DrawRectangle(pen, leftX, offsetY + top, rectW, rectH);
-
-                    int lineX = judgeX;
-                    if (lineX < 0) lineX = 0;
-                    if (lineX >= width) lineX = width - 1;
-                    g.DrawLine(pen, lineX, offsetY, lineX, offsetY + height - 1);
-                }
-
-                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "截图日志", "自动烹饪-截图日志");
-                if (!Directory.Exists(dir))
-                    Directory.CreateDirectory(dir);
-
-                string fileName = "自动烹饪-完美品质.png";
-                string path = Path.Combine(dir, fileName);
-
-                annotated.Save(path, ImageFormat.Png);
-                return path;
-            }
-            catch
-            {
-                return null;
-            }
-        }
+            => SaveRegionDebugImage(source, binarized, leftX, rightX, top, bottom, judgeX, "自动烹饪-完美品质.png");
 
         private static string? SaveNormalRegionDebugImage(Bitmap source, Bitmap binarized, int leftX, int rightX, int top, int bottom, int judgeX)
+            => SaveRegionDebugImage(source, binarized, leftX, rightX, top, bottom, judgeX, "自动烹饪-一般品质.png");
+
+        /// <summary>
+        /// 把「原图 / 二值图」上下拼成一张对照图，标出判定区域（红框）与判定列（竖线）后落盘。
+        /// <para>
+        /// ★ 原来"完美品质"和"一般品质"各有一份**逐字相同**的实现，只差文件名 —— 合成一处，
+        ///   以后调调试图的画法只改这里。任何异常都吞掉并返回 null（调试功能不能拖垮烹饪流程）。
+        /// </para>
+        /// </summary>
+        /// <returns>落盘路径；失败返回 null。</returns>
+        private static string? SaveRegionDebugImage(Bitmap source, Bitmap binarized,
+            int leftX, int rightX, int top, int bottom, int judgeX, string fileName)
         {
             try
             {
@@ -1022,9 +991,7 @@ namespace LvchaxsBS.Core
                 if (!Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
-                string fileName = "自动烹饪-一般品质.png";
                 string path = Path.Combine(dir, fileName);
-
                 annotated.Save(path, ImageFormat.Png);
                 return path;
             }
@@ -1033,6 +1000,7 @@ namespace LvchaxsBS.Core
                 return null;
             }
         }
+
 
         private static async Task RunF4WaitForAuto(CancellationToken token)
         {
@@ -1287,127 +1255,58 @@ namespace LvchaxsBS.Core
             }
         }
 
-        private static async Task<(bool detected, double similarity, int x, int y)> DetectConfirm(string regionKey)
+        // ===== 模板类检测 =====
+        // 流水线只有一份（Core/TemplateProbe.cs）；这里只绑定「区域键 / 模板键 / 日志文案」，
+        // 并保持各自原来的返回值形状 —— 上层全部是解构调用，一行都不用改。
+        // 原来这 4 段几乎逐字相同（DetectConfirm 只是额外算了点击点）。
+
+        /// <summary>本功能的识别阈值（每次现取，用户改配置立刻生效 —— 与原实现一致）。</summary>
+        private static double CookThreshold => ConfigManager.Get<AutoCookSettings>().DetectThreshold;
+
+        private static Task<(bool detected, double similarity, int x, int y)> DetectConfirm(string regionKey)
+            => Task.FromResult(DetectConfirmCore(regionKey));
+
+        private static (bool detected, double similarity, int x, int y) DetectConfirmCore(string regionKey)
         {
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, 0, 0);
+            bool detected = TemplateProbe.TryRun(
+                regionKey, "自动烹饪_确认", CookThreshold, "自动烹饪", "确认",
+                out double similarity, out _, out int x, out int y,
+                logHit: false, computeClickPoint: true);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>(regionKey);
-                if (matchRect == null) return (false, 0, 0, 0);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null) return (false, 0, 0, 0);
-
-                var template = TemplateManager.GetCachedTemplate("自动烹饪_确认");
-                if (template == null) return (false, 0, 0, 0);
-
-                double threshold = ConfigManager.Get<AutoCookSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                if (result != null && result.Similarity >= threshold)
-                {
-                    double capScale = ImageRecognition.GetCaptureScale();
-                    int clickX = matchRect.Rect.X1 + (int)((result.X + template.Width / 2.0) / capScale);
-                    int clickY = matchRect.Rect.Y1 + (int)((result.Y + template.Height / 2.0) / capScale);
-                    return (true, result.Similarity, clickX, clickY);
-                }
-
-                return (false, 0, 0, 0);
-            }
-            catch
-            {
-                return (false, 0, 0, 0);
-            }
+            return detected ? (true, similarity, x, y) : (false, 0, 0, 0);
         }
 
         private static (bool detected, double similarity, long elapsedMs) DetectCookInterfaceSync()
         {
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0, sw.ElapsedMilliseconds);
+            bool detected = TemplateProbe.TryRun(
+                "自动烹饪_烹饪界面区域", "自动烹饪_烹饪界面", CookThreshold, "自动烹饪", "烹饪界面",
+                out double similarity, out long elapsedMs, out _, out _,
+                logHit: false);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("自动烹饪_烹饪界面区域");
-                if (matchRect == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                var template = TemplateManager.GetCachedTemplate("自动烹饪_烹饪界面");
-                if (template == null)
-                    return (false, 0, sw.ElapsedMilliseconds);
-
-                double threshold = ConfigManager.Get<AutoCookSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                return (result != null && result.Similarity >= threshold, result?.Similarity ?? 0, sw.ElapsedMilliseconds);
-            }
-            catch
-            {
-                return (false, 0, sw.ElapsedMilliseconds);
-            }
+            return (detected, similarity, elapsedMs);
         }
 
-        private static async Task<(bool detected, double similarity)> DetectAutoCook()
+        private static Task<(bool detected, double similarity)> DetectAutoCook()
+            => Task.FromResult(DetectSimilarity("自动烹饪_自动烹饪区域", "自动烹饪_自动烹饪", "自动烹饪"));
+
+        private static Task<(bool detected, double similarity)> DetectManualCook()
+            => Task.FromResult(DetectSimilarity("自动烹饪_手动烹饪区域", "自动烹饪_手动烹饪", "手动烹饪"));
+
+        /// <summary>
+        /// 只关心「命中 + 匹配度」的包装。
+        /// ★ 未命中但匹配到东西时仍返回真实匹配度（界面上要显示分数），与原实现一致。
+        /// </summary>
+        private static (bool detected, double similarity) DetectSimilarity(
+            string rectKey, string templateKey, string label)
         {
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0);
+            bool detected = TemplateProbe.TryRun(
+                rectKey, templateKey, CookThreshold, "自动烹饪", label,
+                out double similarity, out _, out _, out _,
+                logHit: false);
 
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("自动烹饪_自动烹饪区域");
-                if (matchRect == null) return (false, 0);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null) return (false, 0);
-
-                var template = TemplateManager.GetCachedTemplate("自动烹饪_自动烹饪");
-                if (template == null) return (false, 0);
-
-                double threshold = ConfigManager.Get<AutoCookSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                bool detected = result != null && result.Similarity >= threshold;
-                return (detected, result?.Similarity ?? 0);
-            }
-            catch
-            {
-                return (false, 0);
-            }
+            return (detected, similarity);
         }
 
-        private static async Task<(bool detected, double similarity)> DetectManualCook()
-        {
-            try
-            {
-                if (!CoordinateFormats.CacheReady)
-                    return (false, 0);
-
-                var matchRect = CoordinateFormats.GetCached<CoordinateFormats.MatchRect>("自动烹饪_手动烹饪区域");
-                if (matchRect == null) return (false, 0);
-
-                using var source = ImageRecognition.CaptureRegionScaled(matchRect);
-                if (source == null) return (false, 0);
-
-                var template = TemplateManager.GetCachedTemplate("自动烹饪_手动烹饪");
-                if (template == null) return (false, 0);
-
-                double threshold = ConfigManager.Get<AutoCookSettings>().DetectThreshold;
-                var result = ImageRecognition.MatchTemplate(source, template, threshold);
-
-                bool detected = result != null && result.Similarity >= threshold;
-                return (detected, result?.Similarity ?? 0);
-            }
-            catch
-            {
-                return (false, 0);
-            }
-        }
 
         private static async Task<(bool detected, double similarity)> DetectCooking()
         {

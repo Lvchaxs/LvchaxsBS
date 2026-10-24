@@ -38,19 +38,40 @@ namespace LvchaxsBS.Core
         private const string ResourceRoot = "Resources/";
 
         /// <summary>
-        /// 资源包是否可用。进程内只探测一次（<see cref="Assembly.Load(string)"/>
-        /// 会先在应用目录里按简单名找 LvchaxsBS_Resources.dll）。
+        /// 资源包是否可用。
+        /// <para>
+        /// 进程内只探测一次；但补上 <c>LvchaxsBS_Resources.dll</c> 之后会调
+        /// <see cref="Reload"/> 重新探测一次，让刚装上的资源包立刻可用（不用重启）。
+        /// </para>
         /// </summary>
-        public static bool IsAvailable { get; } = Detect();
+        public static bool IsAvailable => _isAvailable;
 
         /// <summary>
         /// pack URI 前缀，形如
         /// <c>pack://application:,,,/LvchaxsBS_Resources;component/Resources/</c>；
         /// 资源包缺失时是空字符串。
         /// </summary>
-        public static string Root { get; } = IsAvailable
+        public static string Root => _root ??= _isAvailable
             ? $"pack://application:,,,/{ResourceAssemblyName};component/{ResourceRoot}"
             : string.Empty;
+
+        private static bool _isAvailable = Detect();
+        private static string? _root;
+
+        /// <summary>
+        /// 重新探测一次（资源包热加载用）。
+        /// <para>
+        /// ★ 只可能在「启动时 dll 不在、运行中下载装好」这条路上被调用 —— 那种情况程序集从没加载过，
+        ///   这里 <see cref="Detect"/> 里的 <c>Assembly.LoadFrom</c> 是**第一次**加载，可以成功。
+        /// </para>
+        /// </summary>
+        /// <returns>重新探测后是否可用。</returns>
+        public static bool Reload()
+        {
+            _isAvailable = Detect();
+            _root = null;                  // 下次访问 Root 时按新状态重算
+            return _isAvailable;
+        }
 
         private static bool Detect()
         {

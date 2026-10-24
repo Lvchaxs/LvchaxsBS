@@ -610,10 +610,47 @@
                 <!-- 按钮样式直接引用主程序的 SettingsButtonStyleRound6：
                      这样深浅主题配色、悬停换色、悬停放大 1.06 / 按下缩小 0.97
                      全部与主程序弹窗完全一致，不再各写一套。 -->
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Margin="0">
+                <!-- 两列：左边一行小提示、右边保存/取消 ——
+                     ★ 原来按钮是 `HorizontalAlignment="Center"` 居中的，现在拆成 Grid 的两列，
+                       提示占 `*`（贴左）、按钮占 `Auto`（自然就贴右了）。
+                     ★ 左边距 20 和内容区（`Grid.Row=1` 的 Margin="20,16,20,12"）对齐。 -->
+                <Grid Margin="20,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 小提示：卡片上已经没有置顶/置底按钮了，操作都靠点头像，这里说明一下。
+                         两行：`&#10;` 是显式换行（和「当前没有分组」那处提示同一个写法）。 -->
+                    <TextBlock Grid.Column="0"
+                               Text="小提示: 点击账号头像可置顶账号到列表最上方/分组同效果&#10;分组内账号点击为相反效果置底到最下方代表已登录过"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                    <!-- 「清除异常」：清掉该账号「账号或密码错误」的红标签。
+                         只在**编辑模式**显示（新建账号本来就没标签），且只有真的挂了标签时才亮出来。
+                         ★ 点了就**立刻落盘**并隐藏，不用再点「保存」（2026-10-14 改）。 -->
+                    <Button x:Name="clearErrorButton"
+                            Style="{DynamicResource SettingsButtonStyleRound6}"
+                            Click="ClearErrorButton_Click"
+                            MinWidth="80"
+                            Height="30"
+                            Margin="0,0,8,0"
+                            Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <!-- 「清除异常」用红字：和卡片上的红色标签对应，
+                                 让人一眼看出这个按钮处理的是「异常」这件事。
+                                 ★ 画刷必须 DynamicResource —— 深浅主题各有自己的红
+                                 （Light #991B1B / Dark #FCA5A5），写死颜色另一套主题下会看不清。 -->
+                            <TextBlock Text="清除异常"
+                                       Foreground="{DynamicResource TagRedFgBrush}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="saveButton"
                             Style="{DynamicResource SettingsButtonStyleRound6}"
                             Click="SaveButton_Click"
@@ -645,7 +682,8 @@
                             <TextBlock Text="取消" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                </StackPanel>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
     </Border>

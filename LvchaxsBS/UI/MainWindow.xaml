@@ -41,13 +41,17 @@
 
             <!-- ============ 壁纸层（主题底色之上、所有内容之下） ============ -->
             <!-- 透明度走 Image.Opacity；模糊走 BlurEffect；缩放/旋转/位移走 TransformGroup -->
+            <!-- ★ BitmapScalingMode 用 LowQuality（=Linear）而不是 HighQuality：
+                 本窗口 AllowsTransparency，走的是软件渲染，HighQuality(Fant) 每帧对整窗大图做
+                 高质量重采样非常贵（拖窗口 / 缩放 / 位移时最明显）；壁纸是照片，
+                 放大时 Linear 与 Fant 肉眼几乎无差，但快一个档。模糊开启时更是看不出区别。 -->
             <Image x:Name="WallpaperImage"
                    Grid.Row="0"
                    Grid.RowSpan="4"
                    Stretch="Uniform"
                    Visibility="Collapsed"
                    IsHitTestVisible="False"
-                   RenderOptions.BitmapScalingMode="HighQuality"
+                   RenderOptions.BitmapScalingMode="LowQuality"
                    RenderTransformOrigin="0.5,0.5">
                 <Image.Effect>
                     <BlurEffect x:Name="WallpaperBlurEffect"
@@ -180,11 +184,23 @@
                                 FontSize="12"
                                 Style="{StaticResource TitleBarButtonStyle}"
                                 Click="MaximizeButton_Click"/>
+                        <!-- 关闭按钮：上面是 ✕，底部一行小字提示 Ctrl+F12 也是关闭快捷键 -->
                         <Button x:Name="CloseButton"
-                                Content="✕"
-                                FontSize="12"
+                                Width="48"
                                 Style="{StaticResource TitleBarCloseButtonStyle}"
-                                Click="CloseButton_Click"/>
+                                Click="CloseButton_Click">
+                            <StackPanel Orientation="Vertical"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="✕"
+                                           FontSize="12"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="Ctrl+F12"
+                                           FontSize="8"
+                                           Margin="0,-1,0,0"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>

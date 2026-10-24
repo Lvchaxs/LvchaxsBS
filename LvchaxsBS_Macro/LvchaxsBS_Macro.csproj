@@ -10,6 +10,10 @@
 		<AssemblyName>LvchaxsBS_macro</AssemblyName>
 		<GenerateAppHost>false</GenerateAppHost>
 
+		<!-- ★ 宏编辑器用 AvalonEdit（第三方 dll），library 工程默认不复制 NuGet 依赖 dll，
+		     这里显式开启，让 ICSharpCode.AvalonEdit.dll 落到输出目录，再随 CopyPluginToHost 进宿主 bin -->
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
 		<!-- 插件里不再自带 App，应用级资源（主题画刷 / keyed 样式）由宿主提供 -->
 		<EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
 	</PropertyGroup>
@@ -25,7 +29,9 @@
 	<ItemGroup>
 		<Resource Include="Assets\Images\**\*.png" />
 	</ItemGroup>
-
+	<ItemGroup>
+		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+	</ItemGroup>
 	<!-- 编译后自动放到宿主 bin 里（和 UID 插件一个套路），省得每次手动拷 -->
 	<Target Name="CopyPluginToHost" AfterTargets="Build">
 		<PropertyGroup>
@@ -34,11 +40,10 @@
 		<ItemGroup>
 			<PluginArtifacts Include="$(TargetPath)" />
 			<PluginArtifacts Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
-		</ItemGroup>
+			<!-- ★ AvalonEdit 是宏编辑器的第三方依赖 dll，宿主反射加载 macro.dll 时要能解析到它 -->
+			<PluginArtifacts Include="$(TargetDir)ICSharpCode.AvalonEdit.dll" Condition="Exists('$(TargetDir)ICSharpCode.AvalonEdit.dll')" />
+			</ItemGroup>
 		<!-- 宿主 exe 开着时会锁文件 → 只警告不中断编译 -->
-		<Copy SourceFiles="@(PluginArtifacts)"
-		      DestinationFolder="$(HostBinDir)"
-		      SkipUnchangedFiles="true"
-		      ContinueOnError="WarnAndContinue" />
+		<Copy SourceFiles="@(PluginArtifacts)" DestinationFolder="$(HostBinDir)" SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
 	</Target>
 </Project>

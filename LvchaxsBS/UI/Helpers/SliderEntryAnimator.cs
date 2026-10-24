@@ -45,28 +45,11 @@ namespace LvchaxsBS.UI.Helpers
 
                 LastPlayTick[key] = now;
 
-                foreach (var slider in FindVisualChildren<SpinSliderControl>(root))
+                foreach (var slider in VisualTreeEx.FindChildren<SpinSliderControl>(root))
                 {
                     slider.PlayEntryAnimation();
                 }
             }), DispatcherPriority.Loaded);
-        }
-
-        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject root)
-            where T : DependencyObject
-        {
-            if (root == null) yield break;
-
-            int count = VisualTreeHelper.GetChildrenCount(root);
-            for (int i = 0; i < count; i++)
-            {
-                var child = VisualTreeHelper.GetChild(root, i);
-                if (child is T t)
-                    yield return t;
-
-                foreach (var grand in FindVisualChildren<T>(child))
-                    yield return grand;
-            }
         }
     }
 }

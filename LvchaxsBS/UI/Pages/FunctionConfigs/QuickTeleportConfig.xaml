@@ -9,6 +9,22 @@
       d:DesignHeight="450" d:DesignWidth="800"
       Background="Transparent">
 
+    <Page.Resources>
+        <!-- 地区触发键按钮：未设置=灰、已设置=主题色（观感与首页卡片的触发键按钮一致） -->
+        <Style x:Key="QuickMapKeyButtonStyle" TargetType="Button" BasedOn="{StaticResource FlatButtonStyleRound6}">
+            <Setter Property="Background" Value="{DynamicResource Gray100Brush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryDarkBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Content, RelativeSource={RelativeSource Self}}" Value="未设置">
+                    <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
+
     <ScrollViewer Style="{StaticResource CustomScrollViewer}">
         <StackPanel Margin="5,4,0,0">
 
@@ -239,6 +255,445 @@
                     </Grid>
                 </Grid>
             </Border>
+
+            <!-- ==================== 快速切图 ==================== -->
+            <!-- 来自旧版「快速切图」：地图界面里按地区触发键，直接把地图切到那个地区。
+                 唯一变化：去掉了旧版"按开图键后 10 秒内有效"的时间窗。
+                 布局：4 列 × 4 行（第一行 = 蒙德/璃月/渊下宫/层岩巨渊）。 -->
+
+            <!-- 卡片5：各地区触发键 -->
+            <Border Style="{StaticResource ModuleFunctionCardAutoStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource IconBorderStyle}"
+                            VerticalAlignment="Top" Margin="5,10,12,0">
+                        <Image Source="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
+                               Width="60" Height="60" Stretch="Uniform"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Margin="0,10,12,10">
+                        <Grid>
+                            <TextBlock Text="快速切图"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       VerticalAlignment="Center"/>
+                            <!-- 两个开关上下排：「启用快速切图」在上，「启用切图识别」紧贴其下（用户指定位置） -->
+                            <StackPanel Orientation="Vertical"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center">
+                                <CheckBox x:Name="EnableQuickMapSwitch"
+                                          Content="启用快速切图"
+                                          Style="{StaticResource PurpleCheckBoxStyle}"
+                                          FontSize="11"
+                                          Foreground="{DynamicResource TextSecondaryBrush}"
+                                          HorizontalAlignment="Right"
+                                          Checked="EnableQuickMapSwitch_Changed"
+                                          Unchecked="EnableQuickMapSwitch_Changed"/>
+                                <CheckBox x:Name="EnableCutRecognition"
+                                          Content="启用切图识别"
+                                          Style="{StaticResource PurpleCheckBoxStyle}"
+                                          FontSize="11"
+                                          Foreground="{DynamicResource TextSecondaryBrush}"
+                                          HorizontalAlignment="Right"
+                                          Margin="0,5,0,0"
+                                          Checked="EnableCutRecognition_Changed"
+                                          Unchecked="EnableCutRecognition_Changed"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="在地图界面按下对应地区的触发键即执行快速切图；取消勾选「启用切图识别」则按下后直接执行，不做画面识别"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextDisabledBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,4,0,0"/>
+
+                        <UniformGrid Columns="4" Margin="0,8,0,0">
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="蒙德" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyMondstadt" Grid.Column="1" Tag="Mondstadt"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="璃月" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyLiyue" Grid.Column="1" Tag="Liyue"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="渊下宫" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyEnkanomiya" Grid.Column="1" Tag="Enkanomiya"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="层岩巨渊" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyChasm" Grid.Column="1" Tag="Chasm"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="稻妻" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyInazuma" Grid.Column="1" Tag="Inazuma"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="须弥" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeySumeru" Grid.Column="1" Tag="Sumeru"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="旧日之海" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeySeaOfBygoneEras" Grid.Column="1" Tag="SeaOfBygoneEras"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="远古圣山" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyAncientSacredMountain" Grid.Column="1" Tag="AncientSacredMountain"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="枫丹" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyFontaine" Grid.Column="1" Tag="Fontaine"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="纳塔" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyNatlan" Grid.Column="1" Tag="Natlan"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="空之神殿" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyTempleOfTheVoid" Grid.Column="1" Tag="TempleOfTheVoid"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="霜月" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyFrostmoon" Grid.Column="1" Tag="Frostmoon"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="挪德卡莱" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyNodKrai" Grid.Column="1" Tag="NodKrai"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="至冬" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeySnezhnaya" Grid.Column="1" Tag="Snezhnaya"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="尘歌壶" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeySereniteaPot" Grid.Column="1" Tag="SereniteaPot"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                            <Border Margin="0,3,10,3"
+                                    Padding="8,3"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="千星奇域" FontSize="12"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               VerticalAlignment="Center"/>
+                                    <Button x:Name="QuickMapKeyStellarRealm" Grid.Column="1" Tag="StellarRealm"
+                                            MinWidth="50" MaxWidth="120" Height="24"
+                                            Style="{StaticResource QuickMapKeyButtonStyle}"
+                                            Click="QuickMapKey_Click">
+                                                <TextBlock Text="未设置" FontSize="11"
+                                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            </Button>
+                                </Grid>
+                            </Border>
+                        </UniformGrid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 卡片6：地区点击延迟（导航条是直接点的，没有前置延迟） -->
+            <controls:SliderCardControl x:Name="QuickMapRegionDelayCard"
+                                        Icon="pack://application:,,,/LvchaxsBS;component/UI/Assets/Images/快速传送.png"
+                                        Title="快速切图 · 地区点击延迟"
+                                        Hint="点击右下角后等待点击展开列表地区的延迟"
+                                        Minimum="0" Maximum="500" Step="1"
+                                        Unit="ms" NumericFormat="F0"
+                                        SliderToast="地区点击延迟"
+                                        ValueChanged="QuickMapRegionDelayCard_ValueChanged"/>
 
         </StackPanel>
     </ScrollViewer>

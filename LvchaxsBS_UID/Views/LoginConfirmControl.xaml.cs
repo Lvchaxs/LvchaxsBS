@@ -1,5 +1,6 @@
 ﻿using LvchaxsBS_UID.Models;
 using LvchaxsBS_UID.Utils.File;
+using LvchaxsBS_UID.Services.LoginServices;   // PostLoginOptions / WorldPermission
 using LvchaxsBS_UID.Services.DataServices;
 using LvchaxsBS_UID.Utils.Clipboard;
 using System;
@@ -24,13 +25,19 @@ namespace LvchaxsBS_UID.Views
         public event EventHandler<LoginConfirmEventArgs> ConfirmLogin;
         public event EventHandler CancelLogin;
         public event EventHandler CloseRequested;
-        public event EventHandler<bool> MarkPreferenceChanged;
         public event EventHandler<string> UidCopyRequested;
         public event EventHandler LoginNextRequested;
         public event EventHandler LoginPrevRequested;
 
         /// <summary>点了置底控件（在分组内置底 / 取消置底之间切换）。</summary>
         public event EventHandler MarkToggleRequested;
+
+        /// <summary>
+        /// ★「登录后的附加选项」被改动（勾上 / 取消任何一个复选框）。
+        /// <para>订阅方用它做**实时生效**：人数监控还跑着的时候改了「双人/三人/四人/不选」，
+        /// 第三行下一轮就换成新格式，不必重新登录一次。</para>
+        /// </summary>
+        public event EventHandler ExtraOptionsChanged;
         #endregion
 
         #region 依赖属性
@@ -73,11 +80,13 @@ namespace LvchaxsBS_UID.Views
             // 改 Background 会把那套配色顶掉。
             // 但宿主样式没有定义「禁用」时的外观，只设 IsEnabled 视觉上没变化，
             // 所以用透明度表达禁用态：任何主题下都一致，也不引入固定颜色。
+            // ★ 例外：账号异常（红字）时禁用的按钮要保持不透明 —— 红字就是要让用户看清，
+            //   变淡反而弱化了「账号异常」这个警示。
             if (d is LoginConfirmWindow control)
             {
                 bool enabled = (bool)e.NewValue;
                 control.ConfirmLoginButton.IsEnabled = enabled;
-                control.ConfirmLoginButton.Opacity = enabled ? 1.0 : 0.45;
+                control.ConfirmLoginButton.Opacity = (enabled || control.ConfirmButtonDanger) ? 1.0 : 0.45;
             }
         }
 
@@ -96,6 +105,30 @@ namespace LvchaxsBS_UID.Views
             if (d is LoginConfirmWindow control)
             {
                 control.ConfirmLoginButton.Content = e.NewValue?.ToString() ?? "确认登录";
+            }
+        }
+
+        /// <summary>
+        /// 确认按钮文字是否用红色（账号有「账号或密码错误」标签时「账号异常」用红字）。
+        /// ★ 用本地值设 Foreground 覆盖样式：本地值优先级高于 Style 的 Setter / Trigger，
+        ///   所以即使 hover 也不会把红色顶掉。
+        /// </summary>
+        public static readonly DependencyProperty ConfirmButtonDangerProperty =
+            DependencyProperty.Register(nameof(ConfirmButtonDanger), typeof(bool), typeof(LoginConfirmWindow),
+                new PropertyMetadata(false, OnConfirmButtonDangerChanged));
+
+        public bool ConfirmButtonDanger
+        {
+            get => (bool)GetValue(ConfirmButtonDangerProperty);
+            set => SetValue(ConfirmButtonDangerProperty, value);
+        }
+
+        private static void OnConfirmButtonDangerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is LoginConfirmWindow control)
+            {
+                control.ConfirmLoginButton.Foreground =
+                    (bool)e.NewValue ? control.DangerTextBrush : control.ThemeBrush("TextSecondaryBrush", Brushes.Gray);
             }
         }
 
@@ -224,60 +257,6 @@ namespace LvchaxsBS_UID.Views
             }
         }
 
-        public static readonly DependencyProperty ShowMarkCheckBoxProperty =
-            DependencyProperty.Register(nameof(ShowMarkCheckBox), typeof(bool), typeof(LoginConfirmWindow),
-                new PropertyMetadata(false, OnShowMarkCheckBoxChanged));
-
-        public bool ShowMarkCheckBox
-        {
-            get => (bool)GetValue(ShowMarkCheckBoxProperty);
-            set => SetValue(ShowMarkCheckBoxProperty, value);
-        }
-
-        private static void OnShowMarkCheckBoxChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is LoginConfirmWindow control)
-            {
-                control.MarkAfterLoginCheckBox.Visibility = (bool)e.NewValue ? Visibility.Visible : Visibility.Collapsed;
-            }
-        }
-
-        public static readonly DependencyProperty IsMarkCheckedProperty =
-            DependencyProperty.Register(nameof(IsMarkChecked), typeof(bool), typeof(LoginConfirmWindow),
-                new PropertyMetadata(false, OnIsMarkCheckedChanged));
-
-        public bool IsMarkChecked
-        {
-            get => (bool)GetValue(IsMarkCheckedProperty);
-            set => SetValue(IsMarkCheckedProperty, value);
-        }
-
-        private static void OnIsMarkCheckedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is LoginConfirmWindow control)
-            {
-                control.MarkAfterLoginCheckBox.IsChecked = (bool)e.NewValue;
-            }
-        }
-
-        public static readonly DependencyProperty IsMarkCheckBoxEnabledProperty =
-            DependencyProperty.Register(nameof(IsMarkCheckBoxEnabled), typeof(bool), typeof(LoginConfirmWindow),
-                new PropertyMetadata(true, OnIsMarkCheckBoxEnabledChanged));
-
-        public bool IsMarkCheckBoxEnabled
-        {
-            get => (bool)GetValue(IsMarkCheckBoxEnabledProperty);
-            set => SetValue(IsMarkCheckBoxEnabledProperty, value);
-        }
-
-        private static void OnIsMarkCheckBoxEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is LoginConfirmWindow control)
-            {
-                control.MarkAfterLoginCheckBox.IsEnabled = (bool)e.NewValue;
-            }
-        }
-
         public static readonly DependencyProperty TitleTextProperty =
             DependencyProperty.Register(nameof(TitleText), typeof(string), typeof(LoginConfirmWindow),
                 new PropertyMetadata("确认登录", OnTitleTextChanged));
@@ -345,7 +324,6 @@ namespace LvchaxsBS_UID.Views
         }
 
 
-
         public static readonly DependencyProperty IsMarkedProperty =
             DependencyProperty.Register(nameof(IsMarked), typeof(bool), typeof(LoginConfirmWindow),
                 new PropertyMetadata(false, OnIsMarkedChanged));
@@ -398,6 +376,29 @@ namespace LvchaxsBS_UID.Views
                 control.MarkToggleRow.Visibility = (bool)e.NewValue ? Visibility.Visible : Visibility.Collapsed;
             }
         }
+
+        public static readonly DependencyProperty ShowExtraOptionsProperty =
+            DependencyProperty.Register(nameof(ShowExtraOptions), typeof(bool), typeof(LoginConfirmWindow),
+                new PropertyMetadata(true, OnShowExtraOptionsChanged));
+
+        /// <summary>
+        /// 是否显示「登录后的附加选项」那一整块（打开派蒙 / 聊天 / 联机）。
+        /// <para>★ 只有**分组内**的登录才显示 —— 分组内的登录是完整流程（登录 + 附加动作）；
+        /// 账号列表里的登录只是单纯的登录，检测到主界面就结束，没有这些选项。</para>
+        /// </summary>
+        public bool ShowExtraOptions
+        {
+            get => (bool)GetValue(ShowExtraOptionsProperty);
+            set => SetValue(ShowExtraOptionsProperty, value);
+        }
+
+        private static void OnShowExtraOptionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is LoginConfirmWindow control)
+            {
+                control.ExtraOptionsRow.Visibility = (bool)e.NewValue ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
         #endregion
 
         private bool _isClosing = false;
@@ -421,6 +422,39 @@ namespace LvchaxsBS_UID.Views
 
             // 置底控件按当前账号状态刷新一次（打开前宿主可能已设过 IsMarked）
             UpdateMarkToggleVisual(IsMarked);
+
+            // ★★★ 聊天里给某个队友批了「指令权限」时，要把对应复选框勾上（UI 同步）
+            PostLoginActions.SetGrantPermissionHandler(GrantCommandPermissionToBox);
+        }
+
+        /// <summary>
+        /// ★★★ 把某个 P 位的「指令权限」复选框勾上（2026-10-18 用户要求"UI 复选框同步更改"）。
+        /// <para>
+        /// 调用方（<see cref="PostLoginActions"/>）在后台线程 ⇒ 这里切回 UI 线程。
+        /// 勾上之后会自己触发 <c>ExtraCheckBox_Checked</c> → <c>ExtraOptionsChanged</c>，
+        /// 上层再 <c>UpdateLiveOptions</c> —— 窗口和运行时状态两边一致。
+        /// </para>
+        /// </summary>
+        private void GrantCommandPermissionToBox(string tag)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(() => GrantCommandPermissionToBox(tag));
+                return;
+            }
+
+            CheckBox? box = tag switch
+            {
+                "2P" => ExtraCheckBox7,
+                "3P" => ExtraCheckBox8,
+                "4P" => ExtraCheckBox9,
+                _ => null,
+            };
+
+            if (box == null) return;
+
+            box.IsChecked = true;
+            Debug.WriteLine($"[复选框] 程序授予 {tag} 指令权限 → 已勾选");
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -570,27 +604,20 @@ namespace LvchaxsBS_UID.Views
         /// </summary>
         private void UpdatePlayerCountCheckBoxes(CheckBox checkedBox)
         {
-            int targetCount = 4; // 默认4人
+            // 4/5/6 三选一：勾上哪个，就把另外两个取消。
+            // （原来是三段 if/else 各写一遍"取消另外两个"，外带一个赋值后从未使用的 targetCount）
+            CheckBox?[] others = checkedBox == ExtraCheckBox4
+                ? new CheckBox?[] { ExtraCheckBox5, ExtraCheckBox6 }
+                : checkedBox == ExtraCheckBox5
+                    ? new CheckBox?[] { ExtraCheckBox4, ExtraCheckBox6 }
+                    : checkedBox == ExtraCheckBox6
+                        ? new CheckBox?[] { ExtraCheckBox4, ExtraCheckBox5 }
+                        : Array.Empty<CheckBox?>();
 
-            if (checkedBox == ExtraCheckBox4) // 四人联机
+            foreach (var box in others)
             {
-                if (ExtraCheckBox5 != null) ExtraCheckBox5.IsChecked = false;
-                if (ExtraCheckBox6 != null) ExtraCheckBox6.IsChecked = false;
-                targetCount = 4;
+                if (box != null) box.IsChecked = false;
             }
-            else if (checkedBox == ExtraCheckBox5) // 三人联机
-            {
-                if (ExtraCheckBox4 != null) ExtraCheckBox4.IsChecked = false;
-                if (ExtraCheckBox6 != null) ExtraCheckBox6.IsChecked = false;
-                targetCount = 3;
-            }
-            else if (checkedBox == ExtraCheckBox6) // 双人联机
-            {
-                if (ExtraCheckBox4 != null) ExtraCheckBox4.IsChecked = false;
-                if (ExtraCheckBox5 != null) ExtraCheckBox5.IsChecked = false;
-                targetCount = 2;
-            }
-
         }
 
         /// <summary>
@@ -754,6 +781,9 @@ namespace LvchaxsBS_UID.Views
             }
 
             SaveCheckBoxStates();
+
+            // ★ 实时生效：监控还跑着的时候改了人数目标也要立刻跟上（第三行下一轮就换格式）
+            ExtraOptionsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void ExtraCheckBox_Unchecked(object sender, RoutedEventArgs e)
@@ -783,6 +813,9 @@ namespace LvchaxsBS_UID.Views
             }
 
             SaveCheckBoxStates();
+
+            // ★ 同上：取消勾选也要实时生效（比如把「四人联机」取消 → 第三行变回「当前人数： n/4」）
+            ExtraOptionsChanged?.Invoke(this, EventArgs.Empty);
         }
         #endregion
 
@@ -792,21 +825,138 @@ namespace LvchaxsBS_UID.Views
             TitleText = "确认登录";
             TitleColor = ThemeBrush("TextPrimaryBrush", Brushes.Black);
             ConfirmButtonText = "确认登录";
+            ConfirmButtonDanger = false;
             IsConfirmEnabled = false;
             IsCloseEnabled = true;
-            IsMarkCheckBoxEnabled = true;
+            _opensAccountEditor = false;
             CurrentAccountName = string.Empty;
             AccountUid = string.Empty;
             StatusHintText = string.Empty;
+        }
+
+        /// <summary>
+        /// 取出当前勾选的「登录后附加动作」，交给 <c>PostLoginActions</c> 在**登录成功之后**执行。
+        /// <para>
+        /// ★ 只认第一列那三个（派蒙 / 聊天 / 联机）—— 第二列的联机人数、第三列的指令权限
+        ///   还没做，这里不读它们，免得把半成品行为带进流程。
+        /// </para>
+        /// <para>★ 直接读内存里的 <c>IsChecked</c>（窗口就是复选框的真相来源），不再去读
+        ///   <c>login_checkbox_settings.json</c> —— 那文件是给下次开窗口时还原用的。</para>
+        /// </summary>
+        public PostLoginOptions GetPostLoginOptions()
+        {
+            var options = new PostLoginOptions
+            {
+                OpenPaimonMenu = ExtraCheckBox1?.IsChecked == true,
+                OpenChat = ExtraCheckBox2?.IsChecked == true,
+                OpenMultiplayer = ExtraCheckBox3?.IsChecked == true,
+
+                // ★★★ 「指令权限」：哪几个 P 位有权让程序执行「换号 / 改世界权限」。
+                //    UI 里保证至少勾一个（`UpdateCommandPermissionCheckBoxes`）。
+                Allow2P = ExtraCheckBox7?.IsChecked == true,
+                Allow3P = ExtraCheckBox8?.IsChecked == true,
+                Allow4P = ExtraCheckBox9?.IsChecked == true,
+            };
+
+            // 只有勾了「登录后打开联机界面」，第 4 列那三个才作数（窗口里也只在那时才解锁它们）
+            if (options.OpenMultiplayer)
+            {
+                if (ExtraCheckBox10?.IsChecked == true) options.Permission = WorldPermission.NotAllowJoin;
+                else if (ExtraCheckBox11?.IsChecked == true) options.Permission = WorldPermission.DirectJoin;
+                else if (ExtraCheckBox12?.IsChecked == true) options.Permission = WorldPermission.ConfirmJoin;
+            }
+
+            // 只有勾了「登录后打开聊天界面」，第 2 列那三个才作数（窗口里也只在那时才解锁它们）。
+            // 三个互斥（勾一个自动取消另外两个），所以取到第一个勾上的就行。
+            // ★ 一个都没勾 = 0 → 第三行只显示「当前人数： n/4」，不判断达标。
+            if (options.OpenChat)
+            {
+                if (ExtraCheckBox6?.IsChecked == true) options.PlayerCountTarget = 2;   // 双人联机
+                else if (ExtraCheckBox5?.IsChecked == true) options.PlayerCountTarget = 3;  // 三人联机
+                else if (ExtraCheckBox4?.IsChecked == true) options.PlayerCountTarget = 4;  // 四人联机
+            }
+
+            return options;
+        }
+
+        /// <summary>
+        /// 「账号异常」的统一文案。窗口的状态行、卡片的红标签提示、失败 toast 都用这一句，
+        /// 改一处全跟着变（以前各处写死，改文案容易漏）。
+        /// </summary>
+        public const string AccountErrorHintText = "账号或密码错误-账号编辑中清除异常";
+
+        /// <summary>
+        /// ★「账号验证失效」的统一文案（卡片红标签、窗口状态行、失败 toast 都用这一句）。
+        /// 账号在本机的设备验证过期、登录时弹出「请先验证身份后再登录」时打上。
+        /// </summary>
+        public const string VerifyInvalidHintText = "账号验证失效";
+
+        /// <summary>确认按钮上的短文案：代替「账号异常」的那个（红字 + 禁用）。</summary>
+        private const string VerifyInvalidButtonText = "验证失效";
+        private const string AccountErrorButtonText = "账号异常";
+
+        /// <summary>判断一句失败文案是不是「验证失效」这一类（决定按钮写什么）。</summary>
+        private static bool IsVerifyInvalid(string? loginErrorText)
+            => string.Equals(loginErrorText, VerifyInvalidHintText, StringComparison.Ordinal);
+
+        /// <summary>
+        /// 确认按钮此刻的含义是不是「去账号编辑里处理问题」。
+        /// <para>★ 账号带失败标签（异常 / 验证失效）时为 true：按钮<b>可点</b>，但点了**不跑登录**，
+        ///   而是打开账号编辑让用户自己改账密或点「清除异常」。</para>
+        /// <para>★ 每个状态方法都要显式复位它 —— 漏了就会从"异常账号"切到"正常账号"后
+        ///   点了确认还跑去打开编辑窗口（和当初忘了复位 TitleColor 是同一个坑）。</para>
+        /// </summary>
+        private bool _opensAccountEditor;
+
+        /// <summary>
+        /// 按「当前展示的这个账号」把窗口状态**整段重算**：标题（含颜色）、确认按钮文字/是否红字/
+        /// 是否可点、底部状态行。打开窗口、「上一个/下一个」切换账号、点置底控件，三处都走这里。
+        /// <para>
+        /// ★ 2026-10-14 修 bug：以前切换账号是自己分散赋值，只改了 ConfirmButtonText 和 IsConfirmEnabled，
+        ///   漏了 <c>TitleColor</c> 和 <c>ConfirmButtonDanger</c>、也没判断 <c>HasLoginError</c> ——
+        ///   于是①从异常账号切到正常账号，标题/按钮残留红色；②再切回异常账号，异常状态又显示不出来。
+        ///   ⇒ **凡是"换了一个账号"就必须整段重算，不能只挑几个属性改。**
+        /// </para>
+        /// </summary>
+        /// <param name="hasLoginError">账号带失败红标签 → 不能登录（优先级最高，压过置底）。</param>
+        /// <param name="markedInGroup">分组内已置底 → 不能登录。</param>
+        /// <param name="loginErrorText">失败文案（<see cref="AccountErrorHintText"/> / <see cref="VerifyInvalidHintText"/>）；
+        ///     留空按账密错误处理。</param>
+        public void SetAccountState(bool hasLoginError, bool markedInGroup, string? loginErrorText = null)
+        {
+            // ★ 先无条件复位标题：它是上一次账号留下的重灾区（红色 + 「账号异常」）
+            TitleText = "确认登录";
+            TitleColor = ThemeBrush("TextPrimaryBrush", Brushes.Black);
+            IsCloseEnabled = true;
+
+            if (hasLoginError)
+            {
+                // ★ 效果必须和 <see cref="SetAccountErrorState"/> 一致（文案、红字、可点），
+                //   唯一区别是这里标题保持「确认登录」（刚切过来，流程并没跑过）。
+                string hint = string.IsNullOrEmpty(loginErrorText) ? AccountErrorHintText : loginErrorText;
+                ConfirmButtonText = IsVerifyInvalid(hint) ? VerifyInvalidButtonText : AccountErrorButtonText;
+                ConfirmButtonDanger = true;     // 红字
+                IsConfirmEnabled = true;        // ★ 可点（2026-10-15：点了不是登录，是打开账号编辑）
+                _opensAccountEditor = true;
+                StatusHintText = hint;
+                return;
+            }
+
+            ConfirmButtonText = markedInGroup ? "无法登录" : "确认登录";
+            ConfirmButtonDanger = false;
+            IsConfirmEnabled = !markedInGroup;
+            StatusHintText = markedInGroup ? "账号已置底，无法登录" : string.Empty;
+            _opensAccountEditor = false;
         }
 
         public void SetLoggingInState()
         {
             TitleText = "登录中...";
             ConfirmButtonText = "停止登录";
+            ConfirmButtonDanger = false;
             IsCloseEnabled = false;
-            IsMarkCheckBoxEnabled = false;
             IsConfirmEnabled = true;
+            _opensAccountEditor = false;
             StatusHintText = "正在登录中...";
         }
 
@@ -819,9 +969,10 @@ namespace LvchaxsBS_UID.Views
                 // ★ 完成后按钮恢复成「确认登录」而不是「登录完成」：
                 //   留着"登录完成"会让用户以为这是个新状态，点下去又重新跑一遍登录。
                 ConfirmButtonText = "确认登录";
+                ConfirmButtonDanger = false;
                 IsConfirmEnabled = true;
                 IsCloseEnabled = true;
-                IsMarkCheckBoxEnabled = true;
+                _opensAccountEditor = false;
                 StatusHintText = "登录成功";
             }
             else
@@ -829,9 +980,10 @@ namespace LvchaxsBS_UID.Views
                 TitleText = "登录失败";
                 TitleColor = DangerTextBrush;
                 ConfirmButtonText = "确认登录";
+                ConfirmButtonDanger = false;
                 IsConfirmEnabled = true;
                 IsCloseEnabled = true;
-                IsMarkCheckBoxEnabled = true;
+                _opensAccountEditor = false;
                 StatusHintText = "登录失败，请重试";
             }
         }
@@ -841,15 +993,35 @@ namespace LvchaxsBS_UID.Views
             TitleText = "登录已取消";
             TitleColor = DangerTextBrush;
             ConfirmButtonText = "确认登录";
+            ConfirmButtonDanger = false;
             IsConfirmEnabled = true;
             IsCloseEnabled = true;
-            IsMarkCheckBoxEnabled = true;
+            _opensAccountEditor = false;
             StatusHintText = "登录已取消";
         }
 
-        public bool GetIsMarkChecked()
+        /// <summary>
+        /// ★ 账密已被服务器判错（账号打上红标签）：窗口停在「账号异常」，
+        ///   确认按钮变成红字「账号异常」并禁用 —— 这个账号不能再登录，
+        ///   必须先关掉窗口去「编辑账号」里点「清除异常」。
+        ///   2026-10-14：以前登录失败后只刷新了背后的卡片标签，**这扇已经打开的窗口没人去改**，
+        ///   结果界面上看着「确认登录」还能点、点了又白跑一遍。现在流程结束后立即调用本方法。
+        /// </summary>
+        /// <param name="loginErrorText">失败文案：验证失效传 <see cref="VerifyInvalidHintText"/>，
+        ///     留空按账密错误处理（标题 / 按钮 / 状态行全都跟着它变）。</param>
+        public void SetAccountErrorState(string? loginErrorText = null)
         {
-            return MarkAfterLoginCheckBox.IsChecked == true;
+            string hint = string.IsNullOrEmpty(loginErrorText) ? AccountErrorHintText : loginErrorText;
+            bool verify = IsVerifyInvalid(hint);
+
+            TitleText = verify ? VerifyInvalidButtonText : AccountErrorButtonText;
+            TitleColor = DangerTextBrush;
+            ConfirmButtonText = verify ? VerifyInvalidButtonText : AccountErrorButtonText;
+            ConfirmButtonDanger = true;   // 红字
+            IsConfirmEnabled = true;      // ★ 可点（2026-10-15：点了不是登录，是打开账号编辑）
+            IsCloseEnabled = true;
+            StatusHintText = hint;
+            _opensAccountEditor = true;
         }
 
         private void UpdateCurrentAccountVisibility()
@@ -970,8 +1142,8 @@ namespace LvchaxsBS_UID.Views
         {
             ConfirmLogin?.Invoke(this, new LoginConfirmEventArgs
             {
-                IsMarkChecked = MarkAfterLoginCheckBox.IsChecked == true,
-                Action = ConfirmButtonText
+                Action = ConfirmButtonText,
+                OpensAccountEditor = _opensAccountEditor
             });
         }
 
@@ -979,16 +1151,6 @@ namespace LvchaxsBS_UID.Views
         {
             CloseRequested?.Invoke(this, EventArgs.Empty);
             CloseWithAnimation(false);
-        }
-
-        private void MarkAfterLoginCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            MarkPreferenceChanged?.Invoke(this, true);
-        }
-
-        private void MarkAfterLoginCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            MarkPreferenceChanged?.Invoke(this, false);
         }
 
         private void AccountUidText_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -1041,7 +1203,13 @@ namespace LvchaxsBS_UID.Views
 
     public class LoginConfirmEventArgs : EventArgs
     {
-        public bool IsMarkChecked { get; set; }
         public string Action { get; set; }
+
+        /// <summary>
+        /// ★ 这次点击的含义是「去账号编辑里处理问题」，**不是**登录。
+        /// 账号带着失败标签（异常 / 验证失效）时，确认按钮虽然可点，但点了不再跑登录流程 ——
+        /// 这些问题只能用户自己在编辑里改账密 / 点「清除异常」，程序替不了。
+        /// </summary>
+        public bool OpensAccountEditor { get; set; }
     }
 }

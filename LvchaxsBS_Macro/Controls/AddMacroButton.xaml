@@ -5,26 +5,97 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:LvchaxsBS_Macro.Controls"
              mc:Ignorable="d"
-             d:DesignHeight="28" d:DesignWidth="86">
+             d:DesignHeight="32" d:DesignWidth="110">
+
+    <UserControl.Resources>
+        <!--
+            ★★ 「新建宏」按钮 = UID「添加账号」按钮的**同款尺寸与观感**：
+               卡片底 + 细边框 + 主题文字色、Width 110 / Height 32 / FontSize 14 / 圆角 6 / Padding 10,4。
+            ⛔ UID 的 `NeutralButtonStyle` 定义在 AccountManagerView.xaml 的 **Page.Resources**，
+               是页面级私有资源；插件是反射加载的独立 dll，沿自己的逻辑树查不到
+               （直接用会退化成系统默认按钮）。所以整份复制过来。
+            ⛔ 它 BasedOn 的 `ButtonBaseStyle` 同样是页面级私有 —— 那三个 Setter 直接内联。
+            ⚠️ UID 那边改了尺寸/配色，这里要跟着改，否则两个按钮看着不一样大。
+        -->
+        <Style x:Key="MacroNeutralButtonStyle" TargetType="Button">
+            <!-- —— 原 ButtonBaseStyle 的三个 Setter（页面级私有，内联过来） -->
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Gray400Brush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource PressedBackgroundBrush}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Gray400Brush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
 
     <!--
-        ★ 宿主配置容器页底部按钮条的**第一个**按钮：
-          「添加宏 / 触发键 / 配置 / 返回 / 开关」
-        ★ 外观照抄旁边那几个按钮（FlatButtonStyleRound6 + 28 高 + 11 号字），
-          只是内容多了个矢量 </> 图标，所以用 MinWidth 而不是固定 50。
+        ★ 宿主配置容器页底部按钮条的**第一个**按钮「新建宏」。
+        ★★ 尺寸完全取自 UID「添加账号」按钮：Width=110 / Height=33 / FontSize=14 / 图标画布 23。
+           原来是 MinWidth=78 + 28 高 + 11 号字，比 UID 小一圈。
     -->
     <Button x:Name="AddButton"
-            MinWidth="78" Height="28" Padding="10,0"
-            Style="{DynamicResource FlatButtonStyleRound6}"
-            Background="{DynamicResource CardBackgroundBrush}"
-            Foreground="{DynamicResource TextSecondaryBrush}"
-            BorderBrush="{DynamicResource BorderStrongBrush}"
-            ToolTip="新建一个自定义宏"
+            Width="110"
+            Style="{StaticResource MacroNeutralButtonStyle}"
             Click="AddButton_Click">
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <controls:MacroGlyph Width="16" Height="11"
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+            <!-- 文件夹（文件夹模式用；v2 起不再出现，保留兜底） -->
+            <Viewbox x:Name="FolderIcon"
+                     Width="20" Height="15" Margin="0,0,6,0"
+                     VerticalAlignment="Center"
+                     Visibility="Collapsed">
+                <Canvas Width="42" Height="31">
+                    <Path Data="M33.6,29 H2 V3.4 A2.2,2.2 0 0 1 4.2,1.2 H11.6 A1.6,1.6 0 0 1 13.2,2.8 V4 H32 A1,1 0 0 1 33,5 V8 M10.4,8.7 L39.6,8 L33.2,28.6 L3.5,28.6 Z"
+                          Stroke="{DynamicResource TextSecondaryBrush}"
+                          StrokeThickness="2.5"
+                          Fill="Transparent"
+                          StrokeLineJoin="Miter"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"/>
+                </Canvas>
+            </Viewbox>
+
+            <!-- </> 图标：跟着 14 号字放大到 20×14（原来 16×11 是配 11 号字的） -->
+            <controls:MacroGlyph x:Name="MacroIcon"
+                                 Width="20" Height="14"
                                  VerticalAlignment="Center" Margin="0,0,6,0"/>
-            <TextBlock Text="添加宏" FontSize="11" VerticalAlignment="Center"/>
+
+            <TextBlock x:Name="LabelText" Text="新建宏" VerticalAlignment="Center"/>
         </StackPanel>
     </Button>
 </UserControl>

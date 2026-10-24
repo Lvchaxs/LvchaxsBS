@@ -54,6 +54,12 @@ namespace LvchaxsBS.Services
         /// <summary>KBDLLHOOKSTRUCT.flags 里的「事件是注入的（模拟按键）」标志位。</summary>
         private const uint LLKHF_INJECTED = 0x10;
 
+        /// <summary>
+        /// 「由**更低完整性级别**的进程注入」标志位。
+        /// <para>★ 也是模拟输入（只是来源进程权限更低），同样不能当用户的真实按键。</para>
+        /// </summary>
+        private const uint LLKHF_LOWER_IL_INJECTED = 0x02;
+
         private static IntPtr _hookId = IntPtr.Zero;
         private static LowLevelKeyboardProc _proc;
         private static bool _isStarted = false;
@@ -96,6 +102,20 @@ namespace LvchaxsBS.Services
         private static readonly HashSet<int> _physicallyDown = new HashSet<int>();
 
         private static readonly object _downLock = new object();
+
+        /// <summary>
+        /// 某个虚拟键此刻是否被**真实**按住（程序注入的模拟按键不算）。
+        /// <para>
+        /// ★ 为什么不直接问 <c>GetAsyncKeyState</c>：那个 API 在某些环境（游戏独占输入、
+        ///   钩子线程状态尚未同步）下会漏报修饰键 —— 表现为"Ctrl+V 死活不触发"。
+        ///   这里的集合由钩子自己的 KeyDown/KeyUp 维护，只要钩子收得到键就一定准确。
+        /// </para>
+        /// <para>修饰键要用具体值才能区分左右：0xA2 左Ctrl / 0xA3 右Ctrl / 0xA4 左Alt / 0xA5 右Alt。</para>
+        /// </summary>
+        public static bool IsPhysicallyDown(int vkCode)
+        {
+            lock (_downLock) return _physicallyDown.Contains(vkCode);
+        }
 
         /// <summary>
         /// 维护"物理按下的键"集合；返回这次 KeyDown 是不是自动重复。
@@ -159,8 +179,15 @@ namespace LvchaxsBS.Services
                     bool isDown = wParamInt == WM_KEYDOWN || wParamInt == WM_SYSKEYDOWN;
                     bool isUp = wParamInt == WM_KEYUP || wParamInt == WM_SYSKEYUP;
 
-                    // ★ LLKHF_INJECTED = 0x10：有这一位就是程序注入的（模拟按键）
-                    bool injected = (hookStruct.flags & LLKHF_INJECTED) != 0;
+                    // ★ LLKHF_INJECTED = 0x10 / LLKHF_LOWER_IL_INJECTED = 0x02：
+                    //   有其中任何一位，这个键就是程序灌进去的（模拟按键），不是用户按的。
+                    bool injected = (hookStruct.flags & (LLKHF_INJECTED | LLKHF_LOWER_IL_INJECTED)) != 0;
+
+                    // ★★ 2026-10-23 起：模拟按键**一律不往外发**（只让它作用于游戏本身）——
+                    //    模拟输入只能"执行"，不能反过来触发功能 / 宏。
+                    //    之前只在各功能里靠 SimulationService.IsSimulating 挡宿主自己灌的键，
+                    //    宏插件是独立 dll、另一份 SimulationService ⇒ 它模拟的键照样触发了功能。
+                    if (injected) return CallNextHookEx(_hookId, nCode, wParam, lParam);
 
                     var args = new KeyboardEventArgs
                     {

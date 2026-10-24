@@ -19,7 +19,9 @@ namespace LvchaxsBS.Services
     public static class CaptureSettings
     {
         /// <summary>
-        /// 截图模式读取器：返回 0 = 窗口 DC（坐标需减客户区左上角），1 = 屏幕 DC（屏幕绝对坐标）。
+        /// 截图模式读取器：
+        /// 0 = 窗口 DC（坐标需减客户区左上角）；
+        /// 1 = 屏幕 DC（屏幕绝对坐标）。
         /// </summary>
         public static Func<int>? CaptureModeProvider { get; set; }
 
